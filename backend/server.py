@@ -342,11 +342,13 @@ async def _get_cart(user_id: str) -> dict:
 @api_router.get("/cart")
 async def get_cart(user: dict = Depends(get_current_user)):
     cart = await _get_cart(user["user_id"])
-    enriched = []
-    for it in cart.get("items", []):
-        p = await db.products.find_one({"product_id": it["product_id"]}, {"_id": 0})
-        if p:
-            enriched.append({**serialize_doc(p), "quantity": it["quantity"]})
+    items = cart.get("items", [])
+    if not items:
+        return {"items": []}
+    pids = [it["product_id"] for it in items]
+    products = await db.products.find({"product_id": {"$in": pids}}, {"_id": 0}).to_list(500)
+    pmap = {p["product_id"]: p for p in products}
+    enriched = [{**serialize_doc(pmap[it["product_id"]]), "quantity": it["quantity"]} for it in items if it["product_id"] in pmap]
     return {"items": enriched}
 
 
@@ -393,12 +395,10 @@ async def clear_cart(user: dict = Depends(get_current_user)):
 async def get_wishlist(user: dict = Depends(get_current_user)):
     wl = await db.wishlists.find_one({"user_id": user["user_id"]}, {"_id": 0})
     items = (wl or {}).get("items", [])
-    products = []
-    for pid in items:
-        p = await db.products.find_one({"product_id": pid}, {"_id": 0})
-        if p:
-            products.append(serialize_doc(p))
-    return {"items": products}
+    if not items:
+        return {"items": []}
+    products = await db.products.find({"product_id": {"$in": items}}, {"_id": 0}).to_list(500)
+    return {"items": [serialize_doc(p) for p in products]}
 
 
 @api_router.post("/wishlist")
@@ -471,10 +471,13 @@ def _calc_totals(items_with_products: List[dict]) -> dict:
 
 @api_router.post("/orders")
 async def create_order(payload: OrderCreate, user: dict = Depends(get_current_user)):
-    # Build snapshot
+    # Bulk fetch products in a single query
+    pids = [it.product_id for it in payload.items]
+    products_list = await db.products.find({"product_id": {"$in": pids}}, {"_id": 0}).to_list(500)
+    pmap = {p["product_id"]: p for p in products_list}
     snap: List[dict] = []
     for it in payload.items:
-        p = await db.products.find_one({"product_id": it.product_id}, {"_id": 0})
+        p = pmap.get(it.product_id)
         if not p:
             raise HTTPException(status_code=400, detail=f"Product {it.product_id} not found")
         snap.append({
@@ -651,7 +654,7 @@ async def admin_stats(_: dict = Depends(require_admin)):
     total_orders = await db.orders.count_documents({})
     total_users = await db.users.count_documents({})
     total_products = await db.products.count_documents({})
-    orders = await db.orders.find({"payment_status": {"$in": ["paid", "cod_pending"]}}, {"_id": 0}).to_list(2000)
+    orders = await db.orders.find({"payment_status": {"$in": ["paid", "cod_pending"]}}, {"_id": 0, "total": 1}).to_list(2000)
     revenue = sum(o.get("total", 0) for o in orders)
     return {
         "total_orders": total_orders,
