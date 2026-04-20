@@ -1,0 +1,39 @@
+{
+  "summary": "Backend API test suite executed against public URL. 22/23 tests passed. All products, auth gating, cart CRUD, wishlist, reviews (rating bump), contact, orders (COD/Card), Stripe checkout session creation, admin gating and admin update all pass. _id is excluded from all responses. One real bug: POST /api/orders with payment_method='upi' returns stale payment_status='pending' in response although DB is correctly updated to 'paid' (affects frontend UX - client thinks order is unpaid).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/orders (payment_method=upi)",
+        "issue": "Response returns stale payment_status='pending' instead of 'paid'. The handler updates the DB via a separate update_one() AFTER returning the in-memory 'doc' dict. DB value is correct ('paid') but the API response is stale, which breaks the immediate checkout success UI for UPI mock flow."
+      }
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_nayara_backend.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix POST /api/orders UPI branch: update the in-memory 'doc' dict (doc['payment_status']='paid', doc['status']='processing') before serialize_doc(doc) return. Same fix for COD is cosmetic (value happens to match) but best to mirror for consistency. Alternative: re-fetch the order from DB before returning."
+  ],
+  "critical_code_review_comments": [
+    "server.py POST /api/orders returns the pre-update 'doc' dict for UPI/COD branches, causing response/DB divergence. Either mutate doc or re-fetch after update_one.",
+    "server.py is a single 820-line module; consider splitting into routers (auth, products, cart, orders, payments, admin) per code-review guidelines (>700 lines).",
+    "CORS configured with allow_origins=['*'] AND allow_credentials=True is an anti-pattern (browsers reject credentialed requests with wildcard). Restrict origins for production.",
+    "seed_products() runs on startup only if count==0; any later schema changes to seeds will not re-seed.",
+    "STRIPE_API_KEY defaults to 'sk_test_emergent' in code if missing - should fail fast per env-var policy."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py (new)",
+    "/app/backend/tests/test_nayara_backend.py (new)"
+  ],
+  "success_rate": {"backend": "95.6% (22/23)", "frontend": "not tested"},
+  "test_credentials": "Sessions created directly in MongoDB via conftest fixtures (user + admin with is_admin=true). Passed via Authorization: Bearer header.",
+  "seed_data_creation": "Created ephemeral test users/sessions per pytest session; cleaned up in fixture teardown. Products were already seeded on backend startup (7 products).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "conftest.py provides user_client/admin_client/anon_client fixtures with pymongo session injection to DB_NAME='test_database'. Re-run: cd /app && python -m pytest backend/tests/test_nayara_backend.py -v. Only failing test is TestOrders::test_order_upi_paid which verifies the response payload (not DB). After fix, all 23 should pass.",
+  "rca of the issue": "In server.py create_order(): 'doc = order.model_dump()' is built with payment_status='pending' for card/upi. db.orders.insert_one(doc) is called, then a subsequent db.orders.update_one() sets payment_status='paid' for upi / 'cod_pending' for cod. The function then returns serialize_doc(doc) — the local dict, which was NOT mutated to reflect the post-update values. Hence DB and response diverge for UPI. Fix: after the update_one branches, either update doc in-place (doc['payment_status']='paid'; doc['status']='processing') or re-fetch doc = await db.orders.find_one({'order_id': order.order_id}, {'_id': 0}) before returning."
+}

@@ -1,0 +1,243 @@
+"""Nayara backend API tests - products, auth, cart, wishlist, reviews, orders, stripe, admin."""
+import pytest
+import requests
+
+# ---------- Products ----------
+class TestProducts:
+    def test_list_products_no_id_leak(self, base_url, anon_client):
+        r = anon_client.get(f"{base_url}/api/products")
+        assert r.status_code == 200
+        data = r.json()
+        assert isinstance(data, list)
+        assert len(data) >= 7, f"Expected >=7 products, got {len(data)}"
+        for p in data:
+            assert "_id" not in p
+            assert "product_id" in p and "name" in p and "price" in p
+
+    def test_filter_category_laundry(self, base_url, anon_client):
+        r = anon_client.get(f"{base_url}/api/products?category=laundry")
+        assert r.status_code == 200
+        data = r.json()
+        assert len(data) >= 1
+        assert all(p["category"] == "laundry" for p in data)
+
+    def test_search_soap(self, base_url, anon_client):
+        r = anon_client.get(f"{base_url}/api/products?q=soap")
+        assert r.status_code == 200
+        data = r.json()
+        assert len(data) >= 1
+        assert all("soap" in (p["name"] + p["description"]).lower() for p in data)
+
+    def test_featured_true(self, base_url, anon_client):
+        r = anon_client.get(f"{base_url}/api/products?featured=true")
+        assert r.status_code == 200
+        data = r.json()
+        assert len(data) >= 1
+        assert all(p["featured"] is True for p in data)
+
+    def test_get_product_by_id(self, base_url, anon_client):
+        lst = anon_client.get(f"{base_url}/api/products").json()
+        pid = lst[0]["product_id"]
+        r = anon_client.get(f"{base_url}/api/products/{pid}")
+        assert r.status_code == 200
+        d = r.json()
+        assert d["product_id"] == pid
+        assert "_id" not in d
+
+    def test_get_product_404(self, base_url, anon_client):
+        r = anon_client.get(f"{base_url}/api/products/does_not_exist")
+        assert r.status_code == 404
+
+
+# ---------- Auth ----------
+class TestAuth:
+    def test_invalid_session_id(self, base_url, anon_client):
+        r = anon_client.post(f"{base_url}/api/auth/session", json={"session_id": "invalid_xyz"})
+        assert r.status_code == 401
+
+    def test_me_without_auth(self, base_url, anon_client):
+        r = anon_client.get(f"{base_url}/api/auth/me")
+        assert r.status_code == 401
+
+    def test_me_with_bearer(self, base_url, user_client, user_session):
+        r = user_client.get(f"{base_url}/api/auth/me")
+        assert r.status_code == 200
+        assert r.json()["email"] == user_session["email"]
+        assert "_id" not in r.json()
+
+    def test_protected_routes_401(self, base_url, anon_client):
+        for path in ["/api/cart", "/api/wishlist", "/api/orders"]:
+            r = anon_client.get(f"{base_url}{path}")
+            assert r.status_code == 401, f"{path} expected 401 got {r.status_code}"
+
+
+# ---------- Cart ----------
+class TestCart:
+    def test_cart_flow(self, base_url, user_client):
+        pid = user_client.get(f"{base_url}/api/products").json()[0]["product_id"]
+        # add
+        r = user_client.post(f"{base_url}/api/cart", json={"product_id": pid, "quantity": 2})
+        assert r.status_code == 200
+        # add same again -> merges
+        user_client.post(f"{base_url}/api/cart", json={"product_id": pid, "quantity": 1})
+        r = user_client.get(f"{base_url}/api/cart")
+        assert r.status_code == 200
+        items = r.json()["items"]
+        assert len(items) == 1
+        assert items[0]["quantity"] == 3
+        assert items[0]["product_id"] == pid
+        # update qty
+        r = user_client.put(f"{base_url}/api/cart/{pid}", json={"quantity": 5})
+        assert r.status_code == 200
+        items = user_client.get(f"{base_url}/api/cart").json()["items"]
+        assert items[0]["quantity"] == 5
+        # delete item
+        r = user_client.delete(f"{base_url}/api/cart/{pid}")
+        assert r.status_code == 200
+        assert user_client.get(f"{base_url}/api/cart").json()["items"] == []
+        # add + clear
+        user_client.post(f"{base_url}/api/cart", json={"product_id": pid, "quantity": 1})
+        r = user_client.delete(f"{base_url}/api/cart")
+        assert r.status_code == 200
+        assert user_client.get(f"{base_url}/api/cart").json()["items"] == []
+
+
+# ---------- Wishlist ----------
+class TestWishlist:
+    def test_wishlist_flow(self, base_url, user_client):
+        pid = user_client.get(f"{base_url}/api/products").json()[0]["product_id"]
+        r = user_client.post(f"{base_url}/api/wishlist", json={"product_id": pid})
+        assert r.status_code == 200
+        items = user_client.get(f"{base_url}/api/wishlist").json()["items"]
+        assert any(p["product_id"] == pid for p in items)
+        r = user_client.delete(f"{base_url}/api/wishlist/{pid}")
+        assert r.status_code == 200
+        items = user_client.get(f"{base_url}/api/wishlist").json()["items"]
+        assert not any(p["product_id"] == pid for p in items)
+
+
+# ---------- Reviews ----------
+class TestReviews:
+    def test_review_creates_and_bumps_rating(self, base_url, user_client, anon_client):
+        pid = anon_client.get(f"{base_url}/api/products").json()[0]["product_id"]
+        r = user_client.post(f"{base_url}/api/products/{pid}/reviews",
+                             json={"rating": 5, "title": "Great", "comment": "Loved it"})
+        assert r.status_code == 200
+        data = r.json()
+        assert data["rating"] == 5
+        assert "_id" not in data
+        revs = anon_client.get(f"{base_url}/api/products/{pid}/reviews").json()
+        assert len(revs) >= 1
+        prod = anon_client.get(f"{base_url}/api/products/{pid}").json()
+        assert prod["reviews_count"] >= 1
+
+
+# ---------- Contact ----------
+class TestContact:
+    def test_contact_submit(self, base_url, anon_client):
+        r = anon_client.post(f"{base_url}/api/contact", json={
+            "name": "TEST_ctc", "email": "t@e.com", "subject": "Hi", "message": "Hello"
+        })
+        assert r.status_code == 200
+        assert "contact_id" in r.json()
+
+
+# ---------- Orders ----------
+ADDRESS = {"full_name": "Test", "phone": "9999999999", "line1": "Addr1",
+           "line2": "", "city": "Mumbai", "state": "MH", "pincode": "400001"}
+
+@pytest.fixture
+def sample_items(base_url, user_client):
+    prods = user_client.get(f"{base_url}/api/products").json()
+    return [{"product_id": prods[0]["product_id"], "quantity": 2}]
+
+class TestOrders:
+    def test_order_cod(self, base_url, user_client, sample_items):
+        # add to cart first to verify clearing
+        user_client.post(f"{base_url}/api/cart", json={"product_id": sample_items[0]["product_id"], "quantity": 1})
+        r = user_client.post(f"{base_url}/api/orders", json={
+            "items": sample_items, "address": ADDRESS, "payment_method": "cod"
+        })
+        assert r.status_code == 200
+        o = r.json()
+        assert o["payment_status"] == "cod_pending"
+        assert "_id" not in o
+        # cart cleared
+        assert user_client.get(f"{base_url}/api/cart").json()["items"] == []
+
+    def test_order_upi_paid(self, base_url, user_client, sample_items):
+        r = user_client.post(f"{base_url}/api/orders", json={
+            "items": sample_items, "address": ADDRESS, "payment_method": "upi"
+        })
+        assert r.status_code == 200
+        assert r.json()["payment_status"] == "paid"
+
+    def test_order_card_pending(self, base_url, user_client, sample_items):
+        r = user_client.post(f"{base_url}/api/orders", json={
+            "items": sample_items, "address": ADDRESS, "payment_method": "card"
+        })
+        assert r.status_code == 200
+        assert r.json()["payment_status"] == "pending"
+
+    def test_my_orders_only_own(self, base_url, user_client, user_session):
+        r = user_client.get(f"{base_url}/api/orders")
+        assert r.status_code == 200
+        orders = r.json()
+        assert all(o["user_id"] == user_session["user_id"] for o in orders)
+
+    def test_get_order_forbidden_for_other(self, base_url, user_client, admin_client, sample_items, anon_client):
+        # Make a second user and order - use admin to verify admin can view
+        r = user_client.post(f"{base_url}/api/orders", json={
+            "items": sample_items, "address": ADDRESS, "payment_method": "cod"
+        })
+        oid = r.json()["order_id"]
+        # owner can get
+        assert user_client.get(f"{base_url}/api/orders/{oid}").status_code == 200
+        # admin can get
+        assert admin_client.get(f"{base_url}/api/orders/{oid}").status_code == 200
+        # anon -> 401
+        assert anon_client.get(f"{base_url}/api/orders/{oid}").status_code == 401
+
+
+# ---------- Stripe ----------
+class TestStripe:
+    def test_create_checkout_session(self, base_url, user_client, sample_items, mongo_db):
+        r = user_client.post(f"{base_url}/api/orders", json={
+            "items": sample_items, "address": ADDRESS, "payment_method": "card"
+        })
+        oid = r.json()["order_id"]
+        r = user_client.post(f"{base_url}/api/payments/checkout/session", json={
+            "order_id": oid, "origin_url": base_url
+        })
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data.get("url", "").startswith("https://")
+        assert data.get("session_id")
+        tx = mongo_db.payment_transactions.find_one({"session_id": data["session_id"]})
+        assert tx is not None
+        assert tx["payment_status"] == "initiated"
+
+
+# ---------- Admin gating ----------
+class TestAdmin:
+    def test_non_admin_403(self, base_url, user_client):
+        for p in ["/api/admin/stats", "/api/admin/orders", "/api/admin/users", "/api/admin/contacts"]:
+            r = user_client.get(f"{base_url}{p}")
+            assert r.status_code == 403, f"{p} -> {r.status_code}"
+
+    def test_admin_200(self, base_url, admin_client):
+        for p in ["/api/admin/stats", "/api/admin/orders", "/api/admin/users", "/api/admin/contacts"]:
+            r = admin_client.get(f"{base_url}{p}")
+            assert r.status_code == 200, f"{p} -> {r.status_code}"
+            body = r.json()
+            if isinstance(body, list):
+                for d in body:
+                    assert "_id" not in d
+
+    def test_admin_update_order(self, base_url, admin_client, user_client, sample_items):
+        oid = user_client.post(f"{base_url}/api/orders", json={
+            "items": sample_items, "address": ADDRESS, "payment_method": "cod"
+        }).json()["order_id"]
+        r = admin_client.put(f"{base_url}/api/admin/orders/{oid}", json={"status": "shipped"})
+        assert r.status_code == 200
+        assert r.json()["status"] == "shipped"
