@@ -41,16 +41,16 @@ export default function Footer() {
         <div>
           <h4 className="font-heading font-semibold mb-4">Reach Us</h4>
           <ul className="space-y-3 text-sm text-[#5C7671]">
-            <li className="flex items-start gap-2"><MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" /> Industrial Estate, Pune 411019, India</li>
-            <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> +91 98765 43210</li>
+            <li className="flex items-start gap-2"><MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" /> Jaito, District Faridkot, Punjab 151202, India</li>
+            <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> +91 97808 44330</li>
             <li className="flex items-center gap-2"><Mail className="w-4 h-4" /> hello@nayara.in</li>
           </ul>
         </div>
       </div>
       <div className="border-t border-[var(--nayara-border)]">
         <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between text-xs text-[#5C7671]">
-          <p>© {new Date().getFullYear()} Nayara Brands Pvt. Ltd. All rights reserved.</p>
-          <p className="mt-2 sm:mt-0">Crafted with care in Pune, India.</p>
+          <p>© {new Date().getFullYear()} Nayara Brands. Founded by Abhinav Grover.</p>
+          <p className="mt-2 sm:mt-0">Crafted with care in Jaito, Punjab.</p>
         </div>
       </div>
     </footer>

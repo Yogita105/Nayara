@@ -88,8 +88,8 @@ export default function Home() {
             </div>
             <div className="rounded-3xl p-8 text-white" style={{ background: "var(--nayara-primary)" }}>
               <p className="text-xs uppercase tracking-[0.2em] font-bold mb-3 opacity-80">Made in India</p>
-              <h3 className="font-heading text-2xl font-medium">Proudly manufactured in Pune.</h3>
-              <p className="mt-3 text-sm opacity-90 leading-relaxed">Crafted by local artisans and chemists trained in small-batch methods that have served Indian households for three generations.</p>
+              <h3 className="font-heading text-2xl font-medium">Proudly manufactured in Punjab.</h3>
+              <p className="mt-3 text-sm opacity-90 leading-relaxed">Crafted in Jaito, District Faridkot — a small town in Punjab — by a team trained in small-batch methods that have served Indian households for years.</p>
             </div>
           </div>
         </div>

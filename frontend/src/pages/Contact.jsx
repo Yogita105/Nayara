@@ -62,12 +62,12 @@ export default function Contact() {
           <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <MapPin className="w-5 h-5 text-[var(--nayara-primary)] mb-2" />
             <h3 className="font-heading font-semibold">Visit us</h3>
-            <p className="text-sm text-[#5C7671] mt-1">Plot 12, Industrial Estate,<br />Hadapsar, Pune 411019, India</p>
+            <p className="text-sm text-[#5C7671] mt-1">Jaito, District Faridkot,<br />Punjab 151202, India</p>
           </div>
           <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <Phone className="w-5 h-5 text-[var(--nayara-primary)] mb-2" />
             <h3 className="font-heading font-semibold">Call us</h3>
-            <p className="text-sm text-[#5C7671] mt-1">+91 98765 43210<br />Mon–Sat · 10am–7pm</p>
+            <p className="text-sm text-[#5C7671] mt-1">Abhinav Grover (Owner)<br />+91 97808 44330<br />Mon–Sat · 10am–7pm</p>
           </div>
           <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <Mail className="w-5 h-5 text-[var(--nayara-primary)] mb-2" />

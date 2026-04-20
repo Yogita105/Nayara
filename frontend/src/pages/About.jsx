@@ -14,7 +14,7 @@ export default function About() {
             Three generations of honest clean.
           </h1>
           <p className="mt-6 text-[#5C7671] max-w-2xl mx-auto leading-relaxed">
-            Nayara began in a small workshop in Pune in 1978, when our grandfather mixed his first batch of neem-infused laundry soap. Today, the same recipes live on — made with the same care, direct from our factory to your door.
+            Nayara began in a small workshop in Jaito, Punjab, when founder Abhinav Grover mixed his first batch of neem-infused laundry soap. Today, the same recipes live on — made with the same care, direct from our factory to your door.
           </p>
         </div>
       </section>
