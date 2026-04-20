@@ -700,12 +700,14 @@ async def admin_stats(_: dict = Depends(require_admin)):
     total_orders = await db.orders.count_documents({})
     total_users = await db.users.count_documents({})
     total_products = await db.products.count_documents({})
+    total_messages = await db.contacts.count_documents({})
     orders = await db.orders.find({"payment_status": {"$in": ["paid", "cod_pending"]}}, {"_id": 0, "total": 1}).to_list(2000)
     revenue = sum(o.get("total", 0) for o in orders)
     return {
         "total_orders": total_orders,
         "total_users": total_users,
         "total_products": total_products,
+        "total_messages": total_messages,
         "revenue": round(revenue, 2),
     }
 

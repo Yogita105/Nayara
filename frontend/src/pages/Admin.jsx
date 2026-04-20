@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
-import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag } from "lucide-react";
+import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 const navs = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/messages", label: "Messages", icon: MessageSquare },
   { to: "/admin/users", label: "Users", icon: Users },
 ];
 
@@ -17,14 +18,15 @@ function Dashboard() {
   if (!stats) return <div>Loading...</div>;
   const cards = [
     { label: "Revenue", value: formatINR(stats.revenue), icon: IndianRupee, color: "var(--nayara-primary)" },
-    { label: "Orders", value: stats.total_orders, icon: ShoppingBag, color: "#48CAE4" },
-    { label: "Products", value: stats.total_products, icon: Package, color: "#84A98C" },
-    { label: "Users", value: stats.total_users, icon: Users, color: "#F59E0B" },
+    { label: "Orders", value: stats.total_orders, icon: ShoppingBag, color: "var(--nayara-secondary)" },
+    { label: "Products", value: stats.total_products, icon: Package, color: "#7FB4D9" },
+    { label: "Messages", value: stats.total_messages || 0, icon: MessageSquare, color: "#F59E0B" },
+    { label: "Users", value: stats.total_users, icon: Users, color: "#64748B" },
   ];
   return (
     <div data-testid="admin-dashboard">
       <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Dashboard</h1>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-5">
         {cards.map((c) => (
           <div key={c.label} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6" data-testid={`stat-${c.label.toLowerCase()}`}>
             <div className="w-10 h-10 rounded-full text-white flex items-center justify-center mb-3" style={{ background: c.color }}>
@@ -271,6 +273,72 @@ function UsersAdmin() {
   );
 }
 
+function MessagesAdmin() {
+  const [messages, setMessages] = useState([]);
+  const [selected, setSelected] = useState(null);
+  useEffect(() => { api.get("/admin/contacts").then(({ data }) => setMessages(data)); }, []);
+
+  return (
+    <div data-testid="admin-messages">
+      <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Messages</h1>
+      {messages.length === 0 ? (
+        <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-10 text-center text-[#64748B]">
+          <MessageSquare className="w-10 h-10 mx-auto mb-3" />
+          No customer messages yet.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-5">
+          <div className="rounded-2xl border border-[var(--nayara-border)] bg-white overflow-hidden h-fit max-h-[70vh] overflow-y-auto">
+            {messages.map((m) => (
+              <button
+                key={m.contact_id}
+                onClick={() => setSelected(m)}
+                className={`w-full text-left p-4 border-b border-[var(--nayara-border)] transition ${selected?.contact_id === m.contact_id ? "bg-[#FBEEE4]" : "hover:bg-[#FAFAFA]"}`}
+                data-testid={`msg-item-${m.contact_id}`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-sm truncate">{m.name}</span>
+                  <span className="text-[10px] text-[#64748B]">{m.created_at?.slice(0, 10)}</span>
+                </div>
+                <div className="text-xs text-[#64748B] truncate">{m.subject}</div>
+                <div className="text-xs text-[#64748B] truncate mt-1">{m.message}</div>
+              </button>
+            ))}
+          </div>
+          <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
+            {selected ? (
+              <div data-testid="msg-detail">
+                <div className="flex items-center justify-between gap-4 flex-wrap mb-5">
+                  <div>
+                    <h3 className="font-heading text-xl font-medium">{selected.subject}</h3>
+                    <p className="text-sm text-[#64748B] mt-1">From <span className="font-medium text-[#0F172A]">{selected.name}</span> · {selected.created_at && new Date(selected.created_at).toLocaleString("en-IN")}</p>
+                  </div>
+                  <a href={`mailto:${selected.email}?subject=Re: ${encodeURIComponent(selected.subject)}`} className="nayara-btn-outline text-sm" data-testid="msg-reply-btn">Reply by email</a>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-5">
+                  <div className="rounded-lg bg-[#FAFAFA] p-3">
+                    <div className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B]">Email</div>
+                    <a href={`mailto:${selected.email}`} className="text-[var(--nayara-primary)] break-all">{selected.email}</a>
+                  </div>
+                  {selected.phone && (
+                    <div className="rounded-lg bg-[#FAFAFA] p-3">
+                      <div className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B]">Phone</div>
+                      <a href={`tel:${selected.phone}`} className="text-[var(--nayara-primary)]">{selected.phone}</a>
+                    </div>
+                  )}
+                </div>
+                <div className="rounded-lg border border-[var(--nayara-border)] p-5 leading-relaxed text-sm whitespace-pre-wrap">{selected.message}</div>
+              </div>
+            ) : (
+              <div className="text-center text-[#64748B] py-10">Select a message to read.</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Admin() {
   const location = useLocation();
   return (
@@ -289,6 +357,7 @@ export default function Admin() {
         <Route index element={<Dashboard />} />
         <Route path="orders" element={<OrdersAdmin />} />
         <Route path="products" element={<ProductsAdmin />} />
+        <Route path="messages" element={<MessagesAdmin />} />
         <Route path="users" element={<UsersAdmin />} />
       </Routes>
     </div>
