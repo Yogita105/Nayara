@@ -20,7 +20,7 @@ export default function Home() {
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1632834702267-8da808897480?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxjbGVhbiUyMHdhdGVyJTIwc3BsYXNoJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzY2ODM4Nzh8MA&ixlib=rb-4.1.0&q=85')" }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-[#FBEEE4]/55 via-white/40 to-[#E6F0F9]/55" />
-        <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/55 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent" />
         <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-28 lg:pt-24 lg:pb-40">
           <div className="flex flex-wrap items-center gap-2 mb-6">
             <span className="badge-soft px-4 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5" data-testid="hero-badge">
@@ -34,7 +34,7 @@ export default function Home() {
             Thoughtful cleaning.<br />
             <span className="text-[var(--nayara-primary)]">Everyday</span> <span className="text-[var(--nayara-secondary)]">freshness.</span>
           </h1>
-          <p className="mt-6 max-w-xl text-[#64748B] text-base md:text-lg leading-relaxed">
+          <p className="mt-6 max-w-xl text-[#334155] text-base md:text-lg leading-relaxed font-medium">
             Premium laundry, personal and home care crafted in small batches for Indian homes. Real ingredients. Real value. Delivered straight from our factory floor.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
