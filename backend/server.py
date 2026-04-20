@@ -504,10 +504,14 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     if payload.payment_method == "cod":
         await db.orders.update_one({"order_id": order.order_id}, {"$set": {"payment_status": "cod_pending", "status": "placed"}})
         await db.carts.update_one({"user_id": user["user_id"]}, {"$set": {"items": []}})
+        doc["payment_status"] = "cod_pending"
+        doc["status"] = "placed"
     elif payload.payment_method == "upi":
         # Mock UPI flow - in reality integrate with a PSP
         await db.orders.update_one({"order_id": order.order_id}, {"$set": {"payment_status": "paid", "status": "processing"}})
         await db.carts.update_one({"user_id": user["user_id"]}, {"$set": {"items": []}})
+        doc["payment_status"] = "paid"
+        doc["status"] = "processing"
 
     return serialize_doc(doc)
 
