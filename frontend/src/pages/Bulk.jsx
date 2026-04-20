@@ -174,7 +174,7 @@ export default function Bulk() {
           <div className="mt-8 rounded-xl bg-white border border-[var(--nayara-border)] px-6 py-4 flex items-start gap-3">
             <BadgeCheck className="w-5 h-5 text-[var(--nayara-primary)] flex-shrink-0 mt-0.5" />
             <div className="text-sm text-[#64748B]">
-              Available in bulk quantities with <span className="font-semibold text-[#0F172A]">flexible packaging options</span> — private label, co-brand, or Nayara retail packs.
+              Available in bulk quantities with <span className="font-semibold text-[#0F172A]">flexible packaging sizes</span> — choose the pack size that fits your channel.
             </div>
           </div>
           <div className="mt-4 rounded-xl bg-[#E6F0F9] border border-[#CDE0F0] px-6 py-4 text-sm text-[var(--nayara-secondary)]">
