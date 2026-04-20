@@ -11,7 +11,7 @@ export default function Footer() {
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold" style={{ background: "var(--nayara-primary)" }}>N</div>
             <span className="font-heading text-2xl font-semibold">Nayara</span>
           </div>
-          <p className="text-sm text-[#5C7671] leading-relaxed">
+          <p className="text-sm text-[#64748B] leading-relaxed">
             Premium cleaning & personal care crafted in small batches — delivered factory direct to Indian households.
           </p>
           <div className="flex items-center gap-2 mt-5 text-xs badge-soft px-3 py-1.5 rounded-full w-fit">
@@ -21,7 +21,7 @@ export default function Footer() {
 
         <div>
           <h4 className="font-heading font-semibold mb-4">Shop</h4>
-          <ul className="space-y-2 text-sm text-[#5C7671]">
+          <ul className="space-y-2 text-sm text-[#64748B]">
             <li><Link to="/shop?category=laundry" className="hover:text-[var(--nayara-primary)]">Laundry Care</Link></li>
             <li><Link to="/shop?category=personal-care" className="hover:text-[var(--nayara-primary)]">Personal Care</Link></li>
             <li><Link to="/shop?category=home-care" className="hover:text-[var(--nayara-primary)]">Home Care</Link></li>
@@ -31,7 +31,7 @@ export default function Footer() {
 
         <div>
           <h4 className="font-heading font-semibold mb-4">Company</h4>
-          <ul className="space-y-2 text-sm text-[#5C7671]">
+          <ul className="space-y-2 text-sm text-[#64748B]">
             <li><Link to="/about" className="hover:text-[var(--nayara-primary)]">About Us</Link></li>
             <li><Link to="/contact" className="hover:text-[var(--nayara-primary)]">Contact</Link></li>
             <li><Link to="/orders" className="hover:text-[var(--nayara-primary)]">Track Order</Link></li>
@@ -40,7 +40,7 @@ export default function Footer() {
 
         <div>
           <h4 className="font-heading font-semibold mb-4">Reach Us</h4>
-          <ul className="space-y-3 text-sm text-[#5C7671]">
+          <ul className="space-y-3 text-sm text-[#64748B]">
             <li className="flex items-start gap-2"><MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" /> Jaito, District Faridkot, Punjab 151202, India</li>
             <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> +91 97808 44330</li>
             <li className="flex items-center gap-2"><Mail className="w-4 h-4" /> hello@nayara.in</li>
@@ -48,7 +48,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-[var(--nayara-border)]">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between text-xs text-[#5C7671]">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between text-xs text-[#64748B]">
           <p>© {new Date().getFullYear()} Nayara Brands. Founded by Abhinav Grover.</p>
           <p className="mt-2 sm:mt-0">Crafted with care in Jaito, Punjab.</p>
         </div>

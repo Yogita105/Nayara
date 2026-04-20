@@ -14,9 +14,9 @@ export default function Cart() {
   if (cart.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-20 text-center" data-testid="cart-empty">
-        <ShoppingBag className="w-16 h-16 mx-auto text-[#5C7671] mb-5" />
+        <ShoppingBag className="w-16 h-16 mx-auto text-[#64748B] mb-5" />
         <h1 className="font-heading text-3xl font-medium">Your cart is empty</h1>
-        <p className="text-[#5C7671] mt-2">Add a few of our bestsellers to get started.</p>
+        <p className="text-[#64748B] mt-2">Add a few of our bestsellers to get started.</p>
         <Link to="/shop" className="nayara-btn mt-6" data-testid="cart-shop-link">Shop Now</Link>
       </div>
     );
@@ -29,10 +29,10 @@ export default function Cart() {
         <div className="space-y-4">
           {cart.map((item) => (
             <div key={item.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4 items-center" data-testid={`cart-item-${item.product_id}`}>
-              <img src={item.image} alt={item.name} className="w-24 h-24 rounded-xl object-cover bg-[#F0F5F3]" />
+              <img src={item.image} alt={item.name} className="w-24 h-24 rounded-xl object-cover bg-[#F1F5F9]" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-heading font-medium">{item.name}</h3>
-                <p className="text-sm text-[#5C7671] mt-1">{formatINR(item.price)}</p>
+                <p className="text-sm text-[#64748B] mt-1">{formatINR(item.price)}</p>
                 <div className="mt-3 flex items-center gap-3">
                   <div className="flex items-center border border-[var(--nayara-border)] rounded-full">
                     <button onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))} className="px-3 h-9" data-testid={`cart-dec-${item.product_id}`}><Minus className="w-3 h-3" /></button>
@@ -52,8 +52,8 @@ export default function Cart() {
         <aside className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6 h-fit" data-testid="cart-summary">
           <h3 className="font-heading text-xl font-semibold mb-4">Order Summary</h3>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-[#5C7671]">Subtotal</span><span>{formatINR(cartTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[#5C7671]">Shipping</span><span>{shipping === 0 ? "Free" : formatINR(shipping)}</span></div>
+            <div className="flex justify-between"><span className="text-[#64748B]">Subtotal</span><span>{formatINR(cartTotal)}</span></div>
+            <div className="flex justify-between"><span className="text-[#64748B]">Shipping</span><span>{shipping === 0 ? "Free" : formatINR(shipping)}</span></div>
             {cartTotal < 499 && <div className="text-xs text-[var(--nayara-primary)]">Add {formatINR(499 - cartTotal)} more for free shipping</div>}
           </div>
           <div className="border-t border-[var(--nayara-border)] my-4" />
@@ -65,7 +65,7 @@ export default function Cart() {
           >
             Proceed to Checkout
           </Link>
-          {!user && <p className="text-xs text-[#5C7671] mt-3 text-center">You'll need to sign in to complete checkout.</p>}
+          {!user && <p className="text-xs text-[#64748B] mt-3 text-center">You'll need to sign in to complete checkout.</p>}
         </aside>
       </div>
     </div>

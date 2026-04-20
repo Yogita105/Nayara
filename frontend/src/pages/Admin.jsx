@@ -29,7 +29,7 @@ function Dashboard() {
             <div className="w-10 h-10 rounded-full text-white flex items-center justify-center mb-3" style={{ background: c.color }}>
               <c.icon className="w-5 h-5" />
             </div>
-            <div className="text-xs uppercase tracking-[0.2em] font-bold text-[#5C7671]">{c.label}</div>
+            <div className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B]">{c.label}</div>
             <div className="font-heading text-2xl font-semibold mt-1">{c.value}</div>
           </div>
         ))}
@@ -51,7 +51,7 @@ function OrdersAdmin() {
       <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Orders</h1>
       <div className="rounded-2xl border border-[var(--nayara-border)] bg-white overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-[#F8F9FA] text-[#5C7671] text-left">
+          <thead className="bg-[#FFFFFF] text-[#64748B] text-left">
             <tr>
               <th className="px-4 py-3">Order</th><th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Total</th><th className="px-4 py-3">Pay</th>
@@ -74,7 +74,7 @@ function OrdersAdmin() {
             ))}
           </tbody>
         </table>
-        {orders.length === 0 && <div className="text-center py-8 text-[#5C7671]">No orders.</div>}
+        {orders.length === 0 && <div className="text-center py-8 text-[#64748B]">No orders.</div>}
       </div>
     </div>
   );
@@ -89,10 +89,10 @@ function ProductsAdmin() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {products.map((p) => (
           <div key={p.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4">
-            <img src={p.image} alt="" className="w-20 h-20 rounded-lg object-cover bg-[#F0F5F3]" />
+            <img src={p.image} alt="" className="w-20 h-20 rounded-lg object-cover bg-[#F1F5F9]" />
             <div className="flex-1">
               <h3 className="font-heading font-medium text-sm">{p.name}</h3>
-              <div className="text-xs text-[#5C7671] mt-1">Stock: {p.stock}</div>
+              <div className="text-xs text-[#64748B] mt-1">Stock: {p.stock}</div>
               <div className="font-heading font-semibold mt-2">{formatINR(p.price)}</div>
             </div>
           </div>
@@ -110,7 +110,7 @@ function UsersAdmin() {
       <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Users</h1>
       <div className="rounded-2xl border border-[var(--nayara-border)] bg-white overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-[#F8F9FA] text-[#5C7671] text-left">
+          <thead className="bg-[#FFFFFF] text-[#64748B] text-left">
             <tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Email</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Joined</th></tr>
           </thead>
           <tbody>
@@ -119,7 +119,7 @@ function UsersAdmin() {
                 <td className="px-4 py-3">{u.name}</td>
                 <td className="px-4 py-3">{u.email}</td>
                 <td className="px-4 py-3">{u.is_admin ? <span className="badge-soft px-2 py-1 rounded-full text-xs">Admin</span> : "Customer"}</td>
-                <td className="px-4 py-3 text-xs text-[#5C7671]">{u.created_at?.slice(0, 10)}</td>
+                <td className="px-4 py-3 text-xs text-[#64748B]">{u.created_at?.slice(0, 10)}</td>
               </tr>
             ))}
           </tbody>
@@ -137,7 +137,7 @@ export default function Admin() {
         {navs.map((n) => {
           const active = n.end ? location.pathname === n.to : location.pathname.startsWith(n.to) && n.to !== "/admin";
           return (
-            <Link key={n.to} to={n.to} className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm transition ${active ? "bg-[var(--nayara-primary)] text-white" : "hover:bg-[#E8F1F2]"}`} data-testid={`admin-nav-${n.label.toLowerCase()}`}>
+            <Link key={n.to} to={n.to} className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm transition ${active ? "bg-[var(--nayara-primary)] text-white" : "hover:bg-[#FFF4EB]"}`} data-testid={`admin-nav-${n.label.toLowerCase()}`}>
               <n.icon className="w-4 h-4" /> {n.label}
             </Link>
           );

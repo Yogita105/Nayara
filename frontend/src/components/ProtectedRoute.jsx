@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }) {
   const location = useLocation();
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20 text-[#5C7671]" data-testid="auth-loading">Loading...</div>;
+    return <div className="flex items-center justify-center py-20 text-[#64748B]" data-testid="auth-loading">Loading...</div>;
   }
   if (!user) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;

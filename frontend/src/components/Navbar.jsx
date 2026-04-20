@@ -46,7 +46,7 @@ export default function Navbar() {
               to={l.to}
               end={l.to === "/"}
               className={({ isActive }) =>
-                `text-sm font-medium transition-colors ${isActive ? "text-[var(--nayara-primary)]" : "text-[#5C7671] hover:text-[var(--nayara-primary)]"}`
+                `text-sm font-medium transition-colors ${isActive ? "text-[var(--nayara-primary)]" : "text-[#64748B] hover:text-[var(--nayara-primary)]"}`
               }
               data-testid={`nav-link-${l.label.toLowerCase()}`}
             >
@@ -56,7 +56,7 @@ export default function Navbar() {
         </nav>
 
         <form onSubmit={onSearch} className="hidden lg:flex items-center bg-white border border-[var(--nayara-border)] rounded-full px-3 h-10 w-64" data-testid="nav-search-form">
-          <Search className="w-4 h-4 text-[#5C7671]" />
+          <Search className="w-4 h-4 text-[#64748B]" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -67,10 +67,10 @@ export default function Navbar() {
         </form>
 
         <div className="flex items-center gap-1">
-          <Link to="/wishlist" className="p-2 rounded-full hover:bg-[#E8F1F2] transition-colors" data-testid="nav-wishlist-link" aria-label="Wishlist">
+          <Link to="/wishlist" className="p-2 rounded-full hover:bg-[#FFF4EB] transition-colors" data-testid="nav-wishlist-link" aria-label="Wishlist">
             <Heart className="w-5 h-5" />
           </Link>
-          <Link to="/cart" className="relative p-2 rounded-full hover:bg-[#E8F1F2] transition-colors" data-testid="nav-cart-link" aria-label="Cart">
+          <Link to="/cart" className="relative p-2 rounded-full hover:bg-[#FFF4EB] transition-colors" data-testid="nav-cart-link" aria-label="Cart">
             <ShoppingCart className="w-5 h-5" />
             {cartCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-[var(--nayara-primary)] text-white text-[11px] font-semibold flex items-center justify-center" data-testid="nav-cart-count">
@@ -82,7 +82,7 @@ export default function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-[#E8F1F2] transition-colors" data-testid="nav-user-menu">
+                <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-[#FFF4EB] transition-colors" data-testid="nav-user-menu">
                   {user.picture ? (
                     <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
                   ) : (
@@ -137,8 +137,8 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
-            <form onSubmit={onSearch} className="flex items-center bg-[#F8F9FA] rounded-full px-3 h-10 mt-2">
-              <Search className="w-4 h-4 text-[#5C7671]" />
+            <form onSubmit={onSearch} className="flex items-center bg-[#FFFFFF] rounded-full px-3 h-10 mt-2">
+              <Search className="w-4 h-4 text-[#64748B]" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="bg-transparent outline-none px-2 text-sm flex-1" />
             </form>
           </div>

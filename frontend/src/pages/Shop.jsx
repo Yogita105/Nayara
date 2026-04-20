@@ -54,9 +54,9 @@ export default function Shop() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-10" data-testid="shop-page">
       <div className="mb-8">
-        <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#5C7671] mb-3">Shop</p>
+        <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Shop</p>
         <h1 className="font-heading text-4xl md:text-5xl font-medium tracking-tighter">All Products</h1>
-        <p className="mt-2 text-[#5C7671]">Factory-direct cleaning & personal care. Real prices. No middlemen.</p>
+        <p className="mt-2 text-[#64748B]">Factory-direct cleaning & personal care. Real prices. No middlemen.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
@@ -68,9 +68,9 @@ export default function Shop() {
           </div>
 
           <div className="mb-6">
-            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#5C7671] mb-2 block">Search</label>
-            <div className="flex items-center bg-[#F8F9FA] rounded-md px-3 h-10">
-              <Search className="w-4 h-4 text-[#5C7671]" />
+            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Search</label>
+            <div className="flex items-center bg-[#FFFFFF] rounded-md px-3 h-10">
+              <Search className="w-4 h-4 text-[#64748B]" />
               <input
                 value={q}
                 onChange={(e) => setQuery(e.target.value)}
@@ -82,13 +82,13 @@ export default function Shop() {
           </div>
 
           <div className="mb-6">
-            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#5C7671] mb-3 block">Category</label>
+            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3 block">Category</label>
             <div className="flex flex-col gap-2">
               {CATEGORIES.map((c) => (
                 <button
                   key={c.key}
                   onClick={() => setCategory(c.key)}
-                  className={`text-left px-3 py-2 rounded-md text-sm transition ${category === c.key ? "bg-[var(--nayara-primary)] text-white" : "hover:bg-[#E8F1F2]"}`}
+                  className={`text-left px-3 py-2 rounded-md text-sm transition ${category === c.key ? "bg-[var(--nayara-primary)] text-white" : "hover:bg-[#FFF4EB]"}`}
                   data-testid={`filter-category-${c.key}`}
                 >
                   {c.label}
@@ -98,7 +98,7 @@ export default function Shop() {
           </div>
 
           <div className="mb-6">
-            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#5C7671] mb-3 block">Max Price: ₹{priceRange[1]}</label>
+            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3 block">Max Price: ₹{priceRange[1]}</label>
             <input
               type="range"
               min={50}
@@ -112,7 +112,7 @@ export default function Shop() {
           </div>
 
           <div>
-            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#5C7671] mb-2 block">Sort</label>
+            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Sort</label>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
@@ -128,8 +128,8 @@ export default function Shop() {
         </aside>
 
         <div>
-          <div className="mb-5 text-sm text-[#5C7671]">
-            Showing <span className="font-semibold text-[#1A2E2A]">{filtered.length}</span> products
+          <div className="mb-5 text-sm text-[#64748B]">
+            Showing <span className="font-semibold text-[#0F172A]">{filtered.length}</span> products
           </div>
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
@@ -138,7 +138,7 @@ export default function Shop() {
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-20 text-[#5C7671]">No products match your filters.</div>
+            <div className="text-center py-20 text-[#64748B]">No products match your filters.</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6" data-testid="shop-grid">
               {filtered.map((p, i) => <ProductCard key={p.product_id} product={p} index={i} />)}

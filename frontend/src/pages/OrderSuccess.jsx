@@ -41,7 +41,7 @@ export default function OrderSuccess() {
     return () => clearTimeout(t);
   }, [sessionId, paymentStatus, attempts, loadOrder, refreshCart]);
 
-  if (!order) return <div className="py-20 text-center text-[#5C7671]">Loading order...</div>;
+  if (!order) return <div className="py-20 text-center text-[#64748B]">Loading order...</div>;
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-16 text-center" data-testid="order-success-page">
@@ -49,7 +49,7 @@ export default function OrderSuccess() {
         <CheckCircle2 className="w-10 h-10" />
       </div>
       <h1 className="font-heading text-3xl md:text-4xl font-medium tracking-tight">Thank you for your order!</h1>
-      <p className="mt-3 text-[#5C7671]">Order #{order.order_id}</p>
+      <p className="mt-3 text-[#64748B]">Order #{order.order_id}</p>
       {sessionId && paymentStatus !== "paid" && (
         <p className="mt-3 text-sm text-[var(--nayara-warning)]">Verifying payment... {attempts > 0 && `(attempt ${attempts})`}</p>
       )}
@@ -62,10 +62,10 @@ export default function OrderSuccess() {
         <div className="space-y-3">
           {order.items.map((it) => (
             <div key={it.product_id} className="flex items-center gap-4 text-sm">
-              <img src={it.image} alt="" className="w-14 h-14 rounded-lg object-cover bg-[#F0F5F3]" />
+              <img src={it.image} alt="" className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
               <div className="flex-1">
                 <div className="font-medium">{it.name}</div>
-                <div className="text-xs text-[#5C7671]">Qty: {it.quantity} · {formatINR(it.price)}</div>
+                <div className="text-xs text-[#64748B]">Qty: {it.quantity} · {formatINR(it.price)}</div>
               </div>
               <div className="font-semibold">{formatINR(it.price * it.quantity)}</div>
             </div>

@@ -56,7 +56,7 @@ export default function Checkout() {
   };
 
   if (cart.length === 0) {
-    return <div className="max-w-4xl mx-auto px-6 py-20 text-center text-[#5C7671]">Your cart is empty.</div>;
+    return <div className="max-w-4xl mx-auto px-6 py-20 text-center text-[#64748B]">Your cart is empty.</div>;
   }
 
   return (
@@ -101,28 +101,28 @@ export default function Checkout() {
           <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <h2 className="font-heading text-lg font-semibold mb-5">Payment Method</h2>
             <RadioGroup value={payment} onValueChange={setPayment} className="space-y-3" data-testid="payment-options">
-              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "card" ? "border-[var(--nayara-primary)] bg-[#E8F1F2]" : "border-[var(--nayara-border)]"}`}>
+              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "card" ? "border-[var(--nayara-primary)] bg-[#FFF4EB]" : "border-[var(--nayara-border)]"}`}>
                 <RadioGroupItem value="card" id="pay-card" data-testid="payment-card" />
                 <CreditCard className="w-5 h-5" />
                 <div>
                   <div className="font-medium">Credit / Debit Card</div>
-                  <div className="text-xs text-[#5C7671]">Secure payment via Stripe</div>
+                  <div className="text-xs text-[#64748B]">Secure payment via Stripe</div>
                 </div>
               </label>
-              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "upi" ? "border-[var(--nayara-primary)] bg-[#E8F1F2]" : "border-[var(--nayara-border)]"}`}>
+              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "upi" ? "border-[var(--nayara-primary)] bg-[#FFF4EB]" : "border-[var(--nayara-border)]"}`}>
                 <RadioGroupItem value="upi" id="pay-upi" data-testid="payment-upi" />
                 <Smartphone className="w-5 h-5" />
                 <div>
                   <div className="font-medium">UPI (Demo)</div>
-                  <div className="text-xs text-[#5C7671]">Google Pay, PhonePe, Paytm</div>
+                  <div className="text-xs text-[#64748B]">Google Pay, PhonePe, Paytm</div>
                 </div>
               </label>
-              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "cod" ? "border-[var(--nayara-primary)] bg-[#E8F1F2]" : "border-[var(--nayara-border)]"}`}>
+              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "cod" ? "border-[var(--nayara-primary)] bg-[#FFF4EB]" : "border-[var(--nayara-border)]"}`}>
                 <RadioGroupItem value="cod" id="pay-cod" data-testid="payment-cod" />
                 <Package className="w-5 h-5" />
                 <div>
                   <div className="font-medium">Cash on Delivery</div>
-                  <div className="text-xs text-[#5C7671]">Pay when you receive</div>
+                  <div className="text-xs text-[#64748B]">Pay when you receive</div>
                 </div>
               </label>
             </RadioGroup>
@@ -134,24 +134,24 @@ export default function Checkout() {
           <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
             {cart.map((c) => (
               <div key={c.product_id} className="flex items-center gap-3 text-sm">
-                <img src={c.image} alt="" className="w-12 h-12 rounded-lg object-cover bg-[#F0F5F3]" />
+                <img src={c.image} alt="" className="w-12 h-12 rounded-lg object-cover bg-[#F1F5F9]" />
                 <div className="flex-1 min-w-0">
                   <div className="truncate">{c.name}</div>
-                  <div className="text-xs text-[#5C7671]">× {c.quantity}</div>
+                  <div className="text-xs text-[#64748B]">× {c.quantity}</div>
                 </div>
                 <div className="font-medium">{formatINR(c.price * c.quantity)}</div>
               </div>
             ))}
           </div>
           <div className="space-y-2 text-sm border-t border-[var(--nayara-border)] pt-4">
-            <div className="flex justify-between"><span className="text-[#5C7671]">Subtotal</span><span>{formatINR(cartTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[#5C7671]">Shipping</span><span>{shipping === 0 ? "Free" : formatINR(shipping)}</span></div>
+            <div className="flex justify-between"><span className="text-[#64748B]">Subtotal</span><span>{formatINR(cartTotal)}</span></div>
+            <div className="flex justify-between"><span className="text-[#64748B]">Shipping</span><span>{shipping === 0 ? "Free" : formatINR(shipping)}</span></div>
             <div className="flex justify-between font-heading text-lg font-semibold pt-2 border-t border-[var(--nayara-border)]"><span>Total</span><span>{formatINR(grand)}</span></div>
           </div>
           <button type="submit" disabled={submitting} className="nayara-btn w-full mt-5" data-testid="place-order-btn">
             {submitting ? "Processing..." : `Place Order · ${formatINR(grand)}`}
           </button>
-          <div className="mt-3 flex items-center gap-2 text-xs text-[#5C7671]">
+          <div className="mt-3 flex items-center gap-2 text-xs text-[#64748B]">
             <ShieldCheck className="w-3.5 h-3.5" /> Secure encrypted checkout
           </div>
         </aside>

@@ -12,8 +12,8 @@ export default function Wishlist() {
       <h1 className="font-heading text-3xl md:text-4xl font-medium tracking-tight mb-8">My Wishlist</h1>
       {wishlist.length === 0 ? (
         <div className="text-center py-16 rounded-2xl border border-[var(--nayara-border)] bg-white">
-          <Heart className="w-14 h-14 mx-auto text-[#5C7671] mb-4" />
-          <p className="text-[#5C7671]">Your wishlist is empty.</p>
+          <Heart className="w-14 h-14 mx-auto text-[#64748B] mb-4" />
+          <p className="text-[#64748B]">Your wishlist is empty.</p>
           <Link to="/shop" className="nayara-btn mt-5">Browse Products</Link>
         </div>
       ) : (

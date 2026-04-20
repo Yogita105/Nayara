@@ -15,7 +15,7 @@ export default function ProductCard({ product, index = 0 }) {
       style={{ animationDelay: `${index * 60}ms` }}
       data-testid={`product-card-${product.product_id}`}
     >
-      <div className="relative aspect-square bg-[#F0F5F3] overflow-hidden">
+      <div className="relative aspect-square bg-[#F1F5F9] overflow-hidden">
         <Link to={`/product/${product.product_id}`} data-testid={`product-link-${product.product_id}`}>
           <img
             src={product.image}
@@ -34,11 +34,11 @@ export default function ProductCard({ product, index = 0 }) {
           data-testid={`wishlist-btn-${product.product_id}`}
           aria-label="Toggle wishlist"
         >
-          <Heart className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : "text-[#5C7671]"}`} />
+          <Heart className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : "text-[#64748B]"}`} />
         </button>
       </div>
       <div className="p-5">
-        <div className="flex items-center gap-1 text-xs text-[#5C7671] mb-1">
+        <div className="flex items-center gap-1 text-xs text-[#64748B] mb-1">
           <Star className="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B]" />
           <span>{product.rating?.toFixed(1) || "4.5"}</span>
           <span className="mx-1">·</span>
@@ -47,12 +47,12 @@ export default function ProductCard({ product, index = 0 }) {
         <Link to={`/product/${product.product_id}`}>
           <h3 className="font-heading font-medium text-base leading-snug line-clamp-2 min-h-[2.6rem] hover:text-[var(--nayara-primary)]">{product.name}</h3>
         </Link>
-        <p className="text-xs text-[#5C7671] line-clamp-2 mt-1 min-h-[2rem]">{product.short_description}</p>
+        <p className="text-xs text-[#64748B] line-clamp-2 mt-1 min-h-[2rem]">{product.short_description}</p>
         <div className="flex items-end justify-between mt-4">
           <div>
             <div className="font-heading text-xl font-semibold">{formatINR(product.price)}</div>
             {product.mrp > product.price && (
-              <div className="text-xs text-[#5C7671] line-through">{formatINR(product.mrp)}</div>
+              <div className="text-xs text-[#64748B] line-through">{formatINR(product.mrp)}</div>
             )}
           </div>
           <button

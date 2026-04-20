@@ -26,7 +26,7 @@ export default function ProductDetail() {
   };
   useEffect(() => { load(); }, [productId]);
 
-  if (!product) return <div className="py-20 text-center text-[#5C7671]">Loading...</div>;
+  if (!product) return <div className="py-20 text-center text-[#64748B]">Loading...</div>;
 
   const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100) || 0;
   const saved = isInWishlist(product.product_id);
@@ -44,12 +44,12 @@ export default function ProductDetail() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10" data-testid="product-detail-page">
-      <div className="text-xs text-[#5C7671] mb-6">
-        <Link to="/">Home</Link> / <Link to="/shop">Shop</Link> / <span className="text-[#1A2E2A]">{product.name}</span>
+      <div className="text-xs text-[#64748B] mb-6">
+        <Link to="/">Home</Link> / <Link to="/shop">Shop</Link> / <span className="text-[#0F172A]">{product.name}</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <div className="rounded-3xl overflow-hidden bg-[#F0F5F3] aspect-square">
+        <div className="rounded-3xl overflow-hidden bg-[#F1F5F9] aspect-square">
           <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
         </div>
         <div>
@@ -66,15 +66,15 @@ export default function ProductDetail() {
               <Star className="w-4 h-4 fill-[#F59E0B] text-[#F59E0B]" />
               <span className="font-semibold">{product.rating?.toFixed(1)}</span>
             </div>
-            <span className="text-[#5C7671]">· {product.reviews_count} reviews</span>
+            <span className="text-[#64748B]">· {product.reviews_count} reviews</span>
           </div>
-          <p className="mt-5 text-[#5C7671] leading-relaxed">{product.description}</p>
+          <p className="mt-5 text-[#64748B] leading-relaxed">{product.description}</p>
 
           <div className="mt-6 flex items-end gap-3">
             <div className="font-heading text-4xl font-semibold" data-testid="product-price">{formatINR(product.price)}</div>
             {product.mrp > product.price && (
               <>
-                <div className="text-lg text-[#5C7671] line-through mb-1">{formatINR(product.mrp)}</div>
+                <div className="text-lg text-[#64748B] line-through mb-1">{formatINR(product.mrp)}</div>
                 <div className="text-sm text-[var(--nayara-primary)] font-semibold mb-1">{discount}% off</div>
               </>
             )}
@@ -116,7 +116,7 @@ export default function ProductDetail() {
         <h2 className="font-heading text-2xl font-medium mb-6">Customer Reviews</h2>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
           <div className="space-y-4">
-            {reviews.length === 0 && <div className="text-[#5C7671]">No reviews yet. Be the first!</div>}
+            {reviews.length === 0 && <div className="text-[#64748B]">No reviews yet. Be the first!</div>}
             {reviews.map((r) => (
               <div key={r.review_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-5" data-testid={`review-${r.review_id}`}>
                 <div className="flex items-center gap-2 mb-2">
@@ -125,8 +125,8 @@ export default function ProductDetail() {
                   ))}
                   <span className="text-sm font-semibold ml-1">{r.title}</span>
                 </div>
-                <p className="text-sm text-[#5C7671]">{r.comment}</p>
-                <div className="text-xs text-[#5C7671] mt-3">— {r.user_name}</div>
+                <p className="text-sm text-[#64748B]">{r.comment}</p>
+                <div className="text-xs text-[#64748B] mt-3">— {r.user_name}</div>
               </div>
             ))}
           </div>
@@ -158,7 +158,7 @@ export default function ProductDetail() {
             <Button type="submit" className="mt-4 w-full bg-[var(--nayara-primary)] hover:bg-[var(--nayara-primary-hover)]" data-testid="submit-review-btn">
               Submit Review
             </Button>
-            {!user && <p className="text-xs text-[#5C7671] mt-2">Please login to post a review.</p>}
+            {!user && <p className="text-xs text-[#64748B] mt-2">Please login to post a review.</p>}
           </form>
         </div>
       </section>
