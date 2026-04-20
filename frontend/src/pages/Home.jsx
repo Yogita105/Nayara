@@ -15,7 +15,11 @@ export default function Home() {
     <div data-testid="home-page">
       {/* HERO */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#FBEEE4] via-white to-[#E6F0F9]" />
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1632834702267-8da808897480?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxjbGVhbiUyMHdhdGVyJTIwc3BsYXNoJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzY2ODM4Nzh8MA&ixlib=rb-4.1.0&q=85')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FBEEE4]/75 via-white/60 to-[#E6F0F9]/75" />
         <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-28 lg:pt-24 lg:pb-40">
           <div className="flex flex-wrap items-center gap-2 mb-6">
             <span className="badge-soft px-4 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5" data-testid="hero-badge">
