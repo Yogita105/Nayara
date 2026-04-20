@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
-import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 
 const navs = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/bulk", label: "Bulk Inquiries", icon: Briefcase },
   { to: "/admin/messages", label: "Messages", icon: MessageSquare },
   { to: "/admin/users", label: "Users", icon: Users },
 ];
@@ -20,13 +21,14 @@ function Dashboard() {
     { label: "Revenue", value: formatINR(stats.revenue), icon: IndianRupee, color: "var(--nayara-primary)" },
     { label: "Orders", value: stats.total_orders, icon: ShoppingBag, color: "var(--nayara-secondary)" },
     { label: "Products", value: stats.total_products, icon: Package, color: "#7FB4D9" },
+    { label: "Bulk Inquiries", value: stats.total_bulk_inquiries || 0, icon: Briefcase, color: "var(--nayara-primary-hover)" },
     { label: "Messages", value: stats.total_messages || 0, icon: MessageSquare, color: "#F59E0B" },
     { label: "Users", value: stats.total_users, icon: Users, color: "#64748B" },
   ];
   return (
     <div data-testid="admin-dashboard">
       <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Dashboard</h1>
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-5">
         {cards.map((c) => (
           <div key={c.label} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6" data-testid={`stat-${c.label.toLowerCase()}`}>
             <div className="w-10 h-10 rounded-full text-white flex items-center justify-center mb-3" style={{ background: c.color }}>
@@ -339,6 +341,112 @@ function MessagesAdmin() {
   );
 }
 
+function BulkInquiriesAdmin() {
+  const [items, setItems] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const load = () => api.get("/admin/bulk-inquiries").then(({ data }) => setItems(data));
+  useEffect(() => { load(); }, []);
+
+  const setStatus = async (id, status) => {
+    await api.put(`/admin/bulk-inquiries/${id}`, { status });
+    load();
+    setSelected((s) => s && s.inquiry_id === id ? { ...s, status } : s);
+  };
+
+  const STATUS_COLORS = {
+    new: "bg-blue-100 text-blue-700",
+    contacted: "bg-amber-100 text-amber-700",
+    quoted: "bg-indigo-100 text-indigo-700",
+    won: "bg-green-100 text-green-700",
+    lost: "bg-red-100 text-red-700",
+  };
+
+  return (
+    <div data-testid="admin-bulk">
+      <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Bulk Inquiries</h1>
+      {items.length === 0 ? (
+        <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-10 text-center text-[#64748B]">
+          <Briefcase className="w-10 h-10 mx-auto mb-3" />
+          No bulk inquiries yet.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-5">
+          <div className="rounded-2xl border border-[var(--nayara-border)] bg-white overflow-hidden h-fit max-h-[70vh] overflow-y-auto">
+            {items.map((m) => (
+              <button
+                key={m.inquiry_id}
+                onClick={() => setSelected(m)}
+                className={`w-full text-left p-4 border-b border-[var(--nayara-border)] transition ${selected?.inquiry_id === m.inquiry_id ? "bg-[#FBEEE4]" : "hover:bg-[#FAFAFA]"}`}
+                data-testid={`bulk-item-${m.inquiry_id}`}
+              >
+                <div className="flex items-center justify-between mb-1 gap-2">
+                  <span className="font-medium text-sm truncate">{m.business_name}</span>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[m.status] || 'bg-gray-100'}`}>{m.status || 'new'}</span>
+                </div>
+                <div className="text-xs text-[#64748B] truncate">{m.name} · {m.city}</div>
+                <div className="text-xs text-[#64748B] truncate mt-1">{m.quantity}</div>
+              </button>
+            ))}
+          </div>
+          <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
+            {selected ? (
+              <div data-testid="bulk-detail">
+                <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+                  <div>
+                    <h3 className="font-heading text-xl font-medium">{selected.business_name}</h3>
+                    <p className="text-sm text-[#64748B] mt-1">{selected.name} · {selected.city} · {selected.created_at && new Date(selected.created_at).toLocaleString("en-IN")}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select defaultValue={selected.status || "new"} onChange={(e) => setStatus(selected.inquiry_id, e.target.value)} className="border border-[var(--nayara-border)] rounded px-2 py-1 text-xs" data-testid="bulk-status-select">
+                      {["new", "contacted", "quoted", "won", "lost"].map((s) => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-5">
+                  <div className="rounded-lg bg-[#FAFAFA] p-3">
+                    <div className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B]">Email</div>
+                    <a href={`mailto:${selected.email}`} className="text-[var(--nayara-primary)] break-all">{selected.email}</a>
+                  </div>
+                  <div className="rounded-lg bg-[#FAFAFA] p-3">
+                    <div className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B]">Phone</div>
+                    <a href={`tel:${selected.phone}`} className="text-[var(--nayara-primary)]">{selected.phone}</a>
+                  </div>
+                  <div className="rounded-lg bg-[#FAFAFA] p-3 sm:col-span-2">
+                    <div className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B]">Quantity</div>
+                    <div>{selected.quantity}</div>
+                  </div>
+                  {selected.products_interested?.length > 0 && (
+                    <div className="rounded-lg bg-[#FAFAFA] p-3 sm:col-span-2">
+                      <div className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2">Products</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selected.products_interested.map((p) => (
+                          <span key={p} className="badge-soft px-2 py-1 rounded-full text-xs">{p}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {selected.message && (
+                  <div>
+                    <div className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2">Message</div>
+                    <div className="rounded-lg border border-[var(--nayara-border)] p-5 leading-relaxed text-sm whitespace-pre-wrap">{selected.message}</div>
+                  </div>
+                )}
+                <div className="mt-5 flex gap-3">
+                  <a href={`mailto:${selected.email}?subject=Re: Bulk inquiry from ${encodeURIComponent(selected.business_name)}`} className="nayara-btn-outline text-sm" data-testid="bulk-reply-email">Reply by email</a>
+                  <a href={`tel:${selected.phone}`} className="nayara-btn text-sm" data-testid="bulk-call-btn">Call now</a>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-[#64748B] py-10">Select an inquiry to view details.</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Admin() {
   const location = useLocation();
   return (
@@ -357,6 +465,7 @@ export default function Admin() {
         <Route index element={<Dashboard />} />
         <Route path="orders" element={<OrdersAdmin />} />
         <Route path="products" element={<ProductsAdmin />} />
+        <Route path="bulk" element={<BulkInquiriesAdmin />} />
         <Route path="messages" element={<MessagesAdmin />} />
         <Route path="users" element={<UsersAdmin />} />
       </Routes>

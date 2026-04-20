@@ -11,6 +11,7 @@ import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Bulk from "./pages/Bulk";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
@@ -36,6 +37,7 @@ function AppRouter() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path="/about" element={<About />} />
+        <Route path="/bulk" element={<Bulk />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cart" element={<Cart />} />

@@ -33,6 +33,7 @@ export default function Footer() {
           <h4 className="font-heading font-semibold mb-4">Company</h4>
           <ul className="space-y-2 text-sm text-[#64748B]">
             <li><Link to="/about" className="hover:text-[var(--nayara-primary)]">About Us</Link></li>
+            <li><Link to="/bulk" className="hover:text-[var(--nayara-primary)]">Bulk Orders</Link></li>
             <li><Link to="/contact" className="hover:text-[var(--nayara-primary)]">Contact</Link></li>
             <li><Link to="/orders" className="hover:text-[var(--nayara-primary)]">Track Order</Link></li>
           </ul>

@@ -167,6 +167,17 @@ class ContactRequest(BaseModel):
     message: str
 
 
+class BulkInquiryRequest(BaseModel):
+    name: str
+    business_name: str
+    phone: str
+    email: str
+    city: str
+    products_interested: List[str] = []
+    quantity: str
+    message: Optional[str] = ""
+
+
 class Address(BaseModel):
     full_name: str
     phone: str
@@ -507,6 +518,31 @@ async def contact_submit(payload: ContactRequest):
     return {"ok": True, "contact_id": doc["contact_id"]}
 
 
+# ---------- Bulk Inquiry (B2B) ----------
+@api_router.post("/bulk-inquiry")
+async def bulk_inquiry_submit(payload: BulkInquiryRequest):
+    doc = payload.model_dump()
+    doc["inquiry_id"] = f"bi_{uuid.uuid4().hex[:10]}"
+    doc["status"] = "new"
+    doc["created_at"] = datetime.now(timezone.utc).isoformat()
+    await db.bulk_inquiries.insert_one(doc)
+    return {"ok": True, "inquiry_id": doc["inquiry_id"]}
+
+
+@api_router.get("/admin/bulk-inquiries")
+async def admin_bulk_inquiries(_: dict = Depends(require_admin)):
+    docs = await db.bulk_inquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return [serialize_doc(d) for d in docs]
+
+
+@api_router.put("/admin/bulk-inquiries/{inquiry_id}")
+async def admin_update_bulk_inquiry(inquiry_id: str, payload: Dict[str, Any], _: dict = Depends(require_admin)):
+    allowed = {k: v for k, v in payload.items() if k in {"status"}}
+    await db.bulk_inquiries.update_one({"inquiry_id": inquiry_id}, {"$set": allowed})
+    doc = await db.bulk_inquiries.find_one({"inquiry_id": inquiry_id}, {"_id": 0})
+    return serialize_doc(doc)
+
+
 # ---------- Orders ----------
 def _calc_totals(items_with_products: List[dict]) -> dict:
     subtotal = sum(p["price"] * p["quantity"] for p in items_with_products)
@@ -701,6 +737,7 @@ async def admin_stats(_: dict = Depends(require_admin)):
     total_users = await db.users.count_documents({})
     total_products = await db.products.count_documents({})
     total_messages = await db.contacts.count_documents({})
+    total_bulk_inquiries = await db.bulk_inquiries.count_documents({})
     orders = await db.orders.find({"payment_status": {"$in": ["paid", "cod_pending"]}}, {"_id": 0, "total": 1}).to_list(2000)
     revenue = sum(o.get("total", 0) for o in orders)
     return {
@@ -708,6 +745,7 @@ async def admin_stats(_: dict = Depends(require_admin)):
         "total_users": total_users,
         "total_products": total_products,
         "total_messages": total_messages,
+        "total_bulk_inquiries": total_bulk_inquiries,
         "revenue": round(revenue, 2),
     }
 

@@ -15,6 +15,7 @@ import { Button } from "./ui/button";
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
+  { to: "/bulk", label: "Bulk Orders" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ];
