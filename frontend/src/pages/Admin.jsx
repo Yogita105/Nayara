@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
 import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag } from "lucide-react";
+import { toast } from "sonner";
 
 const navs = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -82,21 +83,162 @@ function OrdersAdmin() {
 
 function ProductsAdmin() {
   const [products, setProducts] = useState([]);
-  useEffect(() => { api.get("/products").then(({ data }) => setProducts(data)); }, []);
+  const [editing, setEditing] = useState(null); // null | "new" | product
+  const load = () => api.get("/products").then(({ data }) => setProducts(data));
+  useEffect(() => { load(); }, []);
+
+  const onDelete = async (id) => {
+    if (!window.confirm("Delete this product?")) return;
+    await api.delete(`/products/${id}`);
+    load();
+  };
+
   return (
     <div data-testid="admin-products">
-      <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Products</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="font-heading text-3xl font-medium tracking-tight">Products</h1>
+        <button onClick={() => setEditing("new")} className="nayara-btn" data-testid="admin-new-product-btn">+ New Product</button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {products.map((p) => (
-          <div key={p.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4">
+          <div key={p.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4" data-testid={`admin-product-${p.product_id}`}>
             <img src={p.image} alt="" className="w-20 h-20 rounded-lg object-cover bg-[#F1F5F9]" />
-            <div className="flex-1">
-              <h3 className="font-heading font-medium text-sm">{p.name}</h3>
-              <div className="text-xs text-[#64748B] mt-1">Stock: {p.stock}</div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-heading font-medium text-sm truncate">{p.name}</h3>
+              <div className="text-xs text-[#64748B] mt-1">Stock: {p.stock} · {p.category}</div>
               <div className="font-heading font-semibold mt-2">{formatINR(p.price)}</div>
+              <div className="flex gap-2 mt-2">
+                <button onClick={() => setEditing(p)} className="text-xs px-3 py-1 rounded-md border border-[var(--nayara-border)] hover:bg-[#FBEEE4]" data-testid={`edit-product-${p.product_id}`}>Edit</button>
+                <button onClick={() => onDelete(p.product_id)} className="text-xs px-3 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50" data-testid={`delete-product-${p.product_id}`}>Delete</button>
+              </div>
             </div>
           </div>
         ))}
+      </div>
+      {editing && <ProductEditor initial={editing === "new" ? null : editing} onClose={() => { setEditing(null); load(); }} />}
+    </div>
+  );
+}
+
+function ProductEditor({ initial, onClose }) {
+  const [form, setForm] = useState(initial || {
+    name: "", slug: "", category: "laundry",
+    short_description: "", description: "",
+    price: 0, mrp: 0, stock: 100, image: "",
+    badges: ["Made in India"], featured: false,
+  });
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const onUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("File too large (max 5MB)"); return; }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post("/admin/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      const base = process.env.REACT_APP_BACKEND_URL;
+      setForm((f) => ({ ...f, image: `${base}${data.url}` }));
+      toast.success("Image uploaded");
+    } catch { toast.error("Upload failed"); }
+    finally { setUploading(false); }
+  };
+
+  const save = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        name: form.name,
+        slug: form.slug || form.name.toLowerCase().replace(/\s+/g, "-"),
+        category: form.category,
+        short_description: form.short_description,
+        description: form.description,
+        price: Number(form.price),
+        mrp: Number(form.mrp),
+        stock: parseInt(form.stock) || 0,
+        image: form.image,
+        images: form.images || [],
+        badges: form.badges || [],
+        featured: !!form.featured,
+      };
+      if (initial && initial.product_id) await api.put(`/products/${initial.product_id}`, payload);
+      else await api.post("/products", payload);
+      toast.success(initial ? "Product updated" : "Product created");
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Save failed");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} data-testid="product-editor">
+        <form onSubmit={save} className="p-6 space-y-4">
+          <h2 className="font-heading text-2xl font-medium">{initial ? "Edit Product" : "New Product"}</h2>
+
+          <div className="flex gap-4 items-start">
+            <div className="w-32 h-32 rounded-xl overflow-hidden bg-[#F1F5F9] flex items-center justify-center">
+              {form.image ? <img src={form.image} alt="" className="w-full h-full object-cover" /> : <span className="text-xs text-[#64748B]">No image</span>}
+            </div>
+            <div className="flex-1">
+              <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B]">Product image</label>
+              <input type="file" accept="image/*" onChange={onUpload} className="mt-2 block text-sm" disabled={uploading} data-testid="product-image-upload" />
+              {uploading && <p className="text-xs text-[#64748B] mt-2">Uploading...</p>}
+              <p className="text-xs text-[#64748B] mt-2">Or paste an image URL below.</p>
+              <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://..." className="mt-1 w-full border border-[var(--nayara-border)] rounded h-9 px-3 text-sm" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Name</label>
+              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-name-input" />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Category</label>
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm bg-white" data-testid="product-category-input">
+                <option value="laundry">Laundry</option>
+                <option value="personal-care">Personal Care</option>
+                <option value="home-care">Home Care</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Price (₹)</label>
+              <input required type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-price-input" />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">MRP (₹)</label>
+              <input required type="number" min="0" step="0.01" value={form.mrp} onChange={(e) => setForm({ ...form, mrp: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-mrp-input" />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Stock</label>
+              <input required type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-stock-input" />
+            </div>
+            <div className="flex items-center gap-2 mt-6">
+              <input id="featured" type="checkbox" checked={!!form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} data-testid="product-featured-input" />
+              <label htmlFor="featured" className="text-sm">Featured on home page</label>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Short description</label>
+            <input value={form.short_description} onChange={(e) => setForm({ ...form, short_description: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-short-desc-input" />
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Description</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full border border-[var(--nayara-border)] rounded px-3 py-2 mt-1 text-sm" data-testid="product-desc-input" />
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Badges (comma-separated)</label>
+            <input value={(form.badges || []).join(", ")} onChange={(e) => setForm({ ...form, badges: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" placeholder="Made in India, Herbal" data-testid="product-badges-input" />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={onClose} className="px-5 py-2 rounded-md border border-[var(--nayara-border)]" data-testid="product-cancel-btn">Cancel</button>
+            <button type="submit" disabled={saving} className="nayara-btn" data-testid="product-save-btn">{saving ? "Saving..." : "Save Product"}</button>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, Cookie, Header
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, Cookie, Header, UploadFile, File, Query
+from fastapi.responses import JSONResponse, Response as FastAPIResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import httpx
+import requests
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any
@@ -26,6 +27,51 @@ db = client[os.environ["DB_NAME"]]
 
 STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "sk_test_emergent")
 ADMIN_EMAILS = [e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()]
+EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
+APP_NAME = "nayara"
+_storage_key: Optional[str] = None
+
+
+def init_storage() -> Optional[str]:
+    global _storage_key
+    if _storage_key:
+        return _storage_key
+    if not EMERGENT_LLM_KEY:
+        return None
+    try:
+        resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_LLM_KEY}, timeout=30)
+        resp.raise_for_status()
+        _storage_key = resp.json()["storage_key"]
+        return _storage_key
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Storage init failed: {e}")
+        return None
+
+
+def put_object(path: str, data: bytes, content_type: str) -> dict:
+    key = init_storage()
+    if not key:
+        raise HTTPException(status_code=500, detail="Storage not available")
+    resp = requests.put(
+        f"{STORAGE_URL}/objects/{path}",
+        headers={"X-Storage-Key": key, "Content-Type": content_type},
+        data=data, timeout=120,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_object(path: str):
+    key = init_storage()
+    if not key:
+        raise HTTPException(status_code=500, detail="Storage not available")
+    resp = requests.get(
+        f"{STORAGE_URL}/objects/{path}",
+        headers={"X-Storage-Key": key}, timeout=60,
+    )
+    resp.raise_for_status()
+    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
 app = FastAPI(title="Nayara API")
 api_router = APIRouter(prefix="/api")
@@ -690,6 +736,45 @@ async def admin_contacts(_: dict = Depends(require_admin)):
     return [serialize_doc(d) for d in docs]
 
 
+# ---------- Admin: Uploads (images) ----------
+MIME_BY_EXT = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif"}
+
+
+@api_router.post("/admin/upload")
+async def admin_upload(file: UploadFile = File(...), user: dict = Depends(require_admin)):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename")
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
+    if ext not in MIME_BY_EXT:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+    data = await file.read()
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (max 5MB)")
+    file_id = uuid.uuid4().hex
+    storage_path = f"{APP_NAME}/products/{file_id}.{ext}"
+    content_type = MIME_BY_EXT[ext]
+    result = put_object(storage_path, data, content_type)
+    await db.files.insert_one({
+        "file_id": file_id,
+        "storage_path": result["path"],
+        "content_type": content_type,
+        "size": result.get("size", len(data)),
+        "uploaded_by": user["user_id"],
+        "is_deleted": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"file_id": file_id, "url": f"/api/files/{file_id}"}
+
+
+@api_router.get("/files/{file_id}")
+async def serve_file(file_id: str):
+    record = await db.files.find_one({"file_id": file_id, "is_deleted": False}, {"_id": 0})
+    if not record:
+        raise HTTPException(status_code=404, detail="File not found")
+    data, ct = get_object(record["storage_path"])
+    return FastAPIResponse(content=data, media_type=record.get("content_type", ct), headers={"Cache-Control": "public, max-age=31536000"})
+
+
 # ---------- Seed Products ----------
 SEED_PRODUCTS = [
     {
@@ -819,6 +904,7 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def on_startup():
+    init_storage()
     await seed_products()
 
 
