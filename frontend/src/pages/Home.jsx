@@ -16,17 +16,23 @@ export default function Home() {
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center opacity-70"
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1632834702267-8da808897480?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxjbGVhbiUyMHdhdGVyJTIwc3BsYXNoJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzY2ODM4Nzh8MA&ixlib=rb-4.1.0&q=85')" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/70 to-[#FFFFFF]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FBEEE4]/90 via-white/85 to-[#E6F0F9]/90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white/70 to-transparent" />
         <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-28 lg:pt-24 lg:pb-40">
-          <span className="badge-soft px-4 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5" data-testid="hero-badge">
-            <Leaf className="w-3.5 h-3.5" /> Made in India · Factory Direct
-          </span>
-          <h1 className="mt-6 font-heading text-4xl sm:text-5xl lg:text-6xl font-medium max-w-3xl tracking-tighter leading-[1.05]">
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            <span className="badge-soft px-4 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5" data-testid="hero-badge">
+              <Leaf className="w-3.5 h-3.5" /> Made in India
+            </span>
+            <span className="badge-soft-blue px-4 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5">
+              <Factory className="w-3.5 h-3.5" /> Factory Direct
+            </span>
+          </div>
+          <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-medium max-w-3xl tracking-tighter leading-[1.05]">
             Thoughtful cleaning.<br />
-            <span className="text-[var(--nayara-primary)]">Everyday freshness.</span>
+            <span className="text-[var(--nayara-primary)]">Everyday</span> <span className="text-[var(--nayara-secondary)]">freshness.</span>
           </h1>
           <p className="mt-6 max-w-xl text-[#64748B] text-base md:text-lg leading-relaxed">
             Premium laundry, personal and home care crafted in small batches for Indian homes. Real ingredients. Real value. Delivered straight from our factory floor.
@@ -39,13 +45,13 @@ export default function Home() {
           </div>
           <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl">
             {[
-              { icon: Factory, label: "Factory Direct" },
-              { icon: ShieldCheck, label: "Skin-safe formulas" },
-              { icon: Truck, label: "Free shipping ₹499+" },
-              { icon: Sparkles, label: "Small-batch made" },
+              { icon: Factory, label: "Factory Direct", tone: "orange" },
+              { icon: ShieldCheck, label: "Skin-safe formulas", tone: "blue" },
+              { icon: Truck, label: "Free shipping ₹499+", tone: "orange" },
+              { icon: Sparkles, label: "Small-batch made", tone: "blue" },
             ].map((f, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-[#0F172A]">
-                <f.icon className="w-5 h-5 text-[var(--nayara-primary)]" />
+                <f.icon className={`w-5 h-5 ${f.tone === "blue" ? "text-[var(--nayara-secondary)]" : "text-[var(--nayara-primary)]"}`} />
                 <span className="font-medium">{f.label}</span>
               </div>
             ))}
