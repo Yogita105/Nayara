@@ -88,7 +88,7 @@ export default function Shop() {
                 <button
                   key={c.key}
                   onClick={() => setCategory(c.key)}
-                  className={`text-left px-3 py-2 rounded-md text-sm transition ${category === c.key ? "bg-[var(--nayara-primary)] text-white" : "hover:bg-[#FFF4EB]"}`}
+                  className={`text-left px-3 py-2 rounded-md text-sm transition ${category === c.key ? "bg-[var(--nayara-primary)] text-white" : "hover:bg-[#FBEEE4]"}`}
                   data-testid={`filter-category-${c.key}`}
                 >
                   {c.label}

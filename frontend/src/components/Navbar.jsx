@@ -67,10 +67,10 @@ export default function Navbar() {
         </form>
 
         <div className="flex items-center gap-1">
-          <Link to="/wishlist" className="p-2 rounded-full hover:bg-[#FFF4EB] transition-colors" data-testid="nav-wishlist-link" aria-label="Wishlist">
+          <Link to="/wishlist" className="p-2 rounded-full hover:bg-[#FBEEE4] transition-colors" data-testid="nav-wishlist-link" aria-label="Wishlist">
             <Heart className="w-5 h-5" />
           </Link>
-          <Link to="/cart" className="relative p-2 rounded-full hover:bg-[#FFF4EB] transition-colors" data-testid="nav-cart-link" aria-label="Cart">
+          <Link to="/cart" className="relative p-2 rounded-full hover:bg-[#FBEEE4] transition-colors" data-testid="nav-cart-link" aria-label="Cart">
             <ShoppingCart className="w-5 h-5" />
             {cartCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-[var(--nayara-primary)] text-white text-[11px] font-semibold flex items-center justify-center" data-testid="nav-cart-count">
@@ -82,7 +82,7 @@ export default function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-[#FFF4EB] transition-colors" data-testid="nav-user-menu">
+                <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-[#FBEEE4] transition-colors" data-testid="nav-user-menu">
                   {user.picture ? (
                     <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
                   ) : (

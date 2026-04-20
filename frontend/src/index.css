@@ -5,19 +5,19 @@
 @tailwind utilities;
 
 :root {
-    --nayara-primary: #F97316;
-    --nayara-primary-hover: #EA580C;
-    --nayara-secondary: #0284C7;
-    --nayara-accent: #38BDF8;
+    --nayara-primary: #D97548;
+    --nayara-primary-hover: #B85F38;
+    --nayara-secondary: #1E5F8E;
+    --nayara-accent: #7FB4D9;
     --nayara-bg: #FFFFFF;
     --nayara-surface: #FFFFFF;
-    --nayara-text: #0F172A;
+    --nayara-text: #1E293B;
     --nayara-text-muted: #64748B;
     --nayara-border: #E2E8F0;
     --nayara-success: #10B981;
     --nayara-warning: #F59E0B;
-    --nayara-soft: #FFF4EB;
-    --nayara-soft-blue: #E0F2FE;
+    --nayara-soft: #FBEEE4;
+    --nayara-soft-blue: #E6F0F9;
 }
 
 body {
@@ -37,24 +37,24 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 @layer base {
     :root {
         --background: 0 0% 100%;
-        --foreground: 222 47% 11%;
+        --foreground: 215 25% 17%;
         --card: 0 0% 100%;
-        --card-foreground: 222 47% 11%;
+        --card-foreground: 215 25% 17%;
         --popover: 0 0% 100%;
-        --popover-foreground: 222 47% 11%;
-        --primary: 20 94% 53%;
+        --popover-foreground: 215 25% 17%;
+        --primary: 20 63% 56%;
         --primary-foreground: 0 0% 100%;
-        --secondary: 201 96% 40%;
+        --secondary: 205 65% 34%;
         --secondary-foreground: 0 0% 100%;
         --muted: 210 40% 98%;
         --muted-foreground: 215 16% 47%;
-        --accent: 199 92% 60%;
-        --accent-foreground: 222 47% 11%;
+        --accent: 205 50% 67%;
+        --accent-foreground: 215 25% 17%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
         --border: 214 20% 90%;
         --input: 214 20% 90%;
-        --ring: 20 94% 53%;
+        --ring: 20 63% 56%;
         --radius: 0.5rem;
     }
 }
@@ -72,7 +72,7 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .nayara-btn:hover {
     background: var(--nayara-primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 8px 20px -10px rgba(249, 115, 22, 0.55);
+    box-shadow: 0 8px 20px -10px rgba(217, 117, 72, 0.45);
 }
 .nayara-btn-outline {
     @apply inline-flex items-center justify-center rounded-md px-6 py-3 font-medium transition-all duration-300 ease-out border;
@@ -93,11 +93,11 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 }
 
 .badge-soft {
-    background: #FFF4EB;
+    background: #FBEEE4;
     color: var(--nayara-primary-hover);
 }
 .badge-soft-blue {
-    background: #E0F2FE;
+    background: #E6F0F9;
     color: var(--nayara-secondary);
 }
 

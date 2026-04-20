@@ -137,7 +137,7 @@ export default function Admin() {
         {navs.map((n) => {
           const active = n.end ? location.pathname === n.to : location.pathname.startsWith(n.to) && n.to !== "/admin";
           return (
-            <Link key={n.to} to={n.to} className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm transition ${active ? "bg-[var(--nayara-primary)] text-white" : "hover:bg-[#FFF4EB]"}`} data-testid={`admin-nav-${n.label.toLowerCase()}`}>
+            <Link key={n.to} to={n.to} className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm transition ${active ? "bg-[var(--nayara-primary)] text-white" : "hover:bg-[#FBEEE4]"}`} data-testid={`admin-nav-${n.label.toLowerCase()}`}>
               <n.icon className="w-4 h-4" /> {n.label}
             </Link>
           );

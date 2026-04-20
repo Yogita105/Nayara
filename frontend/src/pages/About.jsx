@@ -5,7 +5,7 @@ export default function About() {
   return (
     <div data-testid="about-page">
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#FFF4EB] via-[#FFFFFF] to-[#E0F2FE]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#FBEEE4] via-[#FFFFFF] to-[#E6F0F9]" />
         <div className="relative max-w-5xl mx-auto px-6 py-20 text-center">
           <span className="badge-soft px-4 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5">
             <Leaf className="w-3.5 h-3.5" /> Our Story

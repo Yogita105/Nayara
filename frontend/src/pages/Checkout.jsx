@@ -101,7 +101,7 @@ export default function Checkout() {
           <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <h2 className="font-heading text-lg font-semibold mb-5">Payment Method</h2>
             <RadioGroup value={payment} onValueChange={setPayment} className="space-y-3" data-testid="payment-options">
-              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "card" ? "border-[var(--nayara-primary)] bg-[#FFF4EB]" : "border-[var(--nayara-border)]"}`}>
+              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "card" ? "border-[var(--nayara-primary)] bg-[#FBEEE4]" : "border-[var(--nayara-border)]"}`}>
                 <RadioGroupItem value="card" id="pay-card" data-testid="payment-card" />
                 <CreditCard className="w-5 h-5" />
                 <div>
@@ -109,7 +109,7 @@ export default function Checkout() {
                   <div className="text-xs text-[#64748B]">Secure payment via Stripe</div>
                 </div>
               </label>
-              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "upi" ? "border-[var(--nayara-primary)] bg-[#FFF4EB]" : "border-[var(--nayara-border)]"}`}>
+              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "upi" ? "border-[var(--nayara-primary)] bg-[#FBEEE4]" : "border-[var(--nayara-border)]"}`}>
                 <RadioGroupItem value="upi" id="pay-upi" data-testid="payment-upi" />
                 <Smartphone className="w-5 h-5" />
                 <div>
@@ -117,7 +117,7 @@ export default function Checkout() {
                   <div className="text-xs text-[#64748B]">Google Pay, PhonePe, Paytm</div>
                 </div>
               </label>
-              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "cod" ? "border-[var(--nayara-primary)] bg-[#FFF4EB]" : "border-[var(--nayara-border)]"}`}>
+              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "cod" ? "border-[var(--nayara-primary)] bg-[#FBEEE4]" : "border-[var(--nayara-border)]"}`}>
                 <RadioGroupItem value="cod" id="pay-cod" data-testid="payment-cod" />
                 <Package className="w-5 h-5" />
                 <div>
