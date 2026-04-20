@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Leaf, ShieldCheck, Factory, Sparkles, Truck, Home as HomeIcon, X, IndianRupee, Package, BadgeCheck, Award } from "lucide-react";
+import { ArrowRight, Leaf, ShieldCheck, Factory, Sparkles, Truck } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { api } from "../lib/api";
 
@@ -47,109 +47,6 @@ export default function Home() {
               <div key={i} className="flex items-center gap-2 text-sm text-[#0F172A]">
                 <f.icon className="w-5 h-5 text-[var(--nayara-primary)]" />
                 <span className="font-medium">{f.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FACTORY-DIRECT BANNER */}
-      <section className="relative overflow-hidden" data-testid="factory-direct-banner">
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, var(--nayara-primary) 0%, var(--nayara-primary-hover) 100%)" }} />
-        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, rgba(255,255,255,.25) 0, transparent 40%), radial-gradient(circle at 80% 80%, rgba(255,255,255,.2) 0, transparent 40%)" }} />
-        <div className="relative max-w-7xl mx-auto px-6 py-20 lg:py-24 text-white">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-12 items-center">
-            {/* Left — headline */}
-            <div>
-              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-white/15 backdrop-blur-sm border border-white/20">
-                <BadgeCheck className="w-3.5 h-3.5" /> Save up to 30%
-              </span>
-              <h2 className="mt-5 font-heading text-4xl sm:text-5xl lg:text-6xl font-medium tracking-tighter leading-[1.03]" data-testid="factory-direct-headline">
-                Factory Direct.<br />
-                <span className="italic text-white/90">No Middlemen.</span>
-              </h2>
-              <p className="mt-6 text-base md:text-lg text-white/90 max-w-xl leading-relaxed">
-                Every bottle, bar and pack ships straight from our Punjab factory to your doorstep. Skip the 4 layers of distributors, wholesalers and retailers — and keep their margins in your wallet.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/shop" className="inline-flex items-center justify-center rounded-md px-6 py-3 font-medium bg-white text-[var(--nayara-primary-hover)] hover:bg-white/90 transition-all duration-300 hover:-translate-y-0.5" data-testid="banner-shop-btn">
-                  Shop Factory-Direct <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-                <Link to="/about" className="inline-flex items-center justify-center rounded-md px-6 py-3 font-medium border border-white/40 hover:bg-white/10 transition-all duration-300" data-testid="banner-learn-btn">
-                  How we do it
-                </Link>
-              </div>
-            </div>
-
-            {/* Right — visual flow */}
-            <div className="relative">
-              <div className="rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 p-6 md:p-8">
-                <p className="text-[11px] uppercase tracking-[0.25em] font-bold text-white/70 text-center mb-6">The Nayara way vs the usual chain</p>
-                {/* Nayara flow */}
-                <div className="rounded-2xl bg-white/10 border border-white/20 p-5" data-testid="flow-nayara">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex-1 text-center">
-                      <div className="mx-auto w-14 h-14 rounded-2xl bg-white text-[var(--nayara-primary-hover)] flex items-center justify-center shadow-lg">
-                        <Factory className="w-6 h-6" />
-                      </div>
-                      <div className="mt-2 text-xs font-semibold">Our Factory</div>
-                      <div className="text-[10px] text-white/70">Jaito, Punjab</div>
-                    </div>
-                    <div className="flex flex-col items-center text-white/70">
-                      <Truck className="w-5 h-5" />
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 text-center">
-                      <div className="mx-auto w-14 h-14 rounded-2xl bg-white text-[var(--nayara-primary-hover)] flex items-center justify-center shadow-lg">
-                        <HomeIcon className="w-6 h-6" />
-                      </div>
-                      <div className="mt-2 text-xs font-semibold">Your Home</div>
-                      <div className="text-[10px] text-white/70">Anywhere in India</div>
-                    </div>
-                  </div>
-                  <div className="mt-4 text-center">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-[var(--nayara-primary-hover)] text-[11px] font-bold">
-                      <IndianRupee className="w-3 h-3" /> Real factory pricing
-                    </span>
-                  </div>
-                </div>
-                {/* Usual chain */}
-                <div className="mt-5 rounded-2xl bg-black/15 border border-white/10 p-4 opacity-80" data-testid="flow-usual">
-                  <div className="flex items-center justify-between gap-2 text-[10px] font-semibold text-white/80">
-                    <span className="flex-1 text-center">Factory</span>
-                    <ArrowRight className="w-3 h-3" />
-                    <span className="flex-1 text-center line-through">Distributor</span>
-                    <ArrowRight className="w-3 h-3" />
-                    <span className="flex-1 text-center line-through">Wholesaler</span>
-                    <ArrowRight className="w-3 h-3" />
-                    <span className="flex-1 text-center line-through">Retailer</span>
-                    <ArrowRight className="w-3 h-3" />
-                    <span className="flex-1 text-center">You</span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-white/80">
-                    <X className="w-3.5 h-3.5" /> Every layer adds 8–12% markup
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Trust badges */}
-          <div className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="trust-badges">
-            {[
-              { icon: ShieldCheck, label: "100% Authentic", sub: "Straight from the line" },
-              { icon: Award, label: "Made in India", sub: "Jaito, Punjab" },
-              { icon: Truck, label: "Free shipping ₹499+", sub: "Pan-India delivery" },
-              { icon: Package, label: "Easy returns", sub: "7-day hassle-free" },
-            ].map((b, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-3" data-testid={`trust-badge-${i}`}>
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                  <b.icon className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold truncate">{b.label}</div>
-                  <div className="text-[11px] text-white/75 truncate">{b.sub}</div>
-                </div>
               </div>
             ))}
           </div>
