@@ -1,0 +1,118 @@
+{
+  "project_info": {
+    "brand_name": "Nayara",
+    "domain": "E-commerce (Cleaning & Personal Care Products)",
+    "target_audience": "Indian households",
+    "theme": "Light Theme",
+    "archetype": "Archetype 1 (Organic & Earthy) - Modified for 'Clean & Fresh' utility",
+    "vibe": "Clean, fresh, minimal, trustworthy, premium yet accessible."
+  },
+  "colors": {
+    "palette": {
+      "primary": "#2C6E49",
+      "primary_hover": "#215638",
+      "secondary": "#84A98C",
+      "accent": "#48CAE4",
+      "background_base": "#F8F9FA",
+      "surface_base": "#FFFFFF",
+      "text_primary": "#1A2E2A",
+      "text_secondary": "#5C7671",
+      "border_color": "#E2E8F0",
+      "success": "#10B981",
+      "warning": "#F59E0B"
+    },
+    "rules": [
+      "No default Tailwind blues or teals. Use ONLY the specified palette.",
+      "Tint greys with a subtle green/blue hue.",
+      "Primary button text must be white for contrast."
+    ]
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Outfit",
+      "body": "DM Sans",
+      "fallback": "sans-serif"
+    },
+    "hierarchy": {
+      "h1": "text-4xl md:text-5xl lg:text-6xl tracking-tighter font-medium text-[#1A2E2A]",
+      "h2": "text-3xl md:text-4xl tracking-tight font-medium text-[#1A2E2A]",
+      "h3": "text-xl md:text-2xl font-medium text-[#1A2E2A]",
+      "body": "text-base text-[#5C7671] leading-relaxed",
+      "label": "text-xs uppercase tracking-[0.2em] font-bold text-[#5C7671]"
+    },
+    "rules": [
+      "Headings must use tight letter spacing.",
+      "Never use Inter for headings.",
+      "Maintain strict contrast ratio for text."
+    ]
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing (p-8 to p-16) to create breathing room and elevate the 'premium' feel.",
+    "bento_grid": "MODE A (Tetris Grid) for marketing sections (Home, About). Wide gaps (gap-8).",
+    "product_grid": "Standard clean grid (gap-6) for Shop page. Optical alignment heavily enforced.",
+    "container_padding": "p-8 or p-12 for content blocks with borders."
+  },
+  "components": {
+    "navigation": "Crystal Glassmorphism (backdrop-blur-xl bg-white/70) sticky top with 1px border-b border-[#E2E8F0].",
+    "buttons": "Flat solid background. Hover: slight lift (-translate-y-1) and shadow-md. Slight rounded-md radius.",
+    "cards": "Solid surface (#FFFFFF), 1px subtle border (#E2E8F0), soft shadow-sm. Nested elements must respect parent radius.",
+    "forms": "Use Shadcn customized components. Input fields: clean borders, focus:ring-2 focus:ring-[#84A98C] focus:border-transparent.",
+    "badges": "For 'Made in India' and 'Factory Direct Pricing': Soft background pills (e.g., bg-[#E8F1F2] text-[#2C6E49]) with tiny icons."
+  },
+  "motion": {
+    "hover_states": "All interactive elements must have visible hover states. transition-all duration-300 ease-out.",
+    "entrance": "Staggered fade-up for product grids using framer-motion.",
+    "accessibility": "Respect prefers-reduced-motion."
+  },
+  "media": {
+    "images": [
+      {
+        "category": "hero_background",
+        "url": "https://images.unsplash.com/photo-1632834702267-8da808897480?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxjbGVhbiUyMHdhdGVyJTIwc3BsYXNoJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzY2ODM4Nzh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Clean water splash for 'fresh' vibe. Use with heavy light overlay (bg-white/60) so text is readable."
+      },
+      {
+        "category": "product_featured_1",
+        "url": "https://images.unsplash.com/photo-1582020711621-ab153a0f3631?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjV8MHwxfHNlYXJjaHwzfHxmcmVzaCUyMGNsZWFuaW5nJTIwcHJvZHVjdHN8ZW58MHx8fHwxNzc2NjgzODQ4fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Clear plastic bottle for liquid detergent/cleaner."
+      },
+      {
+        "category": "product_featured_2",
+        "url": "https://images.pexels.com/photos/10566509/pexels-photo-10566509.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Hand reaching for minimalistic cleaning products (lifestyle)."
+      },
+      {
+        "category": "product_featured_3",
+        "url": "https://images.unsplash.com/photo-1542038335240-86aea625b913?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwyfHxtaW5pbWFsJTIwc29hcCUyMHBhY2thZ2luZ3xlbnwwfHx8fDE3NzY2ODM4Nzh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Stacked minimal soaps (bathing soap category)."
+      },
+      {
+        "category": "lifestyle_laundry",
+        "url": "https://images.unsplash.com/photo-1681822520036-d84c2a1eefa4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxmcmVzaCUyMGxhdW5kcnklMjBzdW5ueXxlbnwwfHx8fDE3NzY2ODM4NDh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Clothes hanging outside in sun (trust/heritage/freshness)."
+      },
+      {
+        "category": "badge_india",
+        "url": "https://images.pexels.com/photos/27784074/pexels-photo-27784074.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Indian flag badge graphic for 'Made in India' section."
+      }
+    ],
+    "rules": [
+      "Never use generic placeholder images.",
+      "Hero image must have gradient overlay for text contrast.",
+      "Product images in grids should have consistent aspect ratios (e.g., aspect-square or aspect-[4/5])."
+    ]
+  },
+  "instructions_to_main_agent": [
+    "ALWAYS include 'data-testid' attributes (e.g., data-testid='add-to-cart-button') for interactive elements.",
+    "Do not use generic Shadcn components out-of-the-box for the marketing pages (Home/About) - use raw HTML/Tailwind.",
+    "Use Shadcn for interactive features (Filters, Cart, Dialog, Checkout).",
+    "Install 'lucide-react' for all icons.",
+    "Ensure 'Made in India' and 'Factory Direct Pricing' badges are prominently placed near price or CTA on Product Details.",
+    "Do NOT use 'Inter' for headings. Rely on Outfit (via Google Fonts).",
+    "Keep standard layouts for Checkout (familiarity = conversion), but inject brand colors.",
+    "For the e-commerce structure, ensure a robust sidebar filter on the Shop page.",
+    "Always wrap interactive Grid items correctly with subgrid or direct children rules.",
+    "CRITICAL: We are using standard .js and .jsx files. Do NOT use TypeScript (.tsx). Setup guidelines and imports should reflect ES6 Javascript."
+  ]
+}
