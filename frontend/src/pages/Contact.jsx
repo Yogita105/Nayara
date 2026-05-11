@@ -24,7 +24,7 @@ export default function Contact() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-14" data-testid="contact-page">
       <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Contact</p>
-      <h1 className="font-heading text-4xl md:text-5xl font-medium tracking-tighter mb-4">Let's talk.</h1>
+      <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tighter mb-4">Let's talk.</h1>
       <p className="text-[#64748B] max-w-xl">Questions about a product, bulk order or wholesale? Our team responds within 24 hours.</p>
 
       <div className="mt-12 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-10">

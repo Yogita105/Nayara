@@ -143,8 +143,7 @@ function ProductEditor({ initial, onClose }) {
       const fd = new FormData();
       fd.append("file", file);
       const { data } = await api.post("/admin/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-      const base = process.env.REACT_APP_BACKEND_URL;
-      setForm((f) => ({ ...f, image: `${base}${data.url}` }));
+      setForm((f) => ({ ...f, image: data.url }));
       toast.success("Image uploaded");
     } catch { toast.error("Upload failed"); }
     finally { setUploading(false); }
@@ -300,7 +299,7 @@ function MessagesAdmin() {
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-medium text-sm truncate">{m.name}</span>
-                  <span className="text-[10px] text-[#64748B]">{m.created_at?.slice(0, 10)}</span>
+                  <span className="text-xs text-[#64748B]">{m.created_at?.slice(0, 10)}</span>
                 </div>
                 <div className="text-xs text-[#64748B] truncate">{m.subject}</div>
                 <div className="text-xs text-[#64748B] truncate mt-1">{m.message}</div>
@@ -381,7 +380,7 @@ function BulkInquiriesAdmin() {
               >
                 <div className="flex items-center justify-between mb-1 gap-2">
                   <span className="font-medium text-sm truncate">{m.business_name}</span>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[m.status] || 'bg-gray-100'}`}>{m.status || 'new'}</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[m.status] || 'bg-gray-100'}`}>{m.status || 'new'}</span>
                 </div>
                 <div className="text-xs text-[#64748B] truncate">{m.name} · {m.city}</div>
                 <div className="text-xs text-[#64748B] truncate mt-1">{m.quantity}</div>

@@ -1,22 +1,18 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, Cookie, Header, UploadFile, File, Query
-from fastapi.responses import JSONResponse, Response as FastAPIResponse
+from fastapi.responses import JSONResponse, Response as FastAPIResponse, RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import httpx
-import requests
+import cloudinary
+import cloudinary.uploader
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone, timedelta
-
-from emergentintegrations.payments.stripe.checkout import (
-    StripeCheckout,
-    CheckoutSessionRequest,
-)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -25,53 +21,12 @@ mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ["DB_NAME"]]
 
-STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "sk_test_emergent")
-ADMIN_EMAILS = [e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()]
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
-STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
-APP_NAME = "nayara"
-_storage_key: Optional[str] = None
-
-
-def init_storage() -> Optional[str]:
-    global _storage_key
-    if _storage_key:
-        return _storage_key
-    if not EMERGENT_LLM_KEY:
-        return None
-    try:
-        resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_LLM_KEY}, timeout=30)
-        resp.raise_for_status()
-        _storage_key = resp.json()["storage_key"]
-        return _storage_key
-    except Exception as e:
-        logging.getLogger(__name__).warning(f"Storage init failed: {e}")
-        return None
-
-
-def put_object(path: str, data: bytes, content_type: str) -> dict:
-    key = init_storage()
-    if not key:
-        raise HTTPException(status_code=500, detail="Storage not available")
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data, timeout=120,
-    )
-    resp.raise_for_status()
-    return resp.json()
-
-
-def get_object(path: str):
-    key = init_storage()
-    if not key:
-        raise HTTPException(status_code=500, detail="Storage not available")
-    resp = requests.get(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key}, timeout=60,
-    )
-    resp.raise_for_status()
-    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
+    api_key=os.environ.get("CLOUDINARY_API_KEY", ""),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET", ""),
+    secure=True,
+)
 
 app = FastAPI(title="Nayara API")
 api_router = APIRouter(prefix="/api")
@@ -215,13 +170,7 @@ class Order(BaseModel):
     payment_method: str
     payment_status: str = "pending"  # pending, paid, failed
     status: str = "placed"  # placed, processing, shipped, delivered, cancelled
-    stripe_session_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-class CheckoutSessionInit(BaseModel):
-    order_id: str
-    origin_url: str
 
 
 # ---------- Helpers ----------
@@ -284,13 +233,12 @@ async def create_session(body: SessionExchangeRequest, response: Response):
     picture = data.get("picture", "")
     session_token = data["session_token"]
 
-    is_admin = email in ADMIN_EMAILS
     existing = await db.users.find_one({"email": email}, {"_id": 0})
     if existing:
         user_id = existing["user_id"]
         await db.users.update_one(
             {"user_id": user_id},
-            {"$set": {"name": name, "picture": picture, "is_admin": is_admin}},
+            {"$set": {"name": name, "picture": picture}},
         )
     else:
         user_id = f"user_{uuid.uuid4().hex[:12]}"
@@ -299,7 +247,7 @@ async def create_session(body: SessionExchangeRequest, response: Response):
             "email": email,
             "name": name,
             "picture": picture,
-            "is_admin": is_admin,
+            "is_admin": False,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         await db.users.insert_one(user_doc)
@@ -617,119 +565,6 @@ async def get_order(order_id: str, user: dict = Depends(get_current_user)):
     return serialize_doc(doc)
 
 
-# ---------- Stripe Payments ----------
-@api_router.post("/payments/checkout/session")
-async def create_checkout_session(payload: CheckoutSessionInit, request: Request, user: dict = Depends(get_current_user)):
-    order = await db.orders.find_one({"order_id": payload.order_id}, {"_id": 0})
-    if not order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    if order["user_id"] != user["user_id"]:
-        raise HTTPException(status_code=403, detail="Forbidden")
-
-    host_url = str(request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-
-    origin = payload.origin_url.rstrip("/")
-    success_url = f"{origin}/order-success?order_id={order['order_id']}&session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{origin}/checkout?order_id={order['order_id']}"
-
-    amount = float(order["total"])
-    checkout_req = CheckoutSessionRequest(
-        amount=amount,
-        currency="inr",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            "order_id": order["order_id"],
-            "user_id": user["user_id"],
-            "user_email": user["email"],
-        },
-    )
-    session = await stripe_checkout.create_checkout_session(checkout_req)
-
-    # Record transaction
-    await db.payment_transactions.insert_one({
-        "session_id": session.session_id,
-        "order_id": order["order_id"],
-        "user_id": user["user_id"],
-        "amount": amount,
-        "currency": "inr",
-        "payment_status": "initiated",
-        "metadata": {"order_id": order["order_id"]},
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
-    await db.orders.update_one(
-        {"order_id": order["order_id"]},
-        {"$set": {"stripe_session_id": session.session_id}},
-    )
-    return {"url": session.url, "session_id": session.session_id}
-
-
-@api_router.get("/payments/checkout/status/{session_id}")
-async def get_checkout_status(session_id: str, request: Request):
-    host_url = str(request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    status = await stripe_checkout.get_checkout_status(session_id)
-
-    tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
-    if tx and tx.get("payment_status") != "paid" and status.payment_status == "paid":
-        # Update only once
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
-            {"$set": {"payment_status": "paid", "status": status.status}},
-        )
-        order_id = (tx.get("metadata") or {}).get("order_id") or tx.get("order_id")
-        if order_id:
-            await db.orders.update_one(
-                {"order_id": order_id},
-                {"$set": {"payment_status": "paid", "status": "processing"}},
-            )
-            order = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
-            if order:
-                await db.carts.update_one({"user_id": order["user_id"]}, {"$set": {"items": []}})
-    elif tx and status.status == "expired":
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
-            {"$set": {"payment_status": "expired", "status": "expired"}},
-        )
-
-    return {
-        "status": status.status,
-        "payment_status": status.payment_status,
-        "amount_total": status.amount_total,
-        "currency": status.currency,
-        "metadata": status.metadata,
-    }
-
-
-@api_router.post("/webhook/stripe")
-async def stripe_webhook(request: Request):
-    body = await request.body()
-    signature = request.headers.get("Stripe-Signature", "")
-    host_url = str(request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    try:
-        event = await stripe_checkout.handle_webhook(body, signature)
-    except Exception as e:
-        logger.warning(f"Webhook error: {e}")
-        return {"ok": False}
-    if event.payment_status == "paid":
-        order_id = (event.metadata or {}).get("order_id")
-        if order_id:
-            await db.orders.update_one(
-                {"order_id": order_id},
-                {"$set": {"payment_status": "paid", "status": "processing"}},
-            )
-            await db.payment_transactions.update_one(
-                {"session_id": event.session_id},
-                {"$set": {"payment_status": "paid"}},
-            )
-    return {"ok": True}
-
-
 # ---------- Admin ----------
 @api_router.get("/admin/stats")
 async def admin_stats(_: dict = Depends(require_admin)):
@@ -777,7 +612,7 @@ async def admin_contacts(_: dict = Depends(require_admin)):
 
 
 # ---------- Admin: Uploads (images) ----------
-MIME_BY_EXT = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif"}
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
 
 
 @api_router.post("/admin/upload")
@@ -785,25 +620,34 @@ async def admin_upload(file: UploadFile = File(...), user: dict = Depends(requir
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename")
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
-    if ext not in MIME_BY_EXT:
+    if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Unsupported file type")
     data = await file.read()
     if len(data) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 5MB)")
     file_id = uuid.uuid4().hex
-    storage_path = f"{APP_NAME}/products/{file_id}.{ext}"
-    content_type = MIME_BY_EXT[ext]
-    result = put_object(storage_path, data, content_type)
+    try:
+        result = cloudinary.uploader.upload(
+            data,
+            public_id=f"nayara/products/{file_id}",
+            resource_type="image",
+            overwrite=True,
+        )
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Cloudinary upload failed: {e}")
+        raise HTTPException(status_code=500, detail="Image upload failed")
+    cloudinary_url = result["secure_url"]
     await db.files.insert_one({
         "file_id": file_id,
-        "storage_path": result["path"],
-        "content_type": content_type,
-        "size": result.get("size", len(data)),
+        "cloudinary_url": cloudinary_url,
+        "cloudinary_public_id": result["public_id"],
+        "content_type": f"image/{ext}",
+        "size": len(data),
         "uploaded_by": user["user_id"],
         "is_deleted": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
-    return {"file_id": file_id, "url": f"/api/files/{file_id}"}
+    return {"file_id": file_id, "url": cloudinary_url}
 
 
 @api_router.get("/files/{file_id}")
@@ -811,8 +655,7 @@ async def serve_file(file_id: str):
     record = await db.files.find_one({"file_id": file_id, "is_deleted": False}, {"_id": 0})
     if not record:
         raise HTTPException(status_code=404, detail="File not found")
-    data, ct = get_object(record["storage_path"])
-    return FastAPIResponse(content=data, media_type=record.get("content_type", ct), headers={"Cache-Control": "public, max-age=31536000"})
+    return RedirectResponse(url=record["cloudinary_url"], status_code=302)
 
 
 # ---------- Seed Products ----------
@@ -944,7 +787,6 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def on_startup():
-    init_storage()
     await seed_products()
 
 

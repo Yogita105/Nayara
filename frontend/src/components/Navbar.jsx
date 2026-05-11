@@ -37,7 +37,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-2" data-testid="nav-logo-link">
           <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold" style={{ background: "var(--nayara-primary)" }}>N</div>
-          <span className="font-heading text-2xl font-semibold tracking-tight">Nayara</span>
+          <span className="font-heading text-2xl font-semibold tracking-tight text-white">Nayara</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -47,7 +47,7 @@ export default function Navbar() {
               to={l.to}
               end={l.to === "/"}
               className={({ isActive }) =>
-                `text-sm font-medium transition-colors ${isActive ? "text-[var(--nayara-primary)]" : "text-[#64748B] hover:text-[var(--nayara-primary)]"}`
+                `text-base font-medium transition-colors ${isActive ? "text-white font-bold" : "text-white/80 hover:text-white"}`
               }
               data-testid={`nav-link-${l.label.toLowerCase()}`}
             >
@@ -57,24 +57,24 @@ export default function Navbar() {
         </nav>
 
         <form onSubmit={onSearch} className="hidden lg:flex items-center bg-white border border-[var(--nayara-border)] rounded-full px-3 h-10 w-64" data-testid="nav-search-form">
-          <Search className="w-4 h-4 text-[#64748B]" />
+          <Search className="w-5 h-5 text-[#64748B]" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search products..."
-            className="bg-transparent outline-none px-2 text-sm flex-1"
+            className="bg-transparent outline-none px-2 text-base flex-1"
             data-testid="nav-search-input"
           />
         </form>
 
         <div className="flex items-center gap-1">
-          <Link to="/wishlist" className="p-2 rounded-full hover:bg-[#FBEEE4] transition-colors" data-testid="nav-wishlist-link" aria-label="Wishlist">
-            <Heart className="w-5 h-5" />
+          <Link to="/wishlist" className="p-2 rounded-full hover:bg-white/20 transition-colors text-white" data-testid="nav-wishlist-link" aria-label="Wishlist">
+            <Heart className="w-6 h-6" />
           </Link>
-          <Link to="/cart" className="relative p-2 rounded-full hover:bg-[#FBEEE4] transition-colors" data-testid="nav-cart-link" aria-label="Cart">
-            <ShoppingCart className="w-5 h-5" />
+          <Link to="/cart" className="relative p-2 rounded-full hover:bg-white/20 transition-colors text-white" data-testid="nav-cart-link" aria-label="Cart">
+            <ShoppingCart className="w-6 h-6" />
             {cartCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-[var(--nayara-primary)] text-white text-[11px] font-semibold flex items-center justify-center" data-testid="nav-cart-count">
+              <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-[var(--nayara-secondary)] text-white text-[11px] font-semibold flex items-center justify-center" data-testid="nav-cart-count">
                 {cartCount}
               </span>
             )}
@@ -83,13 +83,13 @@ export default function Navbar() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-[#FBEEE4] transition-colors" data-testid="nav-user-menu">
+                <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-white/20 transition-colors text-white" data-testid="nav-user-menu">
                   {user.picture ? (
                     <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-[var(--nayara-secondary)] text-white flex items-center justify-center text-sm font-semibold">{user.name?.[0]?.toUpperCase()}</div>
+                    <div className="w-8 h-8 rounded-full bg-[var(--nayara-secondary)] text-white flex items-center justify-center text-base font-semibold">{user.name?.[0]?.toUpperCase()}</div>
                   )}
-                  <span className="hidden sm:inline text-sm font-medium">{user.name?.split(" ")[0]}</span>
+                  <span className="hidden sm:inline text-base font-medium text-white">{user.name?.split(" ")[0]}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" data-testid="nav-user-dropdown">
@@ -112,14 +112,14 @@ export default function Navbar() {
             </DropdownMenu>
           ) : (
             <Link to="/login" data-testid="nav-login-link">
-              <Button className="rounded-full bg-[var(--nayara-primary)] hover:bg-[var(--nayara-primary-hover)]">
-                <User className="w-4 h-4 mr-1" /> Login
+              <Button className="rounded-full bg-white text-[var(--nayara-primary)] hover:bg-white/90">
+                <User className="w-5 h-5 mr-1" /> Login
               </Button>
             </Link>
           )}
 
-          <button className="md:hidden p-2" onClick={() => setOpen((o) => !o)} data-testid="nav-mobile-toggle" aria-label="Menu">
-            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          <button className="md:hidden p-2 text-white" onClick={() => setOpen((o) => !o)} data-testid="nav-mobile-toggle" aria-label="Menu">
+            {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
@@ -132,15 +132,15 @@ export default function Navbar() {
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                className="py-2 text-sm font-medium"
+                className="py-2 text-base font-medium"
                 data-testid={`mobile-nav-${l.label.toLowerCase()}`}
               >
                 {l.label}
               </Link>
             ))}
             <form onSubmit={onSearch} className="flex items-center bg-[#FFFFFF] rounded-full px-3 h-10 mt-2">
-              <Search className="w-4 h-4 text-[#64748B]" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="bg-transparent outline-none px-2 text-sm flex-1" />
+              <Search className="w-5 h-5 text-[#64748B]" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="bg-transparent outline-none px-2 text-base flex-1" />
             </form>
           </div>
         </div>

@@ -55,7 +55,7 @@ export default function Shop() {
     <div className="max-w-7xl mx-auto px-6 py-10" data-testid="shop-page">
       <div className="mb-8">
         <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Shop</p>
-        <h1 className="font-heading text-4xl md:text-5xl font-medium tracking-tighter">All Products</h1>
+        <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tighter">All Products</h1>
         <p className="mt-2 text-[#64748B]">Factory-direct cleaning & personal care. Real prices. No middlemen.</p>
       </div>
 
@@ -75,7 +75,7 @@ export default function Shop() {
                 value={q}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search products"
-                className="bg-transparent outline-none px-2 text-sm flex-1"
+                className="bg-transparent outline-none px-2 text-base flex-1"
                 data-testid="shop-search-input"
               />
             </div>

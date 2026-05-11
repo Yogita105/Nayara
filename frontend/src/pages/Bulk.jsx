@@ -93,7 +93,7 @@ export default function Bulk() {
                   Or call +91 97808 44330
                 </a>
               </div>
-              <div className="mt-8 flex flex-wrap items-center gap-5 text-xs text-[#64748B]">
+              <div className="mt-8 flex flex-wrap items-center gap-5 text-sm text-[#64748B]">
                 <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-[var(--nayara-primary)]" /> Competitive bulk pricing</div>
                 <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-[var(--nayara-primary)]" /> Custom quote in 24 hours</div>
                 <div className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-[var(--nayara-primary)]" /> Flexible packaging</div>
@@ -126,7 +126,7 @@ export default function Bulk() {
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="text-center max-w-2xl mx-auto mb-14">
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Why Partner with Nayara</p>
-          <h2 className="font-heading text-3xl md:text-4xl font-medium tracking-tight">Built for businesses that move volume.</h2>
+          <h2 className="font-heading text-2xl md:text-3xl font-medium tracking-tight">Built for businesses that move volume.</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" data-testid="bulk-benefits">
           {BENEFITS.map((b, i) => (
@@ -152,7 +152,7 @@ export default function Bulk() {
         <div className="max-w-7xl mx-auto px-6 py-20">
           <div className="mb-10">
             <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Our Range</p>
-            <h2 className="font-heading text-3xl md:text-4xl font-medium tracking-tight">Available in bulk — across our full catalogue.</h2>
+            <h2 className="font-heading text-2xl md:text-3xl font-medium tracking-tight">Available in bulk — across our full catalogue.</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5" data-testid="bulk-categories">
             {CATEGORIES.map((c, i) => (
@@ -187,7 +187,7 @@ export default function Bulk() {
       <section id="inquiry" className="max-w-5xl mx-auto px-6 py-20 scroll-mt-24">
         <div className="text-center mb-10">
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Get Your Quote</p>
-          <h2 className="font-heading text-3xl md:text-4xl font-medium tracking-tight">Tell us what you need.</h2>
+          <h2 className="font-heading text-2xl md:text-3xl font-medium tracking-tight">Tell us what you need.</h2>
           <p className="mt-3 text-[#64748B] max-w-lg mx-auto">We respond to every inquiry within 24 business hours with a customized quote.</p>
         </div>
 

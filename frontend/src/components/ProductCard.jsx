@@ -47,7 +47,7 @@ export default function ProductCard({ product, index = 0 }) {
         <Link to={`/product/${product.product_id}`}>
           <h3 className="font-heading font-medium text-base leading-snug line-clamp-2 min-h-[2.6rem] hover:text-[var(--nayara-primary)]">{product.name}</h3>
         </Link>
-        <p className="text-xs text-[#64748B] line-clamp-2 mt-1 min-h-[2rem]">{product.short_description}</p>
+        <p className="text-sm text-[#64748B] line-clamp-2 mt-1 min-h-[2rem]">{product.short_description}</p>
         <div className="flex items-end justify-between mt-4">
           <div>
             <div className="font-heading text-xl font-semibold">{formatINR(product.price)}</div>

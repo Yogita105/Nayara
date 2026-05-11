@@ -23,7 +23,7 @@ export default function About() {
         <img src="https://images.unsplash.com/photo-1681822520036-d84c2a1eefa4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxmcmVzaCUyMGxhdW5kcnklMjBzdW5ueXxlbnwwfHx8fDE3NzY2ODM4NDh8MA&ixlib=rb-4.1.0&q=85" alt="Laundry in sunlight" className="rounded-3xl object-cover w-full aspect-[4/5]" />
         <div>
           <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Why Nayara</p>
-          <h2 className="font-heading text-3xl md:text-4xl font-medium mb-5 tracking-tight">Real ingredients. Real value.</h2>
+          <h2 className="font-heading text-2xl md:text-3xl font-medium mb-5 tracking-tight">Real ingredients. Real value.</h2>
           <p className="text-[#64748B] leading-relaxed mb-4">
             Every Nayara formula is developed by a team of chemists and tested in real Indian homes — washing saris, school uniforms, steel dabbas, and everything in between.
           </p>
@@ -52,7 +52,7 @@ export default function About() {
 
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="rounded-3xl p-10 md:p-16 text-white text-center" style={{ background: "var(--nayara-secondary)" }}>
-          <h2 className="font-heading text-3xl md:text-4xl font-medium">"Clean, for us, has always meant honest."</h2>
+          <h2 className="font-heading text-2xl md:text-3xl font-medium">"Clean, for us, has always meant honest."</h2>
           <p className="mt-4 opacity-90">— Nayara family, since 1978</p>
         </div>
       </section>

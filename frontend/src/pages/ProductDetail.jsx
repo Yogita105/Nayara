@@ -60,7 +60,7 @@ export default function ProductDetail() {
               </span>
             ))}
           </div>
-          <h1 className="font-heading text-3xl md:text-4xl font-medium tracking-tight" data-testid="product-name">{product.name}</h1>
+          <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tight" data-testid="product-name">{product.name}</h1>
           <div className="mt-3 flex items-center gap-3 text-sm">
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 fill-[#F59E0B] text-[#F59E0B]" />
@@ -71,7 +71,7 @@ export default function ProductDetail() {
           <p className="mt-5 text-[#64748B] leading-relaxed">{product.description}</p>
 
           <div className="mt-6 flex items-end gap-3">
-            <div className="font-heading text-4xl font-semibold" data-testid="product-price">{formatINR(product.price)}</div>
+            <div className="font-heading text-3xl font-semibold" data-testid="product-price">{formatINR(product.price)}</div>
             {product.mrp > product.price && (
               <>
                 <div className="text-lg text-[#64748B] line-through mb-1">{formatINR(product.mrp)}</div>
@@ -94,7 +94,7 @@ export default function ProductDetail() {
             </button>
           </div>
 
-          <div className="mt-8 grid grid-cols-3 gap-3 text-xs">
+          <div className="mt-8 grid grid-cols-3 gap-3 text-sm">
             <div className="rounded-xl border border-[var(--nayara-border)] p-3 bg-white">
               <Truck className="w-4 h-4 mb-1 text-[var(--nayara-primary)]" />
               <span className="font-semibold">Free shipping ₹499+</span>

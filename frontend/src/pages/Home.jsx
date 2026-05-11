@@ -64,7 +64,7 @@ export default function Home() {
         <div className="flex items-end justify-between mb-10">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Bestsellers</p>
-            <h2 className="font-heading text-3xl md:text-4xl font-medium tracking-tight">Loved by 10,000+ Indian homes</h2>
+            <h2 className="font-heading text-2xl md:text-3xl font-medium tracking-tight">Loved by 10,000+ Indian homes</h2>
           </div>
           <Link to="/shop" className="hidden md:inline-flex items-center gap-1 text-sm font-medium text-[var(--nayara-primary)]">
             View All <ArrowRight className="w-4 h-4" />
@@ -104,7 +104,7 @@ export default function Home() {
       {/* CATEGORIES */}
       <section className="max-w-7xl mx-auto px-6 py-20">
         <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Explore</p>
-        <h2 className="font-heading text-3xl md:text-4xl font-medium tracking-tight mb-10">Shop by category</h2>
+        <h2 className="font-heading text-2xl md:text-3xl font-medium tracking-tight mb-10">Shop by category</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             { key: "laundry", label: "Laundry Care", img: "https://images.unsplash.com/photo-1582020711621-ab153a0f3631?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjV8MHwxfHNlYXJjaHwzfHxmcmVzaCUyMGNsZWFuaW5nJTIwcHJvZHVjdHN8ZW58MHx8fHwxNzc2NjgzODQ4fDA&ixlib=rb-4.1.0&q=85" },

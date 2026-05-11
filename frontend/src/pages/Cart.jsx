@@ -24,7 +24,7 @@ export default function Cart() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10" data-testid="cart-page">
-      <h1 className="font-heading text-3xl md:text-4xl font-medium tracking-tight mb-8">Your Cart ({cartCount})</h1>
+      <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tight mb-8">Your Cart ({cartCount})</h1>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
         <div className="space-y-4">
           {cart.map((item) => (
