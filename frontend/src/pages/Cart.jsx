@@ -5,12 +5,21 @@ import { useAuth } from "../context/AuthContext";
 import { formatINR } from "../lib/api";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import ProductImage from "../components/ProductImage";
+import { LoadingPanel } from "../components/DataState";
 
 export default function Cart() {
-  const { cart, updateQuantity, removeFromCart, cartTotal, cartCount } = useCart();
+  const { cart, updateQuantity, removeFromCart, cartTotal, cartCount, cartLoading } = useCart();
   const { user } = useAuth();
   const shipping = cartTotal >= 499 ? 0 : cartCount > 0 ? 49 : 0;
   const grand = cartTotal + shipping;
+
+  if (cartLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-20">
+        <LoadingPanel label="Loading your cart..." />
+      </div>
+    );
+  }
 
   if (cart.length === 0) {
     return (

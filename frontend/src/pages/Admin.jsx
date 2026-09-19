@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { api, errorMessage, formatINR } from "../lib/api";
+import useAsyncData from "../hooks/useAsyncData";
+import { EmptyPanel, ErrorPanel, LoadingPanel, TableStateRow } from "../components/DataState";
 import ProductImage from "../components/ProductImage";
 import RequiredMark from "../components/RequiredMark";
 import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase } from "lucide-react";
@@ -16,9 +18,14 @@ const navs = [
 ];
 
 function Dashboard() {
-  const [stats, setStats] = useState(null);
-  useEffect(() => { api.get("/admin/stats").then(({ data }) => setStats(data)); }, []);
-  if (!stats) return <div>Loading...</div>;
+  const { data: stats, loading, error, reload } = useAsyncData(
+    async () => (await api.get("/admin/stats")).data,
+    [],
+    "Dashboard figures could not be loaded."
+  );
+  if (loading) return <LoadingPanel label="Loading dashboard..." />;
+  if (error) return <ErrorPanel message={error} onRetry={reload} />;
+  if (!stats) return null;
   const cards = [
     { label: "Revenue", value: formatINR(stats.revenue), icon: IndianRupee, color: "var(--nayara-primary)" },
     { label: "Orders", value: stats.total_orders, icon: ShoppingBag, color: "var(--nayara-secondary)" },
@@ -56,9 +63,13 @@ const NEXT_ORDER_STATUSES = {
 };
 
 function OrdersAdmin() {
-  const [orders, setOrders] = useState([]);
-  const load = () => api.get("/admin/orders").then(({ data }) => setOrders(data));
-  useEffect(() => { load(); }, []);
+  const { data, loading, error, reload } = useAsyncData(
+    async () => (await api.get("/admin/orders")).data,
+    [],
+    "Orders could not be loaded."
+  );
+  const orders = data || [];
+  const load = reload;
   const update = async (id, status) => {
     try {
       await api.put(`/admin/orders/${id}`, { status });
@@ -81,6 +92,13 @@ function OrdersAdmin() {
             </tr>
           </thead>
           <tbody>
+            <TableStateRow
+              columns={5}
+              loading={loading}
+              error={error}
+              onRetry={reload}
+              emptyMessage={orders.length === 0 ? "No orders yet." : null}
+            />
             {orders.map((o) => (
               <tr key={o.order_id} className="border-t border-[var(--nayara-border)]">
                 <td className="px-4 py-3 font-mono text-xs">{o.order_id}</td>
@@ -108,21 +126,29 @@ function OrdersAdmin() {
             ))}
           </tbody>
         </table>
-        {orders.length === 0 && <div className="text-center py-8 text-[#64748B]">No orders.</div>}
       </div>
     </div>
   );
 }
 
 function ProductsAdmin() {
-  const [products, setProducts] = useState([]);
   const [editing, setEditing] = useState(null); // null | "new" | product
-  const load = () => api.get("/products").then(({ data }) => setProducts(data));
-  useEffect(() => { load(); }, []);
+  const { data, loading, error, reload } = useAsyncData(
+    async () => (await api.get("/products")).data,
+    [],
+    "Products could not be loaded."
+  );
+  const products = data || [];
+  const load = reload;
 
   const onDelete = async (id) => {
     if (!window.confirm("Delete this product?")) return;
-    await api.delete(`/products/${id}`);
+    try {
+      await api.delete(`/products/${id}`);
+      toast.success("Product deleted");
+    } catch (failure) {
+      toast.error(errorMessage(failure, "Could not delete the product"));
+    }
     load();
   };
 
@@ -132,22 +158,33 @@ function ProductsAdmin() {
         <h1 className="font-heading text-3xl font-medium tracking-tight">Products</h1>
         <button onClick={() => setEditing("new")} className="nayara-btn" data-testid="admin-new-product-btn">+ New Product</button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {products.map((p) => (
-          <div key={p.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4" data-testid={`admin-product-${p.product_id}`}>
-            <ProductImage src={p.image} alt={p.name} className="w-20 h-20 rounded-lg object-cover bg-[#F1F5F9]" />
-            <div className="flex-1 min-w-0">
-              <h3 className="font-heading font-medium text-sm truncate">{p.name}</h3>
-              <div className="text-xs text-[#64748B] mt-1">Stock: {p.stock} · {p.category}</div>
-              <div className="font-heading font-semibold mt-2">{formatINR(p.price)}</div>
-              <div className="flex gap-2 mt-2">
-                <button onClick={() => setEditing(p)} className="text-xs px-3 py-1 rounded-md border border-[var(--nayara-border)] hover:bg-[#FBEEE4]" data-testid={`edit-product-${p.product_id}`}>Edit</button>
-                <button onClick={() => onDelete(p.product_id)} className="text-xs px-3 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50" data-testid={`delete-product-${p.product_id}`}>Delete</button>
+      {loading ? (
+        <LoadingPanel label="Loading products..." />
+      ) : error ? (
+        <ErrorPanel message={error} onRetry={reload} />
+      ) : products.length === 0 ? (
+        <EmptyPanel
+          icon={Package}
+          message="No products yet. Use “+ New Product” to add your first one."
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {products.map((p) => (
+            <div key={p.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4" data-testid={`admin-product-${p.product_id}`}>
+              <ProductImage src={p.image} alt={p.name} className="w-20 h-20 rounded-lg object-cover bg-[#F1F5F9]" />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-heading font-medium text-sm truncate">{p.name}</h3>
+                <div className="text-xs text-[#64748B] mt-1">Stock: {p.stock} · {p.category}</div>
+                <div className="font-heading font-semibold mt-2">{formatINR(p.price)}</div>
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => setEditing(p)} className="text-xs px-3 py-1 rounded-md border border-[var(--nayara-border)] hover:bg-[#FBEEE4]" data-testid={`edit-product-${p.product_id}`}>Edit</button>
+                  <button onClick={() => onDelete(p.product_id)} className="text-xs px-3 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50" data-testid={`delete-product-${p.product_id}`}>Delete</button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       {editing && <ProductEditor initial={editing === "new" ? null : editing} onClose={() => { setEditing(null); load(); }} />}
     </div>
   );
@@ -277,8 +314,12 @@ function ProductEditor({ initial, onClose }) {
 }
 
 function UsersAdmin() {
-  const [users, setUsers] = useState([]);
-  useEffect(() => { api.get("/admin/users").then(({ data }) => setUsers(data)); }, []);
+  const { data, loading, error, reload } = useAsyncData(
+    async () => (await api.get("/admin/users")).data,
+    [],
+    "Users could not be loaded."
+  );
+  const users = data || [];
   return (
     <div data-testid="admin-users">
       <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Users</h1>
@@ -288,6 +329,13 @@ function UsersAdmin() {
             <tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Mobile</th><th className="px-4 py-3">Email</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Joined</th></tr>
           </thead>
           <tbody>
+            <TableStateRow
+              columns={5}
+              loading={loading}
+              error={error}
+              onRetry={reload}
+              emptyMessage={users.length === 0 ? "No users yet." : null}
+            />
             {users.map((u) => (
               <tr key={u.user_id} className="border-t border-[var(--nayara-border)]">
                 <td className="px-4 py-3">{u.name}</td>
@@ -305,14 +353,22 @@ function UsersAdmin() {
 }
 
 function MessagesAdmin() {
-  const [messages, setMessages] = useState([]);
   const [selected, setSelected] = useState(null);
-  useEffect(() => { api.get("/admin/contacts").then(({ data }) => setMessages(data)); }, []);
+  const { data, loading, error, reload } = useAsyncData(
+    async () => (await api.get("/admin/contacts")).data,
+    [],
+    "Messages could not be loaded."
+  );
+  const messages = data || [];
 
   return (
     <div data-testid="admin-messages">
       <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Messages</h1>
-      {messages.length === 0 ? (
+      {loading ? (
+        <LoadingPanel label="Loading messages..." />
+      ) : error ? (
+        <ErrorPanel message={error} onRetry={reload} />
+      ) : messages.length === 0 ? (
         <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-10 text-center text-[#64748B]">
           <MessageSquare className="w-10 h-10 mx-auto mb-3" />
           No customer messages yet.
@@ -371,15 +427,23 @@ function MessagesAdmin() {
 }
 
 function BulkInquiriesAdmin() {
-  const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
-  const load = () => api.get("/admin/bulk-inquiries").then(({ data }) => setItems(data));
-  useEffect(() => { load(); }, []);
+  const { data, loading, error, reload } = useAsyncData(
+    async () => (await api.get("/admin/bulk-inquiries")).data,
+    [],
+    "Bulk inquiries could not be loaded."
+  );
+  const items = data || [];
+  const load = reload;
 
   const setStatus = async (id, status) => {
-    await api.put(`/admin/bulk-inquiries/${id}`, { status });
+    try {
+      await api.put(`/admin/bulk-inquiries/${id}`, { status });
+      setSelected((s) => (s && s.inquiry_id === id ? { ...s, status } : s));
+    } catch (failure) {
+      toast.error(errorMessage(failure, "Could not update the inquiry"));
+    }
     load();
-    setSelected((s) => s && s.inquiry_id === id ? { ...s, status } : s);
   };
 
   const STATUS_COLORS = {
@@ -393,7 +457,11 @@ function BulkInquiriesAdmin() {
   return (
     <div data-testid="admin-bulk">
       <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Bulk Inquiries</h1>
-      {items.length === 0 ? (
+      {loading ? (
+        <LoadingPanel label="Loading bulk inquiries..." />
+      ) : error ? (
+        <ErrorPanel message={error} onRetry={reload} />
+      ) : items.length === 0 ? (
         <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-10 text-center text-[#64748B]">
           <Briefcase className="w-10 h-10 mx-auto mb-3" />
           No bulk inquiries yet.

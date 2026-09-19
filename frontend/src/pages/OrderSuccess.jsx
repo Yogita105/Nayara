@@ -1,25 +1,44 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { CheckCircle2, Package } from "lucide-react";
 import { api, formatINR } from "../lib/api";
+import useAsyncData from "../hooks/useAsyncData";
+import { ErrorPanel, LoadingPanel } from "../components/DataState";
 import ProductImage from "../components/ProductImage";
 import { useCart } from "../context/CartContext";
 
 export default function OrderSuccess() {
   const [params] = useSearchParams();
   const orderId = params.get("order_id");
-  const [order, setOrder] = useState(null);
   const { refreshCart } = useCart();
 
-  const loadOrder = useCallback(async () => {
-    if (!orderId) return;
-    const { data } = await api.get(`/orders/${orderId}`);
-    setOrder(data);
-  }, [orderId]);
+  const { data: order, loading, error, reload } = useAsyncData(
+    async () => {
+      if (!orderId) return null;
+      const { data } = await api.get(`/orders/${orderId}`);
+      return data;
+    },
+    [orderId],
+    "We could not load this order."
+  );
 
-  useEffect(() => { loadOrder(); refreshCart(); }, [loadOrder, refreshCart]);
+  useEffect(() => { refreshCart(); }, [refreshCart]);
 
-  if (!order) return <div className="py-20 text-center text-[#64748B]">Loading order...</div>;
+  if (loading) return <LoadingPanel label="Loading your order..." />;
+  if (error) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <ErrorPanel message={error} onRetry={reload} />
+        <p className="text-center text-sm text-[#64748B] mt-4">
+          Your order may still have been placed. Check{" "}
+          <Link to="/orders" className="text-[var(--nayara-primary)] underline">
+            My Orders
+          </Link>.
+        </p>
+      </div>
+    );
+  }
+  if (!order) return null;
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-16 text-center" data-testid="order-success-page">

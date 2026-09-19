@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
+import useAsyncData from "../hooks/useAsyncData";
+import { ErrorPanel, LoadingPanel } from "../components/DataState";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { Heart, ShoppingCart, Star, ShieldCheck, Truck, Leaf, Minus, Plus } from "lucide-react";
@@ -12,22 +14,39 @@ import { toast } from "sonner";
 
 export default function ProductDetail() {
   const { productId } = useParams();
-  const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [qty, setQty] = useState(1);
   const [form, setForm] = useState({ rating: 5, title: "", comment: "" });
   const { addToCart, toggleWishlist, isInWishlist } = useCart();
   const { user } = useAuth();
 
-  const load = async () => {
-    const { data } = await api.get(`/products/${productId}`);
-    setProduct(data);
-    const r = await api.get(`/products/${productId}/reviews`);
-    setReviews(r.data);
-  };
-  useEffect(() => { load(); }, [productId]);
+  const {
+    data: product,
+    loading,
+    error,
+    reload,
+  } = useAsyncData(
+    async () => {
+      const { data } = await api.get(`/products/${productId}`);
+      const listed = await api.get(`/products/${productId}/reviews`);
+      setReviews(listed.data);
+      return data;
+    },
+    [productId],
+    "This product could not be loaded."
+  );
 
-  if (!product) return <div className="py-20 text-center text-[#64748B]">Loading...</div>;
+  const load = reload;
+
+  if (loading) return <LoadingPanel label="Loading product..." />;
+  if (error) {
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <ErrorPanel message={error} onRetry={reload} />
+      </div>
+    );
+  }
+  if (!product) return null;
 
   const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100) || 0;
   const saved = isInWishlist(product.product_id);

@@ -187,8 +187,8 @@ production-ready ecommerce application.
 - [x] Replace or self-host unreliable third-party product images.
 - [x] Show a placeholder when a product image cannot be loaded.
 - [ ] Upload real photography for products that have none.
-- [ ] Add global API error handling and user-friendly retry states.
-- [ ] Add loading and empty states across every data-driven screen.
+- [x] Add global API error handling and user-friendly retry states.
+- [x] Add loading and empty states across every data-driven screen.
 - [ ] Add accessible form validation and error summaries.
 - [x] Let customers correct their own name and mobile number.
 - [ ] Evaluate migration from Create React App to Vite.

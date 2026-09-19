@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { api } from "../lib/api";
+import { api, errorMessage } from "../lib/api";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
 
@@ -13,26 +13,42 @@ const readLocal = (key) => {
 const writeLocal = (key, val) => localStorage.setItem(key, JSON.stringify(val));
 
 export const CartProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [cart, setCart] = useState([]); // [{product..., quantity}]
   const [wishlist, setWishlist] = useState([]); // [product...]
+  const [cartLoading, setCartLoading] = useState(true);
+  const [wishlistLoading, setWishlistLoading] = useState(true);
 
   // LOCAL: product snapshots with {product_id, name, image, price, quantity}
   const refreshCart = useCallback(async () => {
-    if (user) {
-      const { data } = await api.get("/cart");
-      setCart(data.items || []);
-    } else {
-      setCart(readLocal(LOCAL_KEY));
+    try {
+      if (user) {
+        const { data } = await api.get("/cart");
+        setCart(data.items || []);
+      } else {
+        setCart(readLocal(LOCAL_KEY));
+      }
+    } catch (failure) {
+      // Leaving the previous contents visible is safer than implying the
+      // cart is empty, which invites someone to add the same items twice.
+      toast.error(errorMessage(failure, "We could not load your cart."));
+    } finally {
+      setCartLoading(false);
     }
   }, [user]);
 
   const refreshWishlist = useCallback(async () => {
-    if (user) {
-      const { data } = await api.get("/wishlist");
-      setWishlist(data.items || []);
-    } else {
-      setWishlist(readLocal(WL_KEY));
+    try {
+      if (user) {
+        const { data } = await api.get("/wishlist");
+        setWishlist(data.items || []);
+      } else {
+        setWishlist(readLocal(WL_KEY));
+      }
+    } catch (failure) {
+      toast.error(errorMessage(failure, "We could not load your wishlist."));
+    } finally {
+      setWishlistLoading(false);
     }
   }, [user]);
 
@@ -111,6 +127,10 @@ export const CartProvider = ({ children }) => {
   return (
     <CartContext.Provider value={{
       cart, wishlist, cartCount, cartTotal,
+      // Until we know who is signed in, the local-storage contents are not
+      // the final answer, so the screens should keep waiting.
+      cartLoading: cartLoading || authLoading,
+      wishlistLoading: wishlistLoading || authLoading,
       addToCart, updateQuantity, removeFromCart, clearCart,
       toggleWishlist, isInWishlist, refreshCart, refreshWishlist,
     }}>

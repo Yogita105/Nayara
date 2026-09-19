@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { api, formatINR } from "../lib/api";
+import useAsyncData from "../hooks/useAsyncData";
+import { EmptyPanel, ErrorPanel, LoadingPanel } from "../components/DataState";
 import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
 import ProductImage from "../components/ProductImage";
@@ -13,18 +15,26 @@ const STATUS_COLORS = {
 };
 
 export default function Orders() {
-  const [orders, setOrders] = useState([]);
-  useEffect(() => { api.get("/orders").then(({ data }) => setOrders(data)); }, []);
+  const { data, loading, error, reload } = useAsyncData(
+    async () => (await api.get("/orders")).data,
+    [],
+    "We could not load your orders."
+  );
+  const orders = data || [];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10" data-testid="orders-page">
       <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tight mb-8">My Orders</h1>
-      {orders.length === 0 ? (
-        <div className="text-center py-16 rounded-2xl border border-[var(--nayara-border)] bg-white">
-          <Package className="w-14 h-14 mx-auto text-[#64748B] mb-4" />
-          <p className="text-[#64748B]">No orders yet.</p>
-          <Link to="/shop" className="nayara-btn mt-5">Start Shopping</Link>
-        </div>
+      {loading ? (
+        <LoadingPanel label="Loading your orders..." />
+      ) : error ? (
+        <ErrorPanel message={error} onRetry={reload} />
+      ) : orders.length === 0 ? (
+        <EmptyPanel
+          icon={Package}
+          message="No orders yet."
+          action={<Link to="/shop" className="nayara-btn mt-5">Start Shopping</Link>}
+        />
       ) : (
         <div className="space-y-5">
           {orders.map((o) => (

@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Leaf, ShieldCheck, Factory, Sparkles, Truck } from "lucide-react";
 import ProductCard from "../components/ProductCard";
+import useAsyncData from "../hooks/useAsyncData";
 import { api } from "../lib/api";
 
 export default function Home() {
-  const [featured, setFeatured] = useState([]);
-
-  useEffect(() => {
-    api.get("/products?featured=true").then(({ data }) => setFeatured(data.slice(0, 4)));
-  }, []);
+  const { data, loading } = useAsyncData(
+    async () => (await api.get("/products?featured=true")).data.slice(0, 4),
+    [],
+    "Featured products could not be loaded."
+  );
+  const featured = data || [];
 
   return (
     <div data-testid="home-page">
@@ -71,7 +73,17 @@ export default function Home() {
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" data-testid="featured-grid">
-          {featured.map((p, i) => <ProductCard key={p.product_id} product={p} index={i} />)}
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-2xl border border-[var(--nayara-border)] bg-white overflow-hidden animate-pulse">
+                  <div className="aspect-square bg-[#F1F5F9]" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-4 bg-[#F1F5F9] rounded w-3/4" />
+                    <div className="h-4 bg-[#F1F5F9] rounded w-1/3" />
+                  </div>
+                </div>
+              ))
+            : featured.map((p, i) => <ProductCard key={p.product_id} product={p} index={i} />)}
         </div>
       </section>
 
