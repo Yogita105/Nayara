@@ -210,6 +210,7 @@ production-ready ecommerce application.
       admin access.
 - [x] Use separate databases for tests and live data.
 - [x] Refuse to run the suite against the live database.
+- [x] Keep local development off the production database.
 - [ ] Add dependency vulnerability and secret scanning.
 - [ ] Enforce linting, formatting, type checks, and tests in CI.
 

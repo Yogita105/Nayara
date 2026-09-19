@@ -206,6 +206,26 @@ it empty keeps the problem visible.
 Seeding is a development convenience, not a migration system. The real catalogue
 belongs in the admin screens.
 
+## Databases
+
+Three separate databases on the same cluster keep the shop, local work, and the test
+suite from interfering:
+
+| Purpose | Name | Set by |
+| --- | --- | --- |
+| Local development | `Nayara_dev` | `DB_NAME` in `backend/.env` |
+| Tests | `Nayara_test` | `scripts/run_tests.py`, or `TEST_DB_NAME` |
+| Production | `Nayara` | `DB_NAME` in the host's environment |
+
+A database is only ever chosen by `DB_NAME`. Environment variables take precedence over
+`.env`, which is how the test runner redirects both the API and the tests without
+editing any file, and how a hosting platform supplies production settings where no
+`.env` exists.
+
+Local development deliberately does not use the production database. Once the shop is
+live, its orders hold real names, phone numbers and addresses, and routine development
+should never reach them.
+
 ## Running the tests
 
 The suite creates and deletes accounts, orders and stock, so it must not run against
@@ -223,11 +243,12 @@ Arguments are passed through to pytest:
 python scripts\run_tests.py tests\test_inventory.py -k stock
 ```
 
-The database name defaults to the live name with `_test` appended, for example
-`Nayara_test`. Override it with `TEST_DB_NAME`.
+The database name defaults to the local name with any `_dev` suffix replaced by
+`_test`, for example `Nayara_dev` becomes `Nayara_test`. Override it with
+`TEST_DB_NAME`.
 
 Running `pytest` directly fails with an explanatory error when it would otherwise use
-the live database, so the mistake cannot be made by accident.
+the database this project is configured for, so the mistake cannot be made by accident.
 
 Legacy OAuth accounts do not have passwords. Set one without exposing it in shell
 history by running:

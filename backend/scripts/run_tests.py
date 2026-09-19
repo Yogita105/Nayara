@@ -31,11 +31,14 @@ def resolve_test_database() -> str:
     live_name = (dotenv_values(BACKEND_DIR / ".env").get("DB_NAME") or "").strip()
     test_name = (os.environ.get("TEST_DB_NAME") or "").strip()
     if not test_name:
-        test_name = f"{live_name}_test" if live_name else "nayara_test"
+        # A local database is usually named <project>_dev; tests belong beside
+        # it as <project>_test rather than <project>_dev_test.
+        base = live_name[:-4] if live_name.endswith("_dev") else live_name
+        test_name = f"{base}_test" if base else "nayara_test"
     if live_name and test_name == live_name:
         raise SystemExit(
-            f"TEST_DB_NAME is '{test_name}', which is the live database. "
-            "Choose a different name."
+            f"TEST_DB_NAME is '{test_name}', which is the database this project "
+            "is configured to use. Choose a different name."
         )
     return test_name
 

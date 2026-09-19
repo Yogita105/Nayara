@@ -30,9 +30,9 @@ DB_NAME = (
 
 if LIVE_DB_NAME and DB_NAME == LIVE_DB_NAME:
     raise RuntimeError(
-        f"Refusing to run tests against '{DB_NAME}', which .env names as the "
-        "live database. Run 'python scripts/run_tests.py', or set TEST_DB_NAME "
-        "to a separate database."
+        f"Refusing to run tests against '{DB_NAME}', the database this project "
+        "is configured to use. Run 'python scripts/run_tests.py', or set "
+        "TEST_DB_NAME to a separate database."
     )
 
 
