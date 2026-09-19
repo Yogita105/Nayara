@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { formatINR } from "../lib/api";
+import ProductImage from "./ProductImage";
 
 export default function ProductCard({ product, index = 0 }) {
   const { addToCart, toggleWishlist, isInWishlist } = useCart();
@@ -17,7 +18,7 @@ export default function ProductCard({ product, index = 0 }) {
     >
       <div className="relative aspect-square bg-[#F1F5F9] overflow-hidden">
         <Link to={`/product/${product.product_id}`} data-testid={`product-link-${product.product_id}`}>
-          <img
+          <ProductImage
             src={product.image}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

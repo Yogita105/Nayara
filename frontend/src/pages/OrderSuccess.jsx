@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { CheckCircle2, Package } from "lucide-react";
 import { api, formatINR } from "../lib/api";
+import ProductImage from "../components/ProductImage";
 import { useCart } from "../context/CartContext";
 
 export default function OrderSuccess() {
@@ -33,7 +34,7 @@ export default function OrderSuccess() {
         <div className="space-y-3">
           {order.items.map((it) => (
             <div key={it.product_id} className="flex items-center gap-4 text-sm">
-              <img src={it.image} alt="" className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
+              <ProductImage src={it.image} alt={it.name} className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
               <div className="flex-1">
                 <div className="font-medium">{it.name}</div>
                 <div className="text-sm text-[#64748B]">Qty: {it.quantity} · {formatINR(it.price)}</div>

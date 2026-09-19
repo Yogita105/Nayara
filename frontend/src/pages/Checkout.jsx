@@ -6,6 +6,7 @@ import { formatINR, api } from "../lib/api";
 import { Input } from "../components/ui/input";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Label } from "../components/ui/label";
+import ProductImage from "../components/ProductImage";
 import { Smartphone, Package, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -122,7 +123,7 @@ export default function Checkout() {
           <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
             {cart.map((c) => (
               <div key={c.product_id} className="flex items-center gap-3 text-sm">
-                <img src={c.image} alt="" className="w-12 h-12 rounded-lg object-cover bg-[#F1F5F9]" />
+                <ProductImage src={c.image} alt={c.name} className="w-12 h-12 rounded-lg object-cover bg-[#F1F5F9]" />
                 <div className="flex-1 min-w-0">
                   <div className="truncate">{c.name}</div>
                   <div className="text-xs text-[#64748B]">× {c.quantity}</div>

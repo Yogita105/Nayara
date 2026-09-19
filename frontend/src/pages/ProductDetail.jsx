@@ -7,6 +7,7 @@ import { Heart, ShoppingCart, Star, ShieldCheck, Truck, Leaf, Minus, Plus } from
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Input } from "../components/ui/input";
+import ProductImage from "../components/ProductImage";
 import { toast } from "sonner";
 
 export default function ProductDetail() {
@@ -50,7 +51,7 @@ export default function ProductDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="rounded-3xl overflow-hidden bg-[#F1F5F9] aspect-square">
-          <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+          <ProductImage src={product.image} alt={product.name} className="w-full h-full object-cover" />
         </div>
         <div>
           <div className="flex flex-wrap gap-2 mb-3">

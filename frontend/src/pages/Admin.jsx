@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
+import ProductImage from "../components/ProductImage";
 import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 
@@ -106,7 +107,7 @@ function ProductsAdmin() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {products.map((p) => (
           <div key={p.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4" data-testid={`admin-product-${p.product_id}`}>
-            <img src={p.image} alt="" className="w-20 h-20 rounded-lg object-cover bg-[#F1F5F9]" />
+            <ProductImage src={p.image} alt={p.name} className="w-20 h-20 rounded-lg object-cover bg-[#F1F5F9]" />
             <div className="flex-1 min-w-0">
               <h3 className="font-heading font-medium text-sm truncate">{p.name}</h3>
               <div className="text-xs text-[#64748B] mt-1">Stock: {p.stock} · {p.category}</div>
@@ -184,7 +185,7 @@ function ProductEditor({ initial, onClose }) {
 
           <div className="flex gap-4 items-start">
             <div className="w-32 h-32 rounded-xl overflow-hidden bg-[#F1F5F9] flex items-center justify-center">
-              {form.image ? <img src={form.image} alt="" className="w-full h-full object-cover" /> : <span className="text-xs text-[#64748B]">No image</span>}
+              {form.image ? <ProductImage src={form.image} alt="Product preview" className="w-full h-full object-cover" /> : <span className="text-xs text-[#64748B]">No image</span>}
             </div>
             <div className="flex-1">
               <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B]">Product image</label>

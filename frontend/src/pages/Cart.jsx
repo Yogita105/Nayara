@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { formatINR } from "../lib/api";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import ProductImage from "../components/ProductImage";
 
 export default function Cart() {
   const { cart, updateQuantity, removeFromCart, cartTotal, cartCount } = useCart();
@@ -29,7 +30,7 @@ export default function Cart() {
         <div className="space-y-4">
           {cart.map((item) => (
             <div key={item.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4 items-center" data-testid={`cart-item-${item.product_id}`}>
-              <img src={item.image} alt={item.name} className="w-24 h-24 rounded-xl object-cover bg-[#F1F5F9]" />
+              <ProductImage src={item.image} alt={item.name} className="w-24 h-24 rounded-xl object-cover bg-[#F1F5F9]" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-heading font-medium">{item.name}</h3>
                 <p className="text-sm text-[#64748B] mt-1">{formatINR(item.price)}</p>

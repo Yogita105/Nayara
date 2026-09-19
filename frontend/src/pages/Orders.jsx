@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { api, formatINR } from "../lib/api";
 import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
+import ProductImage from "../components/ProductImage";
 
 const STATUS_COLORS = {
   placed: "bg-blue-100 text-blue-700",
@@ -40,7 +41,7 @@ export default function Orders() {
               </div>
               <div className="flex flex-wrap gap-3 mb-4">
                 {o.items.slice(0, 5).map((it) => (
-                  <img key={it.product_id} src={it.image} alt="" className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
+                  <ProductImage key={it.product_id} src={it.image} alt={it.name} className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
                 ))}
                 {o.items.length > 5 && <div className="w-14 h-14 rounded-lg bg-[#F1F5F9] flex items-center justify-center text-xs">+{o.items.length - 5}</div>}
               </div>
