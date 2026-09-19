@@ -208,7 +208,8 @@ production-ready ecommerce application.
 - [ ] Add frontend component tests.
 - [ ] Add complete browser tests for registration, cart, checkout, orders, and
       admin access.
-- [ ] Use separate databases for tests and live data.
+- [x] Use separate databases for tests and live data.
+- [x] Refuse to run the suite against the live database.
 - [ ] Add dependency vulnerability and secret scanning.
 - [ ] Enforce linting, formatting, type checks, and tests in CI.
 

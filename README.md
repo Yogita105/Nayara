@@ -206,6 +206,29 @@ it empty keeps the problem visible.
 Seeding is a development convenience, not a migration system. The real catalogue
 belongs in the admin screens.
 
+## Running the tests
+
+The suite creates and deletes accounts, orders and stock, so it must not run against
+the database the shop is serving from. Use the runner, which starts its own API on port
+8001 pointed at a separate database:
+
+```powershell
+cd backend
+python scripts\run_tests.py
+```
+
+Arguments are passed through to pytest:
+
+```powershell
+python scripts\run_tests.py tests\test_inventory.py -k stock
+```
+
+The database name defaults to the live name with `_test` appended, for example
+`Nayara_test`. Override it with `TEST_DB_NAME`.
+
+Running `pytest` directly fails with an explanatory error when it would otherwise use
+the live database, so the mistake cannot be made by accident.
+
 Legacy OAuth accounts do not have passwords. Set one without exposing it in shell
 history by running:
 

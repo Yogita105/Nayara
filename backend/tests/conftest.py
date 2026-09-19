@@ -2,20 +2,38 @@ import hashlib
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 import requests
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 from pymongo import MongoClient
 
 
-load_dotenv()
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(BACKEND_DIR / ".env")
+
 BASE_URL = os.environ.get(
     "REACT_APP_BACKEND_URL",
-    "https://nayara-marketplace.preview.emergentagent.com",
+    "http://127.0.0.1:8001",
 ).rstrip("/")
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
-DB_NAME = os.environ.get("DB_NAME", "test_database")
+
+# The suite creates and deletes accounts, orders and stock, so it must never
+# be pointed at the database the shop is serving from.
+LIVE_DB_NAME = (dotenv_values(BACKEND_DIR / ".env").get("DB_NAME") or "").strip()
+DB_NAME = (
+    os.environ.get("TEST_DB_NAME")
+    or os.environ.get("DB_NAME")
+    or "nayara_test"
+).strip()
+
+if LIVE_DB_NAME and DB_NAME == LIVE_DB_NAME:
+    raise RuntimeError(
+        f"Refusing to run tests against '{DB_NAME}', which .env names as the "
+        "live database. Run 'python scripts/run_tests.py', or set TEST_DB_NAME "
+        "to a separate database."
+    )
 
 
 @pytest.fixture(scope="session")
