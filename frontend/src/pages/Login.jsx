@@ -130,7 +130,7 @@ export default function Login() {
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email (optional)</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   name="email"
@@ -142,7 +142,7 @@ export default function Login() {
                   data-testid="auth-email-optional-input"
                 />
                 <p className="text-xs text-[#64748B]">
-                  Add one if you would like receipts by email.
+                  You can skip this, or add one for receipts by email.
                 </p>
               </div>
             </>
