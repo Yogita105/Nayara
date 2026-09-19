@@ -23,6 +23,9 @@ email. Configure these backend environment variables:
 - `TRUST_PROXY_HEADERS`: defaults to `false`. Enable it only when the API sits behind a
   proxy you control that overwrites `X-Forwarded-For`, otherwise callers can spoof
   their address and bypass rate limits.
+- `LOG_LEVEL`: one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`. Defaults to
+  `INFO`.
+- `LOG_JSON`: defaults to `true` in production and staging, `false` elsewhere.
 
 For example:
 
@@ -146,6 +149,40 @@ second one, and a request arriving while the first is still running is rejected 
 released, so a shopper can correct the problem and submit again. The checkout page
 generates one key per visit.
 
+## Logging and health
+
+Each request is tagged with an id, returned as `X-Request-ID`. A caller may supply its
+own id to trace a request across services; otherwise one is generated. Every log line
+written while handling that request carries the same id, so one customer report can be
+followed through the service.
+
+Requests are logged with their method, path, status and duration. Query strings,
+headers and bodies are deliberately excluded because they carry passwords and session
+tokens. Failed requests and anything slower than a second are raised to `WARNING`, and
+server errors to `ERROR`, so a log search for warnings surfaces real problems such as
+repeated failed sign-ins.
+
+```json
+{"time": "2026-09-19T14:57:23+00:00", "level": "WARNING", "logger": "nayara.request",
+ "message": "Request completed", "request_id": "5cc73e15...", "method": "POST",
+ "path": "/api/auth/login", "status": 401, "duration_ms": 287.38}
+```
+
+Production and staging emit JSON for a log aggregator; other environments print a
+readable line. The plain uvicorn access log is switched off because these entries
+replace it.
+
+Two probes are available, both unauthenticated and under `/api` so any proxy already
+routing the API can reach them:
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/health` | Liveness. Confirms the process is answering. |
+| `GET /api/health/ready` | Readiness. Returns `503` when MongoDB is unreachable. |
+
+Point a load balancer at readiness so an instance that loses its database is taken out
+of rotation rather than serving failures.
+
 Legacy OAuth accounts do not have passwords. Set one without exposing it in shell
 history by running:
 
@@ -164,6 +201,7 @@ The Uvicorn entry point remains `backend/server.py`. Application code lives in t
 - `models.py`: Pydantic request and domain models
 - `security.py`: password hashing, session cookies, CSRF tokens, and authorization dependencies
 - `middleware.py`: CSRF enforcement for cookie-authenticated writes
+- `observability.py`: structured logging and request correlation
 - `rate_limit.py`: sign-in and registration throttling
 - `utils.py`: shared serialization and normalization helpers
 - `seed.py`: initial product data
@@ -175,6 +213,7 @@ The Uvicorn entry point remains `backend/server.py`. Application code lives in t
 - `routers/shopping.py`: cart and wishlist
 - `routers/orders.py`: customer order operations
 - `routers/admin.py`: inquiries, administration, and file uploads
+- `routers/health.py`: liveness and readiness probes
 - `main.py`: FastAPI composition, middleware, and lifecycle hooks
 
 Run the API from the repository root with:

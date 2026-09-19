@@ -15,6 +15,7 @@ LOCAL_CORS_ORIGINS = (
     "http://127.0.0.1:3000",
 )
 VALID_ENVIRONMENTS = {"development", "test", "staging", "production"}
+VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
 DEVELOPMENT_SECRET_KEY = "insecure-development-secret-key"
 MINIMUM_SECRET_KEY_LENGTH = 32
 
@@ -31,6 +32,8 @@ class Settings:
     cors_origins: Tuple[str, ...]
     rate_limit_enabled: bool
     trust_proxy_headers: bool
+    log_level: str
+    log_json: bool
     session_days: int
     cloudinary_cloud_name: str
     cloudinary_api_key: str
@@ -92,6 +95,19 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
             )
     secret_key = secret_key or DEVELOPMENT_SECRET_KEY
 
+    log_level = values.get("LOG_LEVEL", "INFO").strip().upper()
+    if log_level not in VALID_LOG_LEVELS:
+        allowed = ", ".join(sorted(VALID_LOG_LEVELS))
+        raise RuntimeError(f"LOG_LEVEL must be one of: {allowed}")
+
+    # Machine-readable logs suit a log aggregator; plain text suits a terminal.
+    log_json_value = values.get("LOG_JSON")
+    log_json = (
+        runtime_environment in {"production", "staging"}
+        if log_json_value is None
+        else parse_boolean(log_json_value, "LOG_JSON")
+    )
+
     return Settings(
         environment=runtime_environment,
         mongo_url=mongo_url,
@@ -113,6 +129,8 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
             values.get("TRUST_PROXY_HEADERS", "false"),
             "TRUST_PROXY_HEADERS",
         ),
+        log_level=log_level,
+        log_json=log_json,
         session_days=7,
         cloudinary_cloud_name=values.get("CLOUDINARY_CLOUD_NAME", ""),
         cloudinary_api_key=values.get("CLOUDINARY_API_KEY", ""),
@@ -124,6 +142,7 @@ settings = load_settings()
 
 MONGO_URL = settings.mongo_url
 DB_NAME = settings.db_name
+ENVIRONMENT = settings.environment
 SECRET_KEY = settings.secret_key
 ADMIN_EMAILS = settings.admin_emails
 COOKIE_SECURE = settings.cookie_secure
@@ -131,6 +150,8 @@ COOKIE_SAMESITE = settings.cookie_samesite
 CORS_ORIGINS = settings.cors_origins
 RATE_LIMIT_ENABLED = settings.rate_limit_enabled
 TRUST_PROXY_HEADERS = settings.trust_proxy_headers
+LOG_LEVEL = settings.log_level
+LOG_JSON = settings.log_json
 SESSION_DAYS = settings.session_days
 
 cloudinary.config(

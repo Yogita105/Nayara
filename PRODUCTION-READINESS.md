@@ -162,15 +162,15 @@ production-ready ecommerce application.
 
 ## 11. Observability and operations
 
-- [ ] Add structured JSON logging.
-- [ ] Add request and correlation IDs.
+- [x] Add structured JSON logging.
+- [x] Add request and correlation IDs.
 - [ ] Add centralized exception reporting.
-- [ ] Add API request latency and error metrics.
-- [ ] Add database health and latency metrics.
-- [ ] Monitor authentication failures and rate-limit events.
-- [ ] Add liveness and readiness endpoints.
+- [x] Log API request latency and outcomes.
+- [ ] Export API and database metrics to a monitoring system.
+- [x] Monitor authentication failures and rate-limit events.
+- [x] Add liveness and readiness endpoints.
 - [ ] Configure alerts for elevated errors and failed payments.
-- [ ] Ensure logs never contain passwords, API keys, raw session tokens, or
+- [x] Ensure logs never contain passwords, API keys, raw session tokens, or
       unnecessary personal data.
 
 ## 12. Frontend production readiness

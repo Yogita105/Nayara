@@ -3,22 +3,22 @@ import logging
 from fastapi import APIRouter, FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from .config import CORS_ORIGINS
+from .config import CORS_ORIGINS, ENVIRONMENT, LOG_JSON, LOG_LEVEL
 from .database import close_database, create_indexes
-from .middleware import csrf_protection
+from .middleware import csrf_protection, request_context
+from .observability import REQUEST_ID_HEADER, configure_logging
 from .pagination import TOTAL_COUNT_HEADER
-from .routers import admin, auth, catalog, orders, shopping
+from .routers import admin, auth, catalog, health, orders, shopping
 from .seed import seed_products
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+configure_logging(LOG_LEVEL, LOG_JSON)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Nayara API")
 
 for router in (
+    health.router,
     auth.router,
     catalog.router,
     shopping.router,
@@ -37,25 +37,29 @@ async def root():
 
 app.include_router(root_router)
 
-# CSRF is registered first so the CORS middleware stays outermost and can
-# attach its headers to rejected cross-site requests.
+# Middleware runs outermost-last, so CORS is added after the others and can
+# attach its headers even to responses they generate.
 app.middleware("http")(csrf_protection)
+app.middleware("http")(request_context)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=list(CORS_ORIGINS),
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=[TOTAL_COUNT_HEADER],
+    expose_headers=[TOTAL_COUNT_HEADER, REQUEST_ID_HEADER],
 )
 
 
 @app.on_event("startup")
 async def on_startup():
+    logger.info("Starting API", extra={"environment": ENVIRONMENT})
     await create_indexes()
     await seed_products()
+    logger.info("API ready")
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
+    logger.info("Shutting down API")
     close_database()
