@@ -38,7 +38,7 @@ class TestIndexDefinitions:
             for collection, _, options in INDEXES
             if "expireAfterSeconds" in options
         }
-        assert ttl == {"user_sessions", "rate_limits"}
+        assert ttl == {"user_sessions", "rate_limits", "order_claims"}
 
     def test_session_and_account_keys_stay_unique(self):
         unique = {

@@ -35,6 +35,7 @@ INDEXES = (
     ("orders", [("user_id", ASCENDING), ("created_at", DESCENDING)], {}),
     ("orders", [("created_at", DESCENDING)], {}),
     ("orders", [("payment_status", ASCENDING)], {}),
+    ("order_claims", [("expires_at", ASCENDING)], {"expireAfterSeconds": 0}),
     ("reviews", [("review_id", ASCENDING)], {"unique": True}),
     ("reviews", [("product_id", ASCENDING), ("created_at", ASCENDING)], {}),
     ("contacts", [("contact_id", ASCENDING)], {"unique": True}),

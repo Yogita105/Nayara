@@ -15,6 +15,10 @@ export default function Checkout() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [payment, setPayment] = useState("upi");
+  // Kept for the whole visit so a retried submission cannot create a second order.
+  const [idempotencyKey] = useState(() =>
+    (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`)
+  );
   const [address, setAddress] = useState({
     full_name: user?.name || "",
     phone: "",
@@ -37,7 +41,7 @@ export default function Checkout() {
         items: cart.map((c) => ({ product_id: c.product_id, quantity: c.quantity })),
         address,
         payment_method: payment,
-      });
+      }, { headers: { "Idempotency-Key": idempotencyKey } });
 
       await clearCart();
       toast.success("Order placed successfully!");

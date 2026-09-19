@@ -32,13 +32,40 @@ def mongo_db():
 TEST_EMAIL_PATTERN = r"^(auth-test-|lockout-|test\.test-user-)"
 
 
+def _return_reserved_stock(mongo_db, owner):
+    """Give back the stock held by orders that are about to be deleted.
+
+    Placing an order decrements product stock, so deleting test orders without
+    this would slowly drain the real catalogue on every run.
+    """
+    for order in mongo_db.orders.find(owner, {"items": 1, "stock_released": 1}):
+        if order.get("stock_released"):
+            continue
+        for item in order.get("items", []):
+            mongo_db.products.update_one(
+                {"product_id": item["product_id"]},
+                {"$inc": {"stock": item["quantity"]}},
+            )
+
+
+def _remove_user_data(mongo_db, user_ids):
+    owner = {"user_id": {"$in": list(user_ids)}}
+    _return_reserved_stock(mongo_db, owner)
+    mongo_db.users.delete_many(owner)
+    mongo_db.user_sessions.delete_many(owner)
+    mongo_db.carts.delete_many(owner)
+    mongo_db.wishlists.delete_many(owner)
+    mongo_db.orders.delete_many(owner)
+
+
 def _purge_test_artifacts(mongo_db):
     """Remove records created by the suite.
 
-    Individual tests clean up after themselves, but a run that is interrupted
-    can still leave accounts behind, so this runs as a safety net.
+    Individual fixtures clean up after themselves, but an interrupted run can
+    still leave accounts behind, so this runs as a safety net.
     """
     mongo_db.rate_limits.delete_many({})
+    mongo_db.order_claims.delete_many({})
     mongo_db.contacts.delete_many({"name": "TEST_ctc", "email": "t@e.com"})
 
     leftovers = [
@@ -48,12 +75,7 @@ def _purge_test_artifacts(mongo_db):
         )
     ]
     if leftovers:
-        owner = {"user_id": {"$in": leftovers}}
-        mongo_db.users.delete_many(owner)
-        mongo_db.user_sessions.delete_many(owner)
-        mongo_db.carts.delete_many(owner)
-        mongo_db.wishlists.delete_many(owner)
-        mongo_db.orders.delete_many(owner)
+        _remove_user_data(mongo_db, leftovers)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -89,23 +111,14 @@ def _mk_session(mongo_db, is_admin=False):
 def user_session(mongo_db):
     user_id, token, email = _mk_session(mongo_db, False)
     yield {"user_id": user_id, "token": token, "email": email}
-    mongo_db.users.delete_one({"user_id": user_id})
-    mongo_db.user_sessions.delete_one({
-        "session_token_hash": hashlib.sha256(token.encode("utf-8")).hexdigest()
-    })
-    mongo_db.carts.delete_one({"user_id": user_id})
-    mongo_db.wishlists.delete_one({"user_id": user_id})
-    mongo_db.orders.delete_many({"user_id": user_id})
+    _remove_user_data(mongo_db, [user_id])
 
 
 @pytest.fixture(scope="session")
 def admin_session(mongo_db):
     user_id, token, email = _mk_session(mongo_db, True)
     yield {"user_id": user_id, "token": token, "email": email}
-    mongo_db.users.delete_one({"user_id": user_id})
-    mongo_db.user_sessions.delete_one({
-        "session_token_hash": hashlib.sha256(token.encode("utf-8")).hexdigest()
-    })
+    _remove_user_data(mongo_db, [user_id])
 
 
 @pytest.fixture

@@ -128,14 +128,15 @@ production-ready ecommerce application.
 
 ## 8. Orders and inventory
 
-- [ ] Validate stock before accepting an order.
-- [ ] Atomically decrement inventory when an order is placed.
-- [ ] Prevent duplicate order submissions with idempotency keys.
+- [x] Validate stock before accepting an order.
+- [x] Atomically decrement inventory when an order is placed.
+- [x] Prevent duplicate order submissions with idempotency keys.
 - [ ] Validate allowed order-status transitions.
-- [ ] Restore inventory when qualifying orders are cancelled.
+- [x] Restore inventory when qualifying orders are cancelled.
 - [ ] Define behavior for partially available orders.
+- [ ] Release stock held by card orders that are never paid.
 - [ ] Add server-side price and discount validation.
-- [ ] Add tests for concurrent orders against limited stock.
+- [x] Add tests for concurrent orders against limited stock.
 
 ## 9. Payments
 

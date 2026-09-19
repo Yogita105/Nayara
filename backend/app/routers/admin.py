@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 from fastapi.responses import RedirectResponse
 
 from ..database import db
+from ..inventory import release_stock
 from ..models import (
     BulkInquiryRequest,
     BulkInquiryUpdate,
@@ -136,15 +137,44 @@ async def admin_update_order(
     payload: OrderUpdate,
     _: dict = Depends(require_admin),
 ):
-    updates = payload.model_dump(exclude_none=True)
-    result = await db.orders.update_one(
-        {"order_id": order_id},
-        {"$set": updates},
-    )
-    if result.matched_count == 0:
+    order = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
+    if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+
+    if payload.status == "cancelled":
+        await cancel_order(order, payload)
+    else:
+        await db.orders.update_one(
+            {"order_id": order_id},
+            {"$set": payload.model_dump(exclude_none=True)},
+        )
+
     doc = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
     return serialize_doc(doc)
+
+
+async def cancel_order(order: dict, payload: OrderUpdate) -> None:
+    """Cancel an order and return its stock exactly once.
+
+    The guard makes the write succeed only for the first cancellation, so
+    repeated requests cannot inflate the catalogue.
+    """
+    updates = payload.model_dump(exclude_none=True)
+    result = await db.orders.update_one(
+        {
+            "order_id": order["order_id"],
+            "status": {"$ne": "cancelled"},
+            "stock_released": {"$ne": True},
+        },
+        {"$set": {**updates, "stock_released": True}},
+    )
+    if result.modified_count == 0:
+        return
+
+    await release_stock([
+        {"product_id": item["product_id"], "quantity": item["quantity"]}
+        for item in order.get("items", [])
+    ])
 
 
 @router.get("/admin/users")

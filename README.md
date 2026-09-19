@@ -113,6 +113,39 @@ A failure is logged rather than blocking startup, because a unique index cannot 
 built over pre-existing duplicates and the API should still serve traffic while that
 is corrected.
 
+## Orders and stock
+
+Placing an order reserves stock. Each product is adjusted with a single conditional
+update, so two shoppers competing for the last unit cannot both succeed:
+
+```javascript
+// Matches only while enough stock remains, then decrements in the same step.
+{ product_id, stock: { $gte: quantity } } -> { $inc: { stock: -quantity } }
+```
+
+If a later line in the same order cannot be filled, the units already reserved are
+returned and the whole order is refused with `409`. Repeated lines for one product are
+combined first, so the check uses the real total. MongoDB transactions are not used
+because they require a replica set, which a local development database may not have.
+
+Cancelling an order returns its stock. The update matches only orders that are not yet
+cancelled, so repeating the request cannot inflate the catalogue.
+
+### Idempotent checkout
+
+Send an `Idempotency-Key` header when placing an order:
+
+```http
+POST /api/orders
+Idempotency-Key: 6f1c1f2e-...
+```
+
+Repeating a request with the same key returns the original order instead of creating a
+second one, and a request arriving while the first is still running is rejected with
+`409`. Keys are scoped per user and expire after 24 hours. After a failure the key is
+released, so a shopper can correct the problem and submit again. The checkout page
+generates one key per visit.
+
 Legacy OAuth accounts do not have passwords. Set one without exposing it in shell
 history by running:
 
@@ -135,6 +168,8 @@ The Uvicorn entry point remains `backend/server.py`. Application code lives in t
 - `utils.py`: shared serialization and normalization helpers
 - `seed.py`: initial product data
 - `pagination.py`: shared paging parameters for list endpoints
+- `inventory.py`: stock reservation and release
+- `idempotency.py`: duplicate-submission protection for checkout
 - `routers/auth.py`: registration, login, logout, and current-user routes
 - `routers/catalog.py`: products and reviews
 - `routers/shopping.py`: cart and wishlist
