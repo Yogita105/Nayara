@@ -155,7 +155,7 @@ function ProductEditor({ initial, onClose }) {
     try {
       const payload = {
         name: form.name,
-        slug: form.slug || form.name.toLowerCase().replace(/\s+/g, "-"),
+        slug: form.slug || form.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
         category: form.category,
         short_description: form.short_description,
         description: form.description,

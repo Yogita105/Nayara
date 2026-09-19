@@ -99,15 +99,15 @@ production-ready ecommerce application.
 
 - [x] Validate and normalize Indian mobile numbers.
 - [x] Enforce unique email addresses and mobile numbers.
-- [ ] Require positive product prices and stock values.
-- [ ] Apply minimum and maximum cart quantities.
-- [ ] Restrict review ratings to values from 1 through 5.
-- [ ] Validate Indian pincodes and delivery phone numbers.
-- [ ] Restrict payment methods to explicit supported values.
-- [ ] Restrict order statuses and validate allowed transitions.
-- [ ] Apply maximum lengths to contact and inquiry messages.
-- [ ] Validate product slug format.
-- [ ] Replace unrestricted admin update dictionaries with explicit Pydantic
+- [x] Require positive product prices and stock values.
+- [x] Apply minimum and maximum cart quantities.
+- [x] Restrict review ratings to values from 1 through 5.
+- [x] Validate Indian pincodes and delivery phone numbers.
+- [x] Restrict payment methods to explicit supported values.
+- [x] Restrict order and inquiry statuses to explicit supported values.
+- [x] Apply maximum lengths to contact and inquiry messages.
+- [x] Validate product slug format.
+- [x] Replace unrestricted admin update dictionaries with explicit Pydantic
       request models.
 - [ ] Standardize API error response shapes.
 
@@ -189,7 +189,7 @@ production-ready ecommerce application.
 - [ ] Implement or remove the test for the missing payment endpoint.
 - [ ] Add unit tests for security and normalization helpers.
 - [ ] Add authorization tests for every admin endpoint.
-- [ ] Add invalid-input and boundary tests.
+- [x] Add invalid-input and boundary tests.
 - [ ] Add concurrent registration and order tests.
 - [ ] Add session-expiration tests.
 - [ ] Add frontend component tests.

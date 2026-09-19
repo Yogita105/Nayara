@@ -1,8 +1,71 @@
 import uuid
 from datetime import datetime, timezone
+from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
+
+from .utils import normalize_indian_mobile
+
+
+MAX_CART_QUANTITY = 50
+MAX_ORDER_ITEMS = 50
+SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+PINCODE_PATTERN = r"^[1-9][0-9]{5}$"
+BUSINESS_PHONE_PATTERN = r"^\+?[0-9][0-9\s-]{7,19}$"
+
+
+class ContentModel(BaseModel):
+    """Base for models holding user-supplied content.
+
+    Surrounding whitespace is removed so length rules cannot be satisfied with
+    blank characters. Credential models deliberately do not inherit this,
+    because trimming a password would change what the user typed.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True, use_enum_values=True)
+
+
+class ProductCategory(str, Enum):
+    LAUNDRY = "laundry"
+    PERSONAL_CARE = "personal-care"
+    HOME_CARE = "home-care"
+
+
+class PaymentMethod(str, Enum):
+    CARD = "card"
+    UPI = "upi"
+    COD = "cod"
+
+
+class PaymentStatus(str, Enum):
+    PENDING = "pending"
+    PAID = "paid"
+    FAILED = "failed"
+    COD_PENDING = "cod_pending"
+
+
+class OrderStatus(str, Enum):
+    PLACED = "placed"
+    PROCESSING = "processing"
+    SHIPPED = "shipped"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+
+class BulkInquiryStatus(str, Enum):
+    NEW = "new"
+    CONTACTED = "contacted"
+    QUOTED = "quoted"
+    WON = "won"
+    LOST = "lost"
 
 
 class User(BaseModel):
@@ -27,129 +90,141 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
-class Product(BaseModel):
-    product_id: str = Field(default_factory=lambda: f"prod_{uuid.uuid4().hex[:10]}")
-    name: str
-    slug: str
-    category: str
-    description: str
-    short_description: str
-    price: float
-    mrp: float
-    image: str
-    images: List[str] = Field(default_factory=list)
-    stock: int = 100
-    rating: float = 4.5
-    reviews_count: int = 0
-    badges: List[str] = Field(default_factory=list)
+class ProductCreate(ContentModel):
+    name: str = Field(min_length=2, max_length=200)
+    slug: str = Field(min_length=2, max_length=200, pattern=SLUG_PATTERN)
+    category: ProductCategory
+    description: str = Field(default="", max_length=5000)
+    short_description: str = Field(default="", max_length=500)
+    price: float = Field(gt=0, le=10_000_000)
+    mrp: float = Field(gt=0, le=10_000_000)
+    image: str = Field(default="", max_length=2000)
+    images: List[str] = Field(default_factory=list, max_length=10)
+    stock: int = Field(default=100, ge=0, le=1_000_000)
+    badges: List[str] = Field(default_factory=list, max_length=10)
     featured: bool = False
+
+    @model_validator(mode="after")
+    def check_mrp_covers_price(self) -> "ProductCreate":
+        if self.mrp < self.price:
+            raise ValueError("MRP must be greater than or equal to the price")
+        return self
+
+
+class Product(ProductCreate):
+    product_id: str = Field(default_factory=lambda: f"prod_{uuid.uuid4().hex[:10]}")
+    rating: float = Field(default=4.5, ge=0, le=5)
+    reviews_count: int = Field(default=0, ge=0)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class ProductCreate(BaseModel):
-    name: str
-    slug: str
-    category: str
-    description: str
-    short_description: str
-    price: float
-    mrp: float
-    image: str
-    images: List[str] = Field(default_factory=list)
-    stock: int = 100
-    badges: List[str] = Field(default_factory=list)
-    featured: bool = False
+class CartItem(ContentModel):
+    product_id: str = Field(min_length=1, max_length=100)
+    quantity: int = Field(ge=1, le=MAX_CART_QUANTITY)
 
 
-class CartItem(BaseModel):
-    product_id: str
-    quantity: int
+class AddToCartRequest(ContentModel):
+    product_id: str = Field(min_length=1, max_length=100)
+    quantity: int = Field(default=1, ge=1, le=MAX_CART_QUANTITY)
 
 
-class AddToCartRequest(BaseModel):
-    product_id: str
-    quantity: int = 1
+class UpdateCartRequest(ContentModel):
+    # Zero is allowed because it removes the line from the cart.
+    quantity: int = Field(ge=0, le=MAX_CART_QUANTITY)
 
 
-class UpdateCartRequest(BaseModel):
-    quantity: int
+class WishlistRequest(ContentModel):
+    product_id: str = Field(min_length=1, max_length=100)
 
 
-class WishlistRequest(BaseModel):
-    product_id: str
+class ReviewCreate(ContentModel):
+    rating: int = Field(ge=1, le=5)
+    title: str = Field(min_length=1, max_length=150)
+    comment: str = Field(min_length=1, max_length=2000)
 
 
-class ReviewCreate(BaseModel):
-    rating: int
-    title: str
-    comment: str
-
-
-class Review(BaseModel):
+class Review(ReviewCreate):
     review_id: str = Field(default_factory=lambda: f"rev_{uuid.uuid4().hex[:10]}")
     product_id: str
     user_id: str
     user_name: str
-    rating: int
-    title: str
-    comment: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class ContactRequest(BaseModel):
-    name: str
-    email: str
-    phone: Optional[str] = ""
-    subject: str
-    message: str
+class ContactRequest(ContentModel):
+    name: str = Field(min_length=2, max_length=100)
+    email: EmailStr
+    phone: Optional[str] = Field(default="", max_length=20)
+    subject: str = Field(min_length=1, max_length=150)
+    message: str = Field(min_length=1, max_length=2000)
 
 
-class BulkInquiryRequest(BaseModel):
-    name: str
-    business_name: str
-    phone: str
-    email: str
-    city: str
-    products_interested: List[str] = Field(default_factory=list)
-    quantity: str
-    message: Optional[str] = ""
+class BulkInquiryRequest(ContentModel):
+    name: str = Field(min_length=2, max_length=100)
+    business_name: str = Field(min_length=2, max_length=150)
+    phone: str = Field(min_length=8, max_length=20, pattern=BUSINESS_PHONE_PATTERN)
+    email: EmailStr
+    city: str = Field(min_length=2, max_length=100)
+    products_interested: List[str] = Field(default_factory=list, max_length=20)
+    quantity: str = Field(min_length=1, max_length=100)
+    message: Optional[str] = Field(default="", max_length=2000)
 
 
-class Address(BaseModel):
-    full_name: str
-    phone: str
-    line1: str
-    line2: Optional[str] = ""
-    city: str
-    state: str
-    pincode: str
+class BulkInquiryUpdate(ContentModel):
+    status: BulkInquiryStatus
 
 
-class OrderCreate(BaseModel):
-    items: List[CartItem]
+class OrderUpdate(ContentModel):
+    status: Optional[OrderStatus] = None
+    payment_status: Optional[PaymentStatus] = None
+
+    @model_validator(mode="after")
+    def require_one_field(self) -> "OrderUpdate":
+        if self.status is None and self.payment_status is None:
+            raise ValueError("Provide status or payment_status")
+        return self
+
+
+class Address(ContentModel):
+    full_name: str = Field(min_length=2, max_length=100)
+    phone: str = Field(min_length=10, max_length=20)
+    line1: str = Field(min_length=3, max_length=200)
+    line2: Optional[str] = Field(default="", max_length=200)
+    city: str = Field(min_length=2, max_length=100)
+    state: str = Field(min_length=2, max_length=100)
+    pincode: str = Field(pattern=PINCODE_PATTERN)
+
+    @field_validator("phone")
+    @classmethod
+    def check_delivery_phone(cls, value: str) -> str:
+        return normalize_indian_mobile(value)
+
+
+class OrderCreate(ContentModel):
+    items: List[CartItem] = Field(min_length=1, max_length=MAX_ORDER_ITEMS)
     address: Address
-    payment_method: str
-    origin_url: Optional[str] = ""
+    payment_method: PaymentMethod
+    origin_url: Optional[str] = Field(default="", max_length=2000)
 
 
-class OrderItemSnapshot(BaseModel):
+class OrderItemSnapshot(ContentModel):
     product_id: str
     name: str
     image: str
-    price: float
-    quantity: int
+    price: float = Field(ge=0)
+    quantity: int = Field(ge=1, le=MAX_CART_QUANTITY)
 
 
-class Order(BaseModel):
+class Order(ContentModel):
     order_id: str = Field(default_factory=lambda: f"ord_{uuid.uuid4().hex[:10]}")
     user_id: str
     user_email: str
-    items: List[OrderItemSnapshot]
-    subtotal: float
-    shipping: float
-    total: float
+    items: List[OrderItemSnapshot] = Field(min_length=1)
+    subtotal: float = Field(ge=0)
+    shipping: float = Field(ge=0)
+    total: float = Field(ge=0)
     address: Address
-    payment_method: str
-    payment_status: str = "pending"
-    status: str = "placed"
+    payment_method: PaymentMethod
+    payment_status: PaymentStatus = PaymentStatus.PENDING
+    status: OrderStatus = OrderStatus.PLACED
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

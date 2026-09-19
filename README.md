@@ -72,6 +72,25 @@ window, even if the correct password is supplied, so guessing cannot shortcut th
 lockout. A successful sign-in clears that account's failure counter. Expired windows
 are removed automatically by a MongoDB TTL index.
 
+## Request validation
+
+Request models in `backend/app/models.py` reject invalid data before it reaches
+MongoDB, returning HTTP `422` with the offending field. The main rules are:
+
+| Area | Rule |
+| --- | --- |
+| Products | Price and MRP must be positive, MRP cannot be below price, stock cannot be negative, category must be a known value, and the slug must be lowercase and hyphenated |
+| Cart | Quantities run from 1 to 50; a cart update may use 0 to remove a line |
+| Reviews | Ratings must be 1 to 5, with a non-empty title and comment |
+| Addresses | Pincodes must be six digits not starting with zero, and the delivery phone is validated and stored as `+91XXXXXXXXXX` |
+| Orders | At least one item, at most 50, and the payment method must be `card`, `upi` or `cod` |
+| Contact and bulk inquiries | Valid email addresses and capped message lengths |
+
+Administrator updates use explicit models rather than free-form dictionaries, so only
+known order and inquiry statuses are accepted and unrelated fields such as an order
+total can never be overwritten. Updating a missing record returns `404` instead of
+silently succeeding.
+
 Legacy OAuth accounts do not have passwords. Set one without exposing it in shell
 history by running:
 

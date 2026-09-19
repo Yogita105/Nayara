@@ -1,14 +1,18 @@
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict
 
 import cloudinary.uploader
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import RedirectResponse
 
 from ..database import db
-from ..models import BulkInquiryRequest, ContactRequest
+from ..models import (
+    BulkInquiryRequest,
+    BulkInquiryUpdate,
+    ContactRequest,
+    OrderUpdate,
+)
 from ..security import require_admin
 from ..utils import serialize_doc
 
@@ -49,18 +53,15 @@ async def admin_bulk_inquiries(_: dict = Depends(require_admin)):
 @router.put("/admin/bulk-inquiries/{inquiry_id}")
 async def admin_update_bulk_inquiry(
     inquiry_id: str,
-    payload: Dict[str, Any],
+    payload: BulkInquiryUpdate,
     _: dict = Depends(require_admin),
 ):
-    allowed = {
-        key: value
-        for key, value in payload.items()
-        if key in {"status"}
-    }
-    await db.bulk_inquiries.update_one(
+    result = await db.bulk_inquiries.update_one(
         {"inquiry_id": inquiry_id},
-        {"$set": allowed},
+        {"$set": {"status": payload.status}},
     )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Inquiry not found")
     doc = await db.bulk_inquiries.find_one(
         {"inquiry_id": inquiry_id},
         {"_id": 0},
@@ -102,18 +103,16 @@ async def admin_all_orders(_: dict = Depends(require_admin)):
 @router.put("/admin/orders/{order_id}")
 async def admin_update_order(
     order_id: str,
-    payload: Dict[str, Any],
+    payload: OrderUpdate,
     _: dict = Depends(require_admin),
 ):
-    allowed = {
-        key: value
-        for key, value in payload.items()
-        if key in {"status", "payment_status"}
-    }
-    await db.orders.update_one(
+    updates = payload.model_dump(exclude_none=True)
+    result = await db.orders.update_one(
         {"order_id": order_id},
-        {"$set": allowed},
+        {"$set": updates},
     )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
     doc = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
     return serialize_doc(doc)
 
