@@ -30,6 +30,9 @@ LOGIN_IP_RULE = RateLimitRule(limit=50, window_seconds=15 * 60)
 LOGIN_IDENTIFIER_RULE = RateLimitRule(limit=5, window_seconds=15 * 60)
 # New accounts allowed from one network address.
 REGISTER_IP_RULE = RateLimitRule(limit=10, window_seconds=60 * 60)
+# Password attempts allowed for one account, to slow down someone guessing the
+# current password from a session they should not have.
+PASSWORD_CHANGE_RULE = RateLimitRule(limit=5, window_seconds=15 * 60)
 
 UNKNOWN_CLIENT = "unknown"
 

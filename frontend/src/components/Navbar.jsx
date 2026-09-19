@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { ShoppingCart, Heart, Search, User, LogOut, Menu, X, Package, LayoutDashboard } from "lucide-react";
+import { ShoppingCart, Heart, Search, User, LogOut, Menu, X, Package, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
@@ -117,6 +117,9 @@ export default function Navbar() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/wishlist")}>
                   <Heart className="w-4 h-4 mr-2" /> Wishlist
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/account")} data-testid="nav-account-item">
+                  <ShieldCheck className="w-4 h-4 mr-2" /> Account
                 </DropdownMenuItem>
                 {user.is_admin && (
                   <DropdownMenuItem onClick={() => navigate("/admin")} data-testid="nav-admin-item">

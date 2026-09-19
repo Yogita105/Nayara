@@ -47,7 +47,7 @@ def mongo_db():
     return client[DB_NAME]
 
 
-TEST_EMAIL_PATTERN = r"^(auth-test-|lockout-|test\.test-user-)"
+TEST_EMAIL_PATTERN = r"^(auth-test-|lockout-|test\.test-user-|account-test-)"
 
 
 def _return_reserved_stock(mongo_db, owner):

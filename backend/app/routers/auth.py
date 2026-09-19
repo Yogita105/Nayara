@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -7,10 +8,11 @@ from pymongo.errors import DuplicateKeyError
 
 from ..config import ADMIN_EMAILS
 from ..database import db
-from ..models import LoginRequest, RegisterRequest
+from ..models import LoginRequest, PasswordChangeRequest, RegisterRequest
 from ..rate_limit import (
     LOGIN_IDENTIFIER_RULE,
     LOGIN_IP_RULE,
+    PASSWORD_CHANGE_RULE,
     REGISTER_IP_RULE,
     enforce_rate_limit,
     ensure_not_blocked,
@@ -21,6 +23,7 @@ from ..security import (
     SESSION_COOKIE_NAME,
     clear_session_cookies,
     create_user_session,
+    end_all_sessions,
     get_current_user,
     get_request_token,
     hash_password,
@@ -32,15 +35,20 @@ from ..utils import normalize_indian_mobile, public_user
 
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
 
 LOGIN_IP_SCOPE = "login-ip"
 LOGIN_IDENTIFIER_SCOPE = "login-identifier"
 REGISTER_IP_SCOPE = "register-ip"
+PASSWORD_CHANGE_SCOPE = "password-change"
 TOO_MANY_LOGINS = "Too many sign-in attempts. Please try again later."
 TOO_MANY_ACCOUNT_LOGINS = (
     "Too many failed sign-in attempts for this account. Please try again later."
 )
 TOO_MANY_REGISTRATIONS = "Too many accounts created recently. Please try again later."
+TOO_MANY_PASSWORD_CHANGES = (
+    "Too many password attempts. Please try again later."
+)
 
 
 @router.post("/register", status_code=201)
@@ -173,3 +181,65 @@ async def logout(
         )
     clear_session_cookies(response)
     return {"ok": True}
+
+
+@router.post("/password")
+async def change_password(
+    body: PasswordChangeRequest,
+    request: Request,
+    user: dict = Depends(get_current_user),
+    authorization: Optional[str] = Header(None),
+):
+    """Replace the password, then sign the account out of other devices."""
+    await enforce_rate_limit(
+        PASSWORD_CHANGE_SCOPE,
+        user["user_id"],
+        PASSWORD_CHANGE_RULE,
+        TOO_MANY_PASSWORD_CHANGES,
+    )
+
+    record = await db.users.find_one(
+        {"user_id": user["user_id"]},
+        {"_id": 0, "password_hash": 1},
+    )
+    current_hash = (record or {}).get("password_hash")
+    if not current_hash or not await verify_password(
+        body.current_password, current_hash
+    ):
+        raise HTTPException(status_code=403, detail="Current password is incorrect")
+
+    if await verify_password(body.new_password, current_hash):
+        raise HTTPException(
+            status_code=422,
+            detail="The new password must differ from the current one",
+        )
+
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"password_hash": await hash_password(body.new_password)}},
+    )
+
+    # Anyone signed in elsewhere with the old password loses access at once.
+    token = get_request_token(request, authorization)
+    ended = await end_all_sessions(user["user_id"], keep_token=token)
+    await reset_rate_limit(PASSWORD_CHANGE_SCOPE, user["user_id"])
+    logger.info(
+        "Password changed",
+        extra={"user_id": user["user_id"], "sessions_ended": ended},
+    )
+    return {"ok": True, "other_sessions_ended": ended}
+
+
+@router.post("/logout-all")
+async def logout_everywhere(
+    response: Response,
+    user: dict = Depends(get_current_user),
+):
+    """End every session for the account, including this one."""
+    ended = await end_all_sessions(user["user_id"])
+    clear_session_cookies(response)
+    logger.info(
+        "Signed out of all devices",
+        extra={"user_id": user["user_id"], "sessions_ended": ended},
+    )
+    return {"ok": True, "sessions_ended": ended}

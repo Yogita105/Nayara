@@ -122,6 +122,19 @@ async def create_user_session(user_id: str, response: Response) -> str:
     return derive_csrf_token(token)
 
 
+async def end_all_sessions(user_id: str, keep_token: Optional[str] = None) -> int:
+    """Sign an account out everywhere, optionally sparing the current caller.
+
+    Used when a password changes and when someone reports a lost device, so a
+    stolen session token stops working immediately rather than lasting a week.
+    """
+    query = {"user_id": user_id}
+    if keep_token:
+        query["session_token_hash"] = {"$ne": hash_session_token(keep_token)}
+    result = await db.user_sessions.delete_many(query)
+    return result.deleted_count
+
+
 async def get_current_user(
     request: Request,
     authorization: Optional[str] = Header(None),

@@ -18,6 +18,7 @@ import OrderSuccess from "./pages/OrderSuccess";
 import Orders from "./pages/Orders";
 import Wishlist from "./pages/Wishlist";
 import Login from "./pages/Login";
+import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -49,6 +50,10 @@ function AppRouter() {
         <Route
           path="/orders"
           element={<ProtectedRoute><Orders /></ProtectedRoute>}
+        />
+        <Route
+          path="/account"
+          element={<ProtectedRoute><Account /></ProtectedRoute>}
         />
         <Route
           path="/admin/*"

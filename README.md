@@ -59,6 +59,23 @@ session token, so it is bound to one session and cannot be forged by another sit
 Deploy the frontend and API on the same site (for example behind one domain with the
 API under `/api`) so the browser can read the `csrf_token` cookie.
 
+## Account security
+
+Two endpoints let someone recover control of an account without waiting for a session
+to expire:
+
+| Endpoint | Effect |
+| --- | --- |
+| `POST /api/auth/password` | Replaces the password after checking the current one, then ends every other session |
+| `POST /api/auth/logout-all` | Ends every session, including the caller's |
+
+A password change deliberately keeps the caller signed in while cutting off everywhere
+else, so someone who suspects their account is being used can lock it down without
+losing the device in front of them. Password attempts are throttled per account, which
+matters because the current password can otherwise be guessed through a stolen session.
+
+Both are reachable from the Account screen at `/account`.
+
 ## Rate limiting
 
 Sign-in and registration are throttled with fixed windows stored in MongoDB, so the
@@ -69,6 +86,7 @@ with a `Retry-After` header.
 | --- | --- | --- |
 | Sign-in attempts per address | 50 | 15 minutes |
 | Failed sign-in attempts per account | 5 | 15 minutes |
+| Password attempts per account | 5 | 15 minutes |
 | Registrations per address | 10 | 1 hour |
 
 Once an account reaches its failed-attempt limit it is locked for the rest of the

@@ -44,11 +44,10 @@ production-ready ecommerce application.
 - [ ] Add password-reset rate limits once that flow exists.
 - [x] Add temporary account lockouts or progressive delays after repeated
       failed logins.
-- [ ] Add password-change functionality.
+- [x] Add password-change functionality.
 - [ ] Add password-reset functionality.
-- [ ] Invalidate all existing sessions after a password reset or password
-      change.
-- [ ] Add a "log out from all devices" feature.
+- [x] Invalidate other sessions after a password change.
+- [x] Add a "log out from all devices" feature.
 - [ ] Add breached-password checks and document password requirements.
 - [ ] Record security audit events without recording passwords or raw tokens.
 
