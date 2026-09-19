@@ -190,28 +190,57 @@ class TestWishlist:
 
 # ---------- Reviews ----------
 class TestReviews:
-    def test_review_creates_and_bumps_rating(self, base_url, user_client, anon_client):
+    def test_review_creates_and_bumps_rating(
+        self, base_url, user_client, anon_client, mongo_db
+    ):
         pid = anon_client.get(f"{base_url}/api/products").json()[0]["product_id"]
-        r = user_client.post(f"{base_url}/api/products/{pid}/reviews",
-                             json={"rating": 5, "title": "Great", "comment": "Loved it"})
-        assert r.status_code == 200
-        data = r.json()
-        assert data["rating"] == 5
-        assert "_id" not in data
-        revs = anon_client.get(f"{base_url}/api/products/{pid}/reviews").json()
-        assert len(revs) >= 1
-        prod = anon_client.get(f"{base_url}/api/products/{pid}").json()
-        assert prod["reviews_count"] >= 1
+        review_id = None
+        try:
+            r = user_client.post(f"{base_url}/api/products/{pid}/reviews",
+                                 json={"rating": 5, "title": "Great", "comment": "Loved it"})
+            assert r.status_code == 200
+            data = r.json()
+            review_id = data["review_id"]
+            assert data["rating"] == 5
+            assert "_id" not in data
+            revs = anon_client.get(f"{base_url}/api/products/{pid}/reviews").json()
+            assert len(revs) >= 1
+            prod = anon_client.get(f"{base_url}/api/products/{pid}").json()
+            assert prod["reviews_count"] >= 1
+        finally:
+            if review_id:
+                mongo_db.reviews.delete_one({"review_id": review_id})
+                _restore_product_rating(mongo_db, pid)
+
+
+def _restore_product_rating(mongo_db, product_id):
+    """Recalculate a product rating so tests leave the catalogue untouched."""
+    summary = list(mongo_db.reviews.aggregate([
+        {"$match": {"product_id": product_id}},
+        {"$group": {"_id": None, "average": {"$avg": "$rating"}, "count": {"$sum": 1}}},
+    ]))
+    average = summary[0]["average"] if summary else 0
+    count = summary[0]["count"] if summary else 0
+    mongo_db.products.update_one(
+        {"product_id": product_id},
+        {"$set": {"rating": round(average, 2), "reviews_count": count}},
+    )
 
 
 # ---------- Contact ----------
 class TestContact:
-    def test_contact_submit(self, base_url, anon_client):
-        r = anon_client.post(f"{base_url}/api/contact", json={
-            "name": "TEST_ctc", "email": "t@e.com", "subject": "Hi", "message": "Hello"
-        })
-        assert r.status_code == 200
-        assert "contact_id" in r.json()
+    def test_contact_submit(self, base_url, anon_client, mongo_db):
+        contact_id = None
+        try:
+            r = anon_client.post(f"{base_url}/api/contact", json={
+                "name": "TEST_ctc", "email": "t@e.com", "subject": "Hi", "message": "Hello"
+            })
+            assert r.status_code == 200
+            contact_id = r.json().get("contact_id")
+            assert contact_id
+        finally:
+            if contact_id:
+                mongo_db.contacts.delete_one({"contact_id": contact_id})
 
 
 # ---------- Orders ----------

@@ -29,12 +29,39 @@ def mongo_db():
     return client[DB_NAME]
 
 
+TEST_EMAIL_PATTERN = r"^(auth-test-|lockout-|test\.test-user-)"
+
+
+def _purge_test_artifacts(mongo_db):
+    """Remove records created by the suite.
+
+    Individual tests clean up after themselves, but a run that is interrupted
+    can still leave accounts behind, so this runs as a safety net.
+    """
+    mongo_db.rate_limits.delete_many({})
+    mongo_db.contacts.delete_many({"name": "TEST_ctc", "email": "t@e.com"})
+
+    leftovers = [
+        user["user_id"]
+        for user in mongo_db.users.find(
+            {"email": {"$regex": TEST_EMAIL_PATTERN}}, {"user_id": 1}
+        )
+    ]
+    if leftovers:
+        owner = {"user_id": {"$in": leftovers}}
+        mongo_db.users.delete_many(owner)
+        mongo_db.user_sessions.delete_many(owner)
+        mongo_db.carts.delete_many(owner)
+        mongo_db.wishlists.delete_many(owner)
+        mongo_db.orders.delete_many(owner)
+
+
 @pytest.fixture(scope="session", autouse=True)
-def reset_rate_limits(mongo_db):
-    """Start each run with empty rate-limit windows."""
-    mongo_db.rate_limits.delete_many({})
+def clean_test_artifacts(mongo_db):
+    """Keep the database free of leftovers before and after a run."""
+    _purge_test_artifacts(mongo_db)
     yield
-    mongo_db.rate_limits.delete_many({})
+    _purge_test_artifacts(mongo_db)
 
 
 def _mk_session(mongo_db, is_admin=False):
