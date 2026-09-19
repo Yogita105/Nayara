@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Leaf, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { errorMessage } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -43,10 +44,7 @@ export default function Login() {
       }
       navigate(redirect, { replace: true });
     } catch (requestError) {
-      setError(
-        requestError.response?.data?.detail
-          || "Authentication failed. Please try again."
-      );
+      setError(errorMessage(requestError, "Authentication failed. Please try again."));
     } finally {
       setSubmitting(false);
     }

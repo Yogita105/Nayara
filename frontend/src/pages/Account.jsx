@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { KeyRound, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { api, setCsrfToken } from "../lib/api";
+import { api, errorMessage, setCsrfToken } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -43,7 +43,7 @@ export default function Account() {
       toast.success("Details saved.");
     } catch (requestError) {
       setProfileError(
-        requestError.response?.data?.detail || "Could not save your details."
+        errorMessage(requestError, "Could not save your details.")
       );
     } finally {
       setSavingProfile(false);
@@ -76,7 +76,7 @@ export default function Account() {
       );
     } catch (requestError) {
       setError(
-        requestError.response?.data?.detail || "Could not update the password."
+        errorMessage(requestError, "Could not update the password.")
       );
     } finally {
       setSaving(false);

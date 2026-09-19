@@ -39,3 +39,22 @@ export const formatINR = (amount) =>
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(amount || 0);
+
+/**
+ * Always produce a string to show the customer.
+ *
+ * A screen must never be one unexpected response away from a blank page, so
+ * anything that is not readable text falls back to a plain sentence.
+ */
+export const errorMessage = (error, fallback = "Something went wrong. Please try again.") => {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === "string" && detail.trim()) return detail;
+
+  const first = error?.response?.data?.errors?.[0]?.message;
+  if (typeof first === "string" && first.trim()) return first;
+
+  if (error?.response?.status === 0 || error?.code === "ERR_NETWORK") {
+    return "Could not reach the server. Check your connection and try again.";
+  }
+  return fallback;
+};

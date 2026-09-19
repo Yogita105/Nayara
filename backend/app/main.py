@@ -11,6 +11,7 @@ from .config import (
     LOG_LEVEL,
 )
 from .database import close_database, create_indexes
+from .errors import register_error_handlers
 from .frontend import mount_frontend
 from .middleware import csrf_protection, request_context
 from .observability import REQUEST_ID_HEADER, configure_logging
@@ -23,6 +24,7 @@ configure_logging(LOG_LEVEL, LOG_JSON)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Nayara API")
+register_error_handlers(app)
 
 for router in (
     health.router,

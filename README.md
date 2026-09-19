@@ -295,6 +295,27 @@ The database name defaults to the local name with any `_dev` suffix replaced by
 Running `pytest` directly fails with an explanatory error when it would otherwise use
 the database this project is configured for, so the mistake cannot be made by accident.
 
+## Errors
+
+Every error uses one shape, so a client can rely on `detail` being a readable
+sentence:
+
+```json
+{
+  "detail": "Password: String should have at least 8 characters",
+  "errors": [{"field": "password", "message": "String should have at least 8 characters"}],
+  "request_id": "9393c7f0..."
+}
+```
+
+Validation failures previously returned a list of objects that also echoed what was
+submitted, including the password on a sign-up form. The browser could not render that
+list at all, so a rejected form left a blank page. Submitted values are now dropped
+before the response is built.
+
+`request_id` matches the `X-Request-ID` header, so a customer can quote it and the
+matching log line can be found.
+
 ## Deploying
 
 The API serves the built frontend, so the whole site is one container on one origin.

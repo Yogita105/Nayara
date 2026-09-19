@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
-import { api, formatINR } from "../lib/api";
+import { api, errorMessage, formatINR } from "../lib/api";
 import ProductImage from "../components/ProductImage";
 import RequiredMark from "../components/RequiredMark";
 import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase } from "lucide-react";
@@ -64,7 +64,7 @@ function OrdersAdmin() {
       await api.put(`/admin/orders/${id}`, { status });
       load();
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Could not update the order");
+      toast.error(errorMessage(error, "Could not update the order"));
       load();
     }
   };
@@ -201,7 +201,7 @@ function ProductEditor({ initial, onClose }) {
       toast.success(initial ? "Product updated" : "Product created");
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Save failed");
+      toast.error(errorMessage(err, "Could not save the product"));
     } finally { setSaving(false); }
   };
 

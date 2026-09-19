@@ -300,7 +300,12 @@ class TestOrders:
         assert anon_client.get(f"{base_url}/api/orders/{oid}").status_code == 401
 
 
-# ---------- Stripe ----------
+# ---------- Payments ----------
+@pytest.mark.skip(
+    reason="No payment provider is integrated yet. This describes what the "
+           "checkout endpoint must do once one is chosen, so it is kept "
+           "rather than deleted."
+)
 class TestStripe:
     def test_create_checkout_session(self, base_url, user_client, sample_items, mongo_db):
         r = user_client.post(f"{base_url}/api/orders", json={

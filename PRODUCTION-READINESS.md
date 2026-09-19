@@ -117,7 +117,7 @@ production-ready ecommerce application.
 - [x] Validate product slug format.
 - [x] Replace unrestricted admin update dictionaries with explicit Pydantic
       request models.
-- [ ] Standardize API error response shapes.
+- [x] Standardize API error response shapes.
 
 ## 7. Pagination and query efficiency
 
@@ -141,7 +141,7 @@ production-ready ecommerce application.
 - [x] Restore inventory when qualifying orders are cancelled.
 - [ ] Define behavior for partially available orders.
 - [ ] Release stock held by card orders that are never paid.
-- [ ] Add server-side price and discount validation.
+- [x] Add server-side price and discount validation.
 - [x] Add tests for concurrent orders against limited stock.
 
 ## 9. Payments
@@ -201,7 +201,7 @@ production-ready ecommerce application.
 - [x] Test registration, session persistence, login, and logout in a browser.
 - [x] Test login with both email and mobile number.
 - [x] Fix the product-count fixture mismatch.
-- [ ] Implement or remove the test for the missing payment endpoint.
+- [x] Implement or remove the test for the missing payment endpoint.
 - [ ] Add unit tests for security and normalization helpers.
 - [ ] Add authorization tests for every admin endpoint.
 - [x] Add invalid-input and boundary tests.

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { formatINR, api } from "../lib/api";
+import { formatINR, api, errorMessage } from "../lib/api";
 import { Input } from "../components/ui/input";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Label } from "../components/ui/label";
@@ -48,7 +48,7 @@ export default function Checkout() {
       toast.success("Order placed successfully!");
       navigate(`/order-success?order_id=${order.order_id}`);
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Could not place order");
+      toast.error(errorMessage(err, "Could not place the order"));
     } finally { setSubmitting(false); }
   };
 
