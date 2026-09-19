@@ -190,11 +190,12 @@ production-ready ecommerce application.
 - [x] Add authentication integration coverage.
 - [x] Test registration, session persistence, login, and logout in a browser.
 - [x] Test login with both email and mobile number.
-- [ ] Fix the product-count fixture mismatch.
+- [x] Fix the product-count fixture mismatch.
 - [ ] Implement or remove the test for the missing payment endpoint.
 - [ ] Add unit tests for security and normalization helpers.
 - [ ] Add authorization tests for every admin endpoint.
 - [x] Add invalid-input and boundary tests.
+- [x] Make tests clean up the records they create.
 - [ ] Add concurrent registration and order tests.
 - [ ] Add session-expiration tests.
 - [ ] Add frontend component tests.
