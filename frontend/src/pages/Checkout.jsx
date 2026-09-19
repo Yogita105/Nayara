@@ -81,7 +81,7 @@ export default function Checkout() {
                 <Input value={address.line1} onChange={(e) => setAddress({ ...address, line1: e.target.value })} required data-testid="addr-line1" />
               </div>
               <div className="md:col-span-2">
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]">Address line 2 (optional)</Label>
+                <Label className="text-xs font-bold uppercase tracking-[0.15em]">Address line 2</Label>
                 <Input value={address.line2} onChange={(e) => setAddress({ ...address, line2: e.target.value })} data-testid="addr-line2" />
               </div>
               <div>

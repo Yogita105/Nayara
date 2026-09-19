@@ -148,7 +148,7 @@ export default function Account() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email (optional)</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               name="email"
