@@ -17,6 +17,10 @@ production-ready ecommerce application.
 - [ ] Add clear service and repository layers when business logic becomes more
       complex.
 - [ ] Establish database migration and index-deployment tooling.
+- [ ] Seed product data only in development and test, never automatically in
+      production, so an emptied catalogue is not silently refilled.
+- [ ] Review uploaded images before they are published, so an accidental upload
+      cannot expose private information.
 
 ## 2. Authentication and account security
 
@@ -178,7 +182,9 @@ production-ready ecommerce application.
 - [x] Prevent the Login button from flashing while authentication is loading.
 - [x] Support registration with email and mobile number.
 - [x] Support password login with either identifier.
-- [ ] Replace or self-host unreliable third-party product images.
+- [x] Replace or self-host unreliable third-party product images.
+- [x] Show a placeholder when a product image cannot be loaded.
+- [ ] Upload real photography for products that have none.
 - [ ] Add global API error handling and user-friendly retry states.
 - [ ] Add loading and empty states across every data-driven screen.
 - [ ] Add accessible form validation and error summaries.
@@ -202,6 +208,7 @@ production-ready ecommerce application.
 - [ ] Add frontend component tests.
 - [ ] Add complete browser tests for registration, cart, checkout, orders, and
       admin access.
+- [ ] Use separate databases for tests and live data.
 - [ ] Add dependency vulnerability and secret scanning.
 - [ ] Enforce linting, formatting, type checks, and tests in CI.
 
