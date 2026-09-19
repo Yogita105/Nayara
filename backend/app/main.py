@@ -3,7 +3,13 @@ import logging
 from fastapi import APIRouter, FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from .config import CORS_ORIGINS, ENVIRONMENT, LOG_JSON, LOG_LEVEL
+from .config import (
+    AUTO_SEED_PRODUCTS,
+    CORS_ORIGINS,
+    ENVIRONMENT,
+    LOG_JSON,
+    LOG_LEVEL,
+)
 from .database import close_database, create_indexes
 from .middleware import csrf_protection, request_context
 from .observability import REQUEST_ID_HEADER, configure_logging
@@ -55,7 +61,16 @@ app.add_middleware(
 async def on_startup():
     logger.info("Starting API", extra={"environment": ENVIRONMENT})
     await create_indexes()
-    await seed_products()
+    if AUTO_SEED_PRODUCTS:
+        inserted = await seed_products()
+        if inserted:
+            logger.info("Inserted starter products", extra={"count": inserted})
+    else:
+        logger.info(
+            "Automatic product seeding is off; run scripts/seed_products.py to "
+            "fill an empty catalogue",
+            extra={"environment": ENVIRONMENT},
+        )
     logger.info("API ready")
 
 

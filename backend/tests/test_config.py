@@ -82,3 +82,49 @@ def test_cors_wildcard_is_rejected():
 def test_invalid_boolean_is_rejected():
     with pytest.raises(RuntimeError, match="COOKIE_SECURE must be true or false"):
         parse_boolean("sometimes", "COOKIE_SECURE")
+
+
+class TestAutomaticSeeding:
+    """Starter products must never appear in a live catalogue on their own."""
+
+    @pytest.mark.parametrize("environment", ["development", "test"])
+    def test_seeding_is_on_where_it_is_convenient(self, environment):
+        settings = load_settings({**BASE_ENVIRONMENT, "ENVIRONMENT": environment})
+
+        assert settings.auto_seed_products is True
+
+    def test_seeding_is_off_in_production(self):
+        assert load_settings(PRODUCTION_ENVIRONMENT).auto_seed_products is False
+
+    def test_seeding_is_off_in_staging(self):
+        settings = load_settings({
+            **BASE_ENVIRONMENT,
+            "ENVIRONMENT": "staging",
+            "CORS_ORIGINS": "https://staging.example.com",
+        })
+
+        assert settings.auto_seed_products is False
+
+    def test_the_default_can_be_overridden(self):
+        settings = load_settings({
+            **BASE_ENVIRONMENT,
+            "AUTO_SEED_PRODUCTS": "false",
+        })
+
+        assert settings.auto_seed_products is False
+
+    def test_an_unreadable_value_is_rejected(self):
+        with pytest.raises(RuntimeError, match="AUTO_SEED_PRODUCTS"):
+            load_settings({**BASE_ENVIRONMENT, "AUTO_SEED_PRODUCTS": "maybe"})
+
+
+class TestLogSettings:
+    def test_production_logs_as_json(self):
+        assert load_settings(PRODUCTION_ENVIRONMENT).log_json is True
+
+    def test_development_logs_as_text(self):
+        assert load_settings(BASE_ENVIRONMENT).log_json is False
+
+    def test_an_unknown_log_level_is_rejected(self):
+        with pytest.raises(RuntimeError, match="LOG_LEVEL must be one of"):
+            load_settings({**BASE_ENVIRONMENT, "LOG_LEVEL": "CHATTY"})

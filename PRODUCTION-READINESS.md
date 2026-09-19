@@ -17,7 +17,7 @@ production-ready ecommerce application.
 - [ ] Add clear service and repository layers when business logic becomes more
       complex.
 - [ ] Establish database migration and index-deployment tooling.
-- [ ] Seed product data only in development and test, never automatically in
+- [x] Seed product data only in development and test, never automatically in
       production, so an emptied catalogue is not silently refilled.
 - [ ] Review uploaded images before they are published, so an accidental upload
       cannot expose private information.

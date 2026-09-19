@@ -34,6 +34,7 @@ class Settings:
     trust_proxy_headers: bool
     log_level: str
     log_json: bool
+    auto_seed_products: bool
     session_days: int
     cloudinary_cloud_name: str
     cloudinary_api_key: str
@@ -108,6 +109,16 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
         else parse_boolean(log_json_value, "LOG_JSON")
     )
 
+    # Starter products are a convenience for local work. Writing them
+    # automatically elsewhere could refill a catalogue that was emptied by
+    # mistake, hiding the incident behind plausible-looking data.
+    auto_seed_value = values.get("AUTO_SEED_PRODUCTS")
+    auto_seed_products = (
+        runtime_environment in {"development", "test"}
+        if auto_seed_value is None
+        else parse_boolean(auto_seed_value, "AUTO_SEED_PRODUCTS")
+    )
+
     return Settings(
         environment=runtime_environment,
         mongo_url=mongo_url,
@@ -131,6 +142,7 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
         ),
         log_level=log_level,
         log_json=log_json,
+        auto_seed_products=auto_seed_products,
         session_days=7,
         cloudinary_cloud_name=values.get("CLOUDINARY_CLOUD_NAME", ""),
         cloudinary_api_key=values.get("CLOUDINARY_API_KEY", ""),
@@ -152,6 +164,7 @@ RATE_LIMIT_ENABLED = settings.rate_limit_enabled
 TRUST_PROXY_HEADERS = settings.trust_proxy_headers
 LOG_LEVEL = settings.log_level
 LOG_JSON = settings.log_json
+AUTO_SEED_PRODUCTS = settings.auto_seed_products
 SESSION_DAYS = settings.session_days
 
 cloudinary.config(

@@ -101,12 +101,22 @@ SEED_PRODUCTS = [
 ]
 
 
-async def seed_products() -> None:
+async def seed_products() -> int:
+    """Fill an empty catalogue with the starter products.
+
+    Nothing is written when products already exist, so prices and stock edited
+    through the admin screens are never overwritten. The count of inserted
+    products is returned so callers can report what happened.
+    """
     if await db.products.count_documents({}) > 0:
-        return
+        return 0
+
+    documents = []
     for seed_product in SEED_PRODUCTS:
-        product = Product(**seed_product)
-        doc = product.model_dump()
-        doc["created_at"] = doc["created_at"].isoformat()
-        await db.products.insert_one(doc)
-    logger.info("Seeded %d products", len(SEED_PRODUCTS))
+        document = Product(**seed_product).model_dump()
+        document["created_at"] = document["created_at"].isoformat()
+        documents.append(document)
+
+    await db.products.insert_many(documents)
+    logger.info("Seeded starter products", extra={"count": len(documents)})
+    return len(documents)

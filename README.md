@@ -26,6 +26,7 @@ email. Configure these backend environment variables:
 - `LOG_LEVEL`: one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`. Defaults to
   `INFO`.
 - `LOG_JSON`: defaults to `true` in production and staging, `false` elsewhere.
+- `AUTO_SEED_PRODUCTS`: defaults to `true` in development and test, `false` elsewhere.
 
 For example:
 
@@ -182,6 +183,28 @@ routing the API can reach them:
 
 Point a load balancer at readiness so an instance that loses its database is taken out
 of rotation rather than serving failures.
+
+## Starter products
+
+`backend/app/seed.py` holds a small starter catalogue so a fresh clone has something to
+show. It is written only into an **empty** products collection, so prices and stock
+edited through the admin screens are never overwritten.
+
+Seeding runs automatically in development and test only. Elsewhere it is a deliberate
+step:
+
+```powershell
+cd backend
+python scripts\seed_products.py
+```
+
+The reason is worth stating plainly: if a live catalogue were emptied by accident, an
+automatic seed on the next restart would refill it with seven development products at
+invented prices. The shop would look healthy while the real catalogue was gone. Leaving
+it empty keeps the problem visible.
+
+Seeding is a development convenience, not a migration system. The real catalogue
+belongs in the admin screens.
 
 Legacy OAuth accounts do not have passwords. Set one without exposing it in shell
 history by running:
