@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { api } from "../lib/api";
+import { api, setCsrfToken } from "../lib/api";
 
 const AuthContext = createContext(null);
 
@@ -19,22 +19,31 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    // CRITICAL: If returning from OAuth callback, skip the /me check.
-    // AuthCallback will exchange the session_id and establish the session first.
-    if (typeof window !== "undefined" && window.location.hash?.includes("session_id=")) {
-      setLoading(false);
-      return;
-    }
     checkAuth();
   }, [checkAuth]);
 
+  const login = async (credentials) => {
+    const { data } = await api.post("/auth/login", credentials);
+    setCsrfToken(data.csrf_token);
+    setUser(data.user);
+    return data.user;
+  };
+
+  const register = async (details) => {
+    const { data } = await api.post("/auth/register", details);
+    setCsrfToken(data.csrf_token);
+    setUser(data.user);
+    return data.user;
+  };
+
   const logout = async () => {
-    try { await api.post("/auth/logout"); } catch { /* ignore */ }
+    await api.post("/auth/logout");
+    setCsrfToken(null);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, checkAuth, logout }}>
+    <AuthContext.Provider value={{ user, loading, checkAuth, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

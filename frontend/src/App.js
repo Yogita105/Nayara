@@ -1,6 +1,6 @@
 import React from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { Toaster } from "sonner";
@@ -18,18 +18,11 @@ import OrderSuccess from "./pages/OrderSuccess";
 import Orders from "./pages/Orders";
 import Wishlist from "./pages/Wishlist";
 import Login from "./pages/Login";
-import AuthCallback from "./pages/AuthCallback";
 import Admin from "./pages/Admin";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
 function AppRouter() {
-  const location = useLocation();
-  // CRITICAL: Handle OAuth callback synchronously during render.
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-  if (location.hash && location.hash.includes("session_id=")) {
-    return <AuthCallback />;
-  }
   return (
     <Routes>
       <Route element={<Layout />}>

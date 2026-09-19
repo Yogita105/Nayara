@@ -1,0 +1,1 @@
+"""Nayara backend application package."""

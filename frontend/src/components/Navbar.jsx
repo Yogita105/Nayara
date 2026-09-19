@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ShoppingCart, Heart, Search, User, LogOut, Menu, X, Package, LayoutDashboard } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import {
@@ -21,7 +22,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const { cartCount } = useCart();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -30,6 +31,15 @@ export default function Navbar() {
   const onSearch = (e) => {
     e.preventDefault();
     if (q.trim()) navigate(`/shop?q=${encodeURIComponent(q.trim())}`);
+  };
+
+  const onLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+    } catch {
+      toast.error("Could not log out. Please try again.");
+    }
   };
 
   return (
@@ -80,7 +90,16 @@ export default function Navbar() {
             )}
           </Link>
 
-          {user ? (
+          {loading ? (
+            <div
+              className="flex items-center gap-2 p-1 pr-3"
+              aria-label="Loading account"
+              data-testid="nav-auth-loading"
+            >
+              <div className="w-8 h-8 rounded-full bg-white/25 animate-pulse" />
+              <div className="hidden sm:block w-12 h-4 rounded bg-white/25 animate-pulse" />
+            </div>
+          ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-white/20 transition-colors text-white" data-testid="nav-user-menu">
@@ -105,7 +124,7 @@ export default function Navbar() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} data-testid="nav-logout-item">
+                <DropdownMenuItem onClick={onLogout} data-testid="nav-logout-item">
                   <LogOut className="w-4 h-4 mr-2" /> Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>

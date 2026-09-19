@@ -1,34 +1,176 @@
-import React from "react";
-import { useAuth } from "../context/AuthContext";
-import { Navigate, useLocation } from "react-router-dom";
-import { Button } from "../components/ui/button";
+import React, { useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Leaf, ShieldCheck } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 
 export default function Login() {
-  const { user, loading } = useAuth();
+  const { user, loading, login, register } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({ name: "", email: "", mobile: "", password: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const redirect = new URLSearchParams(location.search).get("redirect")
+    || location.state?.from
+    || "/";
 
   if (!loading && user) {
-    const redirect = new URLSearchParams(location.search).get("redirect") || "/";
     return <Navigate to={redirect} replace />;
   }
 
-  const handleGoogleLogin = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = window.location.origin + (new URLSearchParams(location.search).get("redirect") || "/");
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  const updateField = (event) => {
+    setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
+    try {
+      if (mode === "register") {
+        await register(form);
+      } else {
+        await login({ identifier: form.email, password: form.password });
+      }
+      navigate(redirect, { replace: true });
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.detail
+          || "Authentication failed. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const switchMode = () => {
+    setMode((current) => current === "login" ? "register" : "login");
+    setError("");
   };
 
   return (
     <div className="max-w-md mx-auto px-6 py-16" data-testid="login-page">
-      <div className="rounded-3xl border border-[var(--nayara-border)] bg-white p-10 text-center">
+      <div className="rounded-3xl border border-[var(--nayara-border)] bg-white p-10">
         <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center text-white font-bold text-2xl" style={{ background: "var(--nayara-primary)" }}>N</div>
-        <h1 className="font-heading text-3xl font-medium mt-5 tracking-tight">Welcome to Nayara</h1>
-        <p className="text-[#64748B] mt-2">Sign in to save your wishlist, track orders and check out faster.</p>
-        <Button onClick={handleGoogleLogin} className="mt-8 w-full h-12 bg-[var(--nayara-primary)] hover:bg-[var(--nayara-primary-hover)] rounded-full" data-testid="google-login-btn">
-          <svg className="w-5 h-5 mr-2" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-          Continue with Google
-        </Button>
+        <div className="text-center">
+          <h1 className="font-heading text-3xl font-medium mt-5 tracking-tight">
+            {mode === "login" ? "Welcome back" : "Create your account"}
+          </h1>
+          <p className="text-[#64748B] mt-2">
+            {mode === "login"
+              ? "Sign in to view your orders and saved products."
+              : "Join Nayara for a faster, more personal shopping experience."}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5" data-testid="auth-form">
+          {mode === "register" && (
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                name="name"
+                value={form.name}
+                onChange={updateField}
+                autoComplete="name"
+                minLength={2}
+                maxLength={100}
+                required
+                className="h-11"
+                data-testid="auth-name-input"
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="email">
+              {mode === "login" ? "Email or mobile number" : "Email"}
+            </Label>
+            <Input
+              id="email"
+              name="email"
+              type={mode === "login" ? "text" : "email"}
+              value={form.email}
+              onChange={updateField}
+              autoComplete={mode === "login" ? "username" : "email"}
+              placeholder={mode === "login" ? "Email or 10-digit mobile number" : ""}
+              required
+              className="h-11"
+              data-testid="auth-email-input"
+            />
+          </div>
+          {mode === "register" && (
+            <div className="space-y-2">
+              <Label htmlFor="mobile">Mobile number</Label>
+              <Input
+                id="mobile"
+                name="mobile"
+                type="tel"
+                inputMode="numeric"
+                value={form.mobile}
+                onChange={updateField}
+                autoComplete="tel"
+                placeholder="10-digit Indian mobile number"
+                minLength={10}
+                maxLength={20}
+                required
+                className="h-11"
+                data-testid="auth-mobile-input"
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={updateField}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              minLength={mode === "register" ? 8 : 1}
+              maxLength={128}
+              required
+              className="h-11"
+              data-testid="auth-password-input"
+            />
+            {mode === "register" && (
+              <p className="text-xs text-[#64748B]">Use at least 8 characters.</p>
+            )}
+          </div>
+
+          {error && (
+            <p role="alert" className="text-sm text-red-600" data-testid="auth-error">
+              {error}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="w-full h-12 bg-[var(--nayara-primary)] hover:bg-[var(--nayara-primary-hover)] rounded-full"
+            data-testid="auth-submit-btn"
+          >
+            {submitting
+              ? "Please wait..."
+              : mode === "login" ? "Sign in" : "Create account"}
+          </Button>
+        </form>
+
+        <p className="mt-6 text-sm text-center text-[#64748B]">
+          {mode === "login" ? "New to Nayara?" : "Already have an account?"}{" "}
+          <button
+            type="button"
+            onClick={switchMode}
+            className="font-medium text-[var(--nayara-primary)] hover:underline"
+            data-testid="auth-mode-toggle"
+          >
+            {mode === "login" ? "Create an account" : "Sign in"}
+          </button>
+        </p>
         <div className="mt-6 text-xs text-[#64748B] flex items-center justify-center gap-3">
           <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Secure</span>
           <span>·</span>

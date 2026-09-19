@@ -1,4 +1,5 @@
 """Nayara backend API tests - products, auth, cart, wishlist, reviews, orders, stripe, admin."""
+import uuid
 import pytest
 import requests
 
@@ -51,9 +52,80 @@ class TestProducts:
 
 # ---------- Auth ----------
 class TestAuth:
-    def test_invalid_session_id(self, base_url, anon_client):
-        r = anon_client.post(f"{base_url}/api/auth/session", json={"session_id": "invalid_xyz"})
+    def test_invalid_login(self, base_url, anon_client):
+        r = anon_client.post(
+            f"{base_url}/api/auth/login",
+            json={"identifier": "missing@example.com", "password": "invalid-password"},
+        )
         assert r.status_code == 401
+
+    def test_register_login_and_logout(self, base_url, mongo_db):
+        email = f"auth-test-{uuid.uuid4().hex}@example.com"
+        mobile = f"9{uuid.uuid4().int % 10**9:09d}"
+        password = "SecurePassword123!"
+        client = requests.Session()
+        try:
+            r = client.post(
+                f"{base_url}/api/auth/register",
+                json={
+                    "name": "Auth Test",
+                    "email": email,
+                    "mobile": mobile,
+                    "password": password,
+                },
+            )
+            assert r.status_code == 201
+            assert r.json()["user"]["email"] == email
+            assert r.json()["user"]["mobile"] == f"+91{mobile}"
+            assert "password_hash" not in r.json()["user"]
+            assert client.cookies.get("session_token")
+            csrf = {"X-CSRF-Token": r.json()["csrf_token"]}
+
+            duplicate = requests.post(
+                f"{base_url}/api/auth/register",
+                json={
+                    "name": "Auth Test",
+                    "email": email,
+                    "mobile": mobile,
+                    "password": password,
+                },
+            )
+            assert duplicate.status_code == 409
+
+            me = client.get(f"{base_url}/api/auth/me")
+            assert me.status_code == 200
+            assert me.json()["email"] == email
+            assert "password_hash" not in me.json()
+
+            # A cookie session must present the CSRF token on writes.
+            assert client.post(f"{base_url}/api/auth/logout").status_code == 403
+
+            assert client.post(
+                f"{base_url}/api/auth/logout", headers=csrf
+            ).status_code == 200
+            assert client.get(f"{base_url}/api/auth/me").status_code == 401
+
+            login = client.post(
+                f"{base_url}/api/auth/login",
+                json={"identifier": mobile, "password": password},
+            )
+            assert login.status_code == 200
+            csrf = {"X-CSRF-Token": login.json()["csrf_token"]}
+            assert client.get(f"{base_url}/api/auth/me").status_code == 200
+
+            assert client.post(
+                f"{base_url}/api/auth/logout", headers=csrf
+            ).status_code == 200
+            login = client.post(
+                f"{base_url}/api/auth/login",
+                json={"identifier": email, "password": password},
+            )
+            assert login.status_code == 200
+        finally:
+            user = mongo_db.users.find_one({"email": email})
+            if user:
+                mongo_db.user_sessions.delete_many({"user_id": user["user_id"]})
+                mongo_db.users.delete_one({"user_id": user["user_id"]})
 
     def test_me_without_auth(self, base_url, anon_client):
         r = anon_client.get(f"{base_url}/api/auth/me")
