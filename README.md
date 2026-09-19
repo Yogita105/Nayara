@@ -162,6 +162,24 @@ because they require a replica set, which a local development database may not h
 Cancelling an order returns its stock. The update matches only orders that are not yet
 cancelled, so repeating the request cannot inflate the catalogue.
 
+### Order states
+
+An order moves forward only:
+
+```text
+placed ─→ processing ─→ shipped ─→ delivered
+   └───────────┴───────────┴────→ cancelled
+```
+
+`delivered` and `cancelled` are final. Reopening a cancelled order would leave it
+active after its stock had already gone back to the catalogue, so the shop would offer
+units that are actually spoken for. A rejected change returns `409` and names the
+statuses that are available instead. Repeating the current status succeeds without
+doing anything, so a retry is harmless.
+
+The admin screen offers only the statuses the API will accept, and disables the control
+once an order is final.
+
 ### Idempotent checkout
 
 Send an `Idempotency-Key` header when placing an order:

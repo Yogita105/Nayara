@@ -136,7 +136,7 @@ production-ready ecommerce application.
 - [x] Validate stock before accepting an order.
 - [x] Atomically decrement inventory when an order is placed.
 - [x] Prevent duplicate order submissions with idempotency keys.
-- [ ] Validate allowed order-status transitions.
+- [x] Validate allowed order-status transitions.
 - [x] Restore inventory when qualifying orders are cancelled.
 - [ ] Define behavior for partially available orders.
 - [ ] Release stock held by card orders that are never paid.

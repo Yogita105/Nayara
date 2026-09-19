@@ -178,6 +178,111 @@ class TestIdempotentSubmission:
         assert stock_of(mongo_db, product["product_id"]) == 1
 
 
+class TestStatusTransitions:
+    """Delivered and cancelled are final, which is what protects stock."""
+
+    def ordered(self, base_url, user_client, stocked_product, quantity=1):
+        product = stocked_product(10)
+        order_id = place_order(
+            user_client, base_url,
+            [{"product_id": product["product_id"], "quantity": quantity}],
+        ).json()["order_id"]
+        return product, order_id
+
+    def advance(self, base_url, admin_client, order_id, status):
+        return admin_client.put(
+            f"{base_url}/api/admin/orders/{order_id}", json={"status": status}
+        )
+
+    def test_an_order_moves_forward_through_its_states(
+        self, base_url, user_client, admin_client, stocked_product
+    ):
+        _, order_id = self.ordered(base_url, user_client, stocked_product)
+
+        for status in ("processing", "shipped", "delivered"):
+            response = self.advance(base_url, admin_client, order_id, status)
+            assert response.status_code == 200, status
+            assert response.json()["status"] == status
+
+    def test_an_order_cannot_move_backwards(
+        self, base_url, user_client, admin_client, stocked_product
+    ):
+        _, order_id = self.ordered(base_url, user_client, stocked_product)
+        self.advance(base_url, admin_client, order_id, "shipped")
+
+        response = self.advance(base_url, admin_client, order_id, "placed")
+
+        assert response.status_code == 409
+        assert "cannot become" in response.json()["detail"]
+
+    def test_a_delivered_order_is_final(
+        self, base_url, user_client, admin_client, stocked_product
+    ):
+        _, order_id = self.ordered(base_url, user_client, stocked_product)
+        self.advance(base_url, admin_client, order_id, "shipped")
+        self.advance(base_url, admin_client, order_id, "delivered")
+
+        response = self.advance(base_url, admin_client, order_id, "cancelled")
+
+        assert response.status_code == 409
+        assert "final state" in response.json()["detail"]
+
+    def test_a_cancelled_order_cannot_be_reopened(
+        self, base_url, user_client, admin_client, stocked_product, mongo_db
+    ):
+        product, order_id = self.ordered(
+            base_url, user_client, stocked_product, quantity=4
+        )
+        assert stock_of(mongo_db, product["product_id"]) == 6
+
+        self.advance(base_url, admin_client, order_id, "cancelled")
+        assert stock_of(mongo_db, product["product_id"]) == 10
+
+        # Reopening would leave the order active after its stock went back,
+        # so the catalogue would claim units that are actually spoken for.
+        response = self.advance(base_url, admin_client, order_id, "processing")
+
+        assert response.status_code == 409
+        assert stock_of(mongo_db, product["product_id"]) == 10
+
+    def test_repeating_the_current_status_is_accepted(
+        self, base_url, user_client, admin_client, stocked_product, mongo_db
+    ):
+        product, order_id = self.ordered(
+            base_url, user_client, stocked_product, quantity=2
+        )
+        self.advance(base_url, admin_client, order_id, "cancelled")
+        assert stock_of(mongo_db, product["product_id"]) == 10
+
+        response = self.advance(base_url, admin_client, order_id, "cancelled")
+
+        assert response.status_code == 200
+        # A retry must not hand back the same units twice.
+        assert stock_of(mongo_db, product["product_id"]) == 10
+
+    def test_an_order_can_be_cancelled_while_placed(
+        self, base_url, user_client, admin_client, stocked_product
+    ):
+        _, order_id = self.ordered(base_url, user_client, stocked_product)
+
+        assert self.advance(
+            base_url, admin_client, order_id, "cancelled"
+        ).status_code == 200
+
+    def test_payment_status_can_still_be_corrected(
+        self, base_url, user_client, admin_client, stocked_product
+    ):
+        _, order_id = self.ordered(base_url, user_client, stocked_product)
+
+        response = admin_client.put(
+            f"{base_url}/api/admin/orders/{order_id}",
+            json={"payment_status": "paid"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["payment_status"] == "paid"
+
+
 class TestCancellationRestoresStock:
     def test_cancelling_returns_the_stock_once(
         self, base_url, user_client, admin_client, stocked_product, mongo_db

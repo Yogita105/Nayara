@@ -68,6 +68,39 @@ class BulkInquiryStatus(str, Enum):
     LOST = "lost"
 
 
+# Which status an order may move to next. Delivered and cancelled are final:
+# reopening a cancelled order would leave it active after its stock had
+# already been returned to the catalogue, overstating what is in hand.
+ORDER_STATUS_TRANSITIONS = {
+    OrderStatus.PLACED.value: {
+        OrderStatus.PROCESSING.value,
+        OrderStatus.SHIPPED.value,
+        OrderStatus.CANCELLED.value,
+    },
+    OrderStatus.PROCESSING.value: {
+        OrderStatus.SHIPPED.value,
+        OrderStatus.CANCELLED.value,
+    },
+    OrderStatus.SHIPPED.value: {
+        OrderStatus.DELIVERED.value,
+        OrderStatus.CANCELLED.value,
+    },
+    OrderStatus.DELIVERED.value: set(),
+    OrderStatus.CANCELLED.value: set(),
+}
+
+
+def allowed_next_statuses(current: str) -> set:
+    return ORDER_STATUS_TRANSITIONS.get(current, set())
+
+
+def can_change_status(current: str, requested: str) -> bool:
+    """Repeating the current status is accepted so a retry is harmless."""
+    if current == requested:
+        return True
+    return requested in allowed_next_statuses(current)
+
+
 class User(BaseModel):
     user_id: str
     mobile: str

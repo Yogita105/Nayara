@@ -45,13 +45,28 @@ function Dashboard() {
   );
 }
 
+// Mirrors the rules the API enforces, so the dropdown never offers a change
+// that would be rejected. Delivered and cancelled orders are final.
+const NEXT_ORDER_STATUSES = {
+  placed: ["processing", "shipped", "cancelled"],
+  processing: ["shipped", "cancelled"],
+  shipped: ["delivered", "cancelled"],
+  delivered: [],
+  cancelled: [],
+};
+
 function OrdersAdmin() {
   const [orders, setOrders] = useState([]);
   const load = () => api.get("/admin/orders").then(({ data }) => setOrders(data));
   useEffect(() => { load(); }, []);
   const update = async (id, status) => {
-    await api.put(`/admin/orders/${id}`, { status });
-    load();
+    try {
+      await api.put(`/admin/orders/${id}`, { status });
+      load();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Could not update the order");
+      load();
+    }
   };
   return (
     <div data-testid="admin-orders">
@@ -73,8 +88,20 @@ function OrdersAdmin() {
                 <td className="px-4 py-3">{formatINR(o.total)}</td>
                 <td className="px-4 py-3"><span className="badge-soft px-2 py-1 rounded-full text-xs">{o.payment_method}</span></td>
                 <td className="px-4 py-3">
-                  <select defaultValue={o.status} onChange={(e) => update(o.order_id, e.target.value)} className="border border-[var(--nayara-border)] rounded px-2 py-1 text-xs">
-                    {["placed", "processing", "shipped", "delivered", "cancelled"].map((s) => <option key={s}>{s}</option>)}
+                  <select
+                    value={o.status}
+                    onChange={(e) => update(o.order_id, e.target.value)}
+                    disabled={(NEXT_ORDER_STATUSES[o.status] || []).length === 0}
+                    className="border border-[var(--nayara-border)] rounded px-2 py-1 text-xs disabled:opacity-60"
+                    title={
+                      (NEXT_ORDER_STATUSES[o.status] || []).length === 0
+                        ? "This order has reached its final state"
+                        : undefined
+                    }
+                  >
+                    {[o.status, ...(NEXT_ORDER_STATUSES[o.status] || [])].map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
                   </select>
                 </td>
               </tr>

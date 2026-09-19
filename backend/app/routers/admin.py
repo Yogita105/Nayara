@@ -13,6 +13,8 @@ from ..models import (
     BulkInquiryUpdate,
     ContactRequest,
     OrderUpdate,
+    allowed_next_statuses,
+    can_change_status,
 )
 from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
 from ..security import require_admin
@@ -140,6 +142,21 @@ async def admin_update_order(
     order = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+
+    current_status = order.get("status", "")
+    if payload.status is not None and not can_change_status(
+        current_status, payload.status
+    ):
+        allowed = sorted(allowed_next_statuses(current_status))
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"An order that is {current_status} cannot become "
+                f"{payload.status}. "
+                + (f"It can only become: {', '.join(allowed)}." if allowed
+                   else "It has reached its final state.")
+            ),
+        )
 
     if payload.status == "cancelled":
         await cancel_order(order, payload)
