@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 import cloudinary.uploader
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from fastapi.responses import RedirectResponse
 
 from ..database import db
@@ -13,6 +13,7 @@ from ..models import (
     ContactRequest,
     OrderUpdate,
 )
+from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
 from ..security import require_admin
 from ..utils import serialize_doc
 
@@ -20,6 +21,29 @@ from ..utils import serialize_doc
 router = APIRouter(prefix="/api", tags=["admin"])
 logger = logging.getLogger(__name__)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
+
+
+async def paged_admin_list(
+    collection: str,
+    response: Response,
+    sort_field: str,
+    limit: int,
+    offset: int,
+    projection: dict,
+) -> list:
+    """Return one page and report the total so the UI can show page counts."""
+    response.headers[TOTAL_COUNT_HEADER] = str(
+        await db[collection].count_documents({})
+    )
+    docs = await (
+        db[collection]
+        .find({}, projection)
+        .sort(sort_field, -1)
+        .skip(offset)
+        .limit(limit)
+        .to_list(limit)
+    )
+    return [serialize_doc(doc) for doc in docs]
 
 
 @router.post("/contact")
@@ -42,12 +66,15 @@ async def bulk_inquiry_submit(payload: BulkInquiryRequest):
 
 
 @router.get("/admin/bulk-inquiries")
-async def admin_bulk_inquiries(_: dict = Depends(require_admin)):
-    docs = await db.bulk_inquiries.find(
-        {},
-        {"_id": 0},
-    ).sort("created_at", -1).to_list(500)
-    return [serialize_doc(doc) for doc in docs]
+async def admin_bulk_inquiries(
+    response: Response,
+    limit: int = limit_query(500),
+    offset: int = offset_query(),
+    _: dict = Depends(require_admin),
+):
+    return await paged_admin_list(
+        "bulk_inquiries", response, "created_at", limit, offset, {"_id": 0}
+    )
 
 
 @router.put("/admin/bulk-inquiries/{inquiry_id}")
@@ -92,12 +119,15 @@ async def admin_stats(_: dict = Depends(require_admin)):
 
 
 @router.get("/admin/orders")
-async def admin_all_orders(_: dict = Depends(require_admin)):
-    docs = await db.orders.find(
-        {},
-        {"_id": 0},
-    ).sort("created_at", -1).to_list(500)
-    return [serialize_doc(doc) for doc in docs]
+async def admin_all_orders(
+    response: Response,
+    limit: int = limit_query(500),
+    offset: int = offset_query(),
+    _: dict = Depends(require_admin),
+):
+    return await paged_admin_list(
+        "orders", response, "created_at", limit, offset, {"_id": 0}
+    )
 
 
 @router.put("/admin/orders/{order_id}")
@@ -118,21 +148,32 @@ async def admin_update_order(
 
 
 @router.get("/admin/users")
-async def admin_users(_: dict = Depends(require_admin)):
-    docs = await db.users.find(
-        {},
+async def admin_users(
+    response: Response,
+    limit: int = limit_query(500),
+    offset: int = offset_query(),
+    _: dict = Depends(require_admin),
+):
+    return await paged_admin_list(
+        "users",
+        response,
+        "created_at",
+        limit,
+        offset,
         {"_id": 0, "password_hash": 0},
-    ).to_list(500)
-    return [serialize_doc(doc) for doc in docs]
+    )
 
 
 @router.get("/admin/contacts")
-async def admin_contacts(_: dict = Depends(require_admin)):
-    docs = await db.contacts.find(
-        {},
-        {"_id": 0},
-    ).sort("created_at", -1).to_list(500)
-    return [serialize_doc(doc) for doc in docs]
+async def admin_contacts(
+    response: Response,
+    limit: int = limit_query(500),
+    offset: int = offset_query(),
+    _: dict = Depends(require_admin),
+):
+    return await paged_admin_list(
+        "contacts", response, "created_at", limit, offset, {"_id": 0}
+    )
 
 
 @router.post("/admin/upload")

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..database import db
 from ..models import Order, OrderCreate, OrderItemSnapshot
+from ..pagination import limit_query, offset_query
 from ..security import get_current_user
 from ..utils import serialize_doc
 
@@ -99,11 +100,18 @@ async def create_order(
 
 
 @router.get("/orders")
-async def my_orders(user: dict = Depends(get_current_user)):
-    docs = await db.orders.find(
-        {"user_id": user["user_id"]},
-        {"_id": 0},
-    ).sort("created_at", -1).to_list(200)
+async def my_orders(
+    user: dict = Depends(get_current_user),
+    limit: int = limit_query(200),
+    offset: int = offset_query(),
+):
+    docs = await (
+        db.orders.find({"user_id": user["user_id"]}, {"_id": 0})
+        .sort("created_at", -1)
+        .skip(offset)
+        .limit(limit)
+        .to_list(limit)
+    )
     return [serialize_doc(doc) for doc in docs]
 
 

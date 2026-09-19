@@ -6,6 +6,7 @@ from starlette.middleware.cors import CORSMiddleware
 from .config import CORS_ORIGINS
 from .database import close_database, create_indexes
 from .middleware import csrf_protection
+from .pagination import TOTAL_COUNT_HEADER
 from .routers import admin, auth, catalog, orders, shopping
 from .seed import seed_products
 
@@ -45,6 +46,7 @@ app.add_middleware(
     allow_origins=list(CORS_ORIGINS),
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=[TOTAL_COUNT_HEADER],
 )
 
 

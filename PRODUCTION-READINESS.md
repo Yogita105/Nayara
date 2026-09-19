@@ -85,10 +85,12 @@ production-ready ecommerce application.
 - [x] Add a unique sparse index for hashed session tokens.
 - [x] Add a TTL index for session expiration.
 - [x] Add a TTL index for expired rate-limit windows.
-- [ ] Add indexes for product slug, category, and featured status.
-- [ ] Add indexes for order ID, user ID, and creation date.
-- [ ] Add an index for review product ID.
-- [ ] Add indexes for contact and bulk-inquiry creation dates.
+- [x] Add indexes for product slug, category, and featured status.
+- [x] Enforce unique product slugs.
+- [x] Add indexes for order ID, user ID, and creation date.
+- [x] Add an index for review product ID.
+- [x] Add indexes for contact and bulk-inquiry creation dates.
+- [x] Add unique indexes for cart, wishlist, and file owners.
 - [ ] Configure MongoDB connection-pool limits and timeouts.
 - [ ] Enable managed backups and test restoration.
 - [ ] Configure production replication.
@@ -113,11 +115,14 @@ production-ready ecommerce application.
 
 ## 7. Pagination and query efficiency
 
-- [ ] Add pagination to product listings.
-- [ ] Add pagination to customer and administrator order listings.
-- [ ] Add pagination to administrator user listings.
-- [ ] Add pagination to reviews, contacts, and bulk inquiries.
-- [ ] Avoid loading every review when recalculating a product rating.
+- [x] Add pagination to product listings.
+- [x] Add pagination to customer and administrator order listings.
+- [x] Add pagination to administrator user listings.
+- [x] Add pagination to reviews, contacts, and bulk inquiries.
+- [x] Sort every paged query on an indexed field so pages do not overlap.
+- [x] Avoid loading every review when recalculating a product rating.
+- [x] Escape user input used in product search patterns.
+- [ ] Use the paging parameters in the storefront and admin screens.
 - [ ] Add query-level performance tests for growing collections.
 - [ ] Add caching only after measuring production access patterns.
 

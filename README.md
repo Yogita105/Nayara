@@ -91,6 +91,28 @@ known order and inquiry statuses are accepted and unrelated fields such as an or
 total can never be overwritten. Updating a missing record returns `404` instead of
 silently succeeding.
 
+## Paging and indexes
+
+Every list endpoint accepts `limit` and `offset` query parameters. Responses stay plain
+arrays, so existing clients are unaffected, and the defaults match the previous fixed
+caps. `limit` must be between 1 and 500; invalid values return `422`.
+
+```http
+GET /api/products?category=laundry&limit=24&offset=24
+```
+
+Each paged query sorts on an indexed field. Without a deterministic sort, skipping
+records could return the same document twice or miss one entirely.
+
+Administrator lists also return an `X-Total-Count` header so a page-numbered UI knows
+how many records exist. Storefront listings omit it to avoid a second query on every
+page view.
+
+Indexes are declared in one table in `backend/app/database.py` and created at startup.
+A failure is logged rather than blocking startup, because a unique index cannot be
+built over pre-existing duplicates and the API should still serve traffic while that
+is corrected.
+
 Legacy OAuth accounts do not have passwords. Set one without exposing it in shell
 history by running:
 
@@ -112,6 +134,7 @@ The Uvicorn entry point remains `backend/server.py`. Application code lives in t
 - `rate_limit.py`: sign-in and registration throttling
 - `utils.py`: shared serialization and normalization helpers
 - `seed.py`: initial product data
+- `pagination.py`: shared paging parameters for list endpoints
 - `routers/auth.py`: registration, login, logout, and current-user routes
 - `routers/catalog.py`: products and reviews
 - `routers/shopping.py`: cart and wishlist
