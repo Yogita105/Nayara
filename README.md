@@ -7,12 +7,17 @@ Track launch preparation in the
 
 ## Authentication configuration
 
-The application uses email-or-mobile and password authentication with seven-day,
-server-managed sessions. New accounts require both an email address and an Indian
-mobile number. Existing accounts without a mobile number can continue to sign in by
-email. Configure these backend environment variables:
+The **mobile number identifies an account**. It is required, unique, and how people
+sign in. An email address is optional: many customers in India have an address they
+never read, so demanding one costs sign-ups without providing a usable way to reach
+them. When an email is given it must be unique, and it can also be used to sign in.
 
-- `ADMIN_EMAILS`: comma-separated email addresses that should receive administrator access.
+Sessions are server-managed and last seven days. Configure these backend environment
+variables:
+
+- `ADMIN_MOBILES`: comma-separated mobile numbers that should receive administrator
+  access. They may be written in any usual form, such as `9876543210` or
+  `+91 98765 43210`.
 - `COOKIE_SECURE`: set to `true` in HTTPS production environments; leave `false` for local HTTP development.
 - `ENVIRONMENT`: one of `development`, `test`, `staging`, or `production`.
 - `CORS_ORIGINS`: comma-separated frontend origins. It is required in production,
@@ -37,9 +42,9 @@ CORS_ORIGINS=https://www.nayara.in,https://nayara.in
 SECRET_KEY=<a long random value from a secret manager>
 ```
 
-New accounts whose normalized email appears in `ADMIN_EMAILS` are administrators.
-Existing MongoDB admin flags are preserved, and allowlisted accounts are promoted when
-they log in.
+New accounts whose mobile number appears in `ADMIN_MOBILES` are administrators.
+Existing MongoDB admin flags are preserved, so an administrator created before the
+allowlist existed keeps access.
 
 Passwords are stored as bcrypt hashes. Session tokens are sent only through an HttpOnly
 cookie and are stored as SHA-256 hashes in MongoDB.
@@ -66,7 +71,7 @@ to expire:
 
 | Endpoint | Effect |
 | --- | --- |
-| `PUT /api/auth/profile` | Updates the name and mobile number |
+| `PUT /api/auth/profile` | Updates the name and optional email address |
 | `POST /api/auth/password` | Replaces the password after checking the current one, then ends every other session |
 | `POST /api/auth/logout-all` | Ends every session, including the caller's |
 
@@ -75,10 +80,10 @@ else, so someone who suspects their account is being used can lock it down witho
 losing the device in front of them. Password attempts are throttled per account, which
 matters because the current password can otherwise be guessed through a stolen session.
 
-Both are reachable from the Account screen at `/account`, alongside the name and mobile
-number. The email address is not editable there: it identifies the account and grants
-administrator access through the allowlist, so changing it safely needs a verified-email
-flow. Accounts created before mobile numbers were collected show a prompt to add one.
+Both are reachable from the Account screen at `/account`, alongside the name and email
+address. The mobile number is not editable there: it identifies the account, is how
+people sign in, and grants administrator access through the allowlist, so changing it
+safely needs a verified-number flow.
 
 ## Rate limiting
 

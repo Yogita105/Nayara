@@ -45,6 +45,8 @@ production-ready ecommerce application.
 - [x] Add temporary account lockouts or progressive delays after repeated
       failed logins.
 - [x] Add password-change functionality.
+- [x] Make the mobile number the account identifier, with email optional.
+- [ ] Allow the mobile number to be changed once it can be verified.
 - [ ] Add password-reset functionality.
 - [x] Invalidate other sessions after a password change.
 - [x] Add a "log out from all devices" feature.

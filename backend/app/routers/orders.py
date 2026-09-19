@@ -89,7 +89,8 @@ async def create_order(
     paid_immediately = payload.payment_method == "upi"
     order = Order(
         user_id=user["user_id"],
-        user_email=user["email"],
+        user_mobile=user.get("mobile", ""),
+        user_email=user.get("email"),
         items=[OrderItemSnapshot(**snapshot) for snapshot in snapshots],
         **calculate_totals(snapshots),
         address=payload.address,

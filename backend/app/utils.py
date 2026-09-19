@@ -14,7 +14,7 @@ def serialize_doc(doc: dict) -> dict:
 
 def public_user(user: dict) -> dict:
     result = {}
-    for key in ("user_id", "email", "mobile", "name", "picture", "is_admin", "created_at"):
+    for key in ("user_id", "mobile", "email", "name", "picture", "is_admin", "created_at"):
         value = user.get(key)
         result[key] = value.isoformat() if isinstance(value, datetime) else value
     return result

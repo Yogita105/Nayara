@@ -110,6 +110,7 @@ def _mk_session(mongo_db, is_admin=False):
     email = f"test.{user_id}@example.com"
     mongo_db.users.insert_one({
         "user_id": user_id,
+        "mobile": f"+91{9}{uuid.uuid4().int % 10**9:09d}",
         "email": email,
         "name": "Test User",
         "picture": "",

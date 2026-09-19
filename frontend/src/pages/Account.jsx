@@ -20,11 +20,11 @@ export default function Account() {
 
   const [profile, setProfile] = useState({
     name: user?.name || "",
-    mobile: user?.mobile || "",
+    email: user?.email || "",
   });
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState("");
-  const missingMobile = !user?.mobile;
+  const missingEmail = !user?.email;
 
   const updateProfileField = (event) =>
     setProfile((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -34,8 +34,11 @@ export default function Account() {
     setProfileError("");
     setSavingProfile(true);
     try {
-      const { data } = await api.put("/auth/profile", profile);
-      setProfile({ name: data.name, mobile: data.mobile || "" });
+      const { data } = await api.put("/auth/profile", {
+        name: profile.name,
+        email: profile.email.trim() || null,
+      });
+      setProfile({ name: data.name, email: data.email || "" });
       await checkAuth();
       toast.success("Details saved.");
     } catch (requestError) {
@@ -100,15 +103,15 @@ export default function Account() {
       <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tight mb-2">
         Account
       </h1>
-      <p className="text-[#64748B] mb-8">{user?.email}</p>
+      <p className="text-[#64748B] mb-8">{user?.mobile}</p>
 
       <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6 mb-6">
         <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
           <UserRound className="w-4 h-4" /> Your details
         </h2>
         <p className="text-sm text-[#64748B] mt-1 mb-5">
-          {missingMobile
-            ? "Add a mobile number so we can reach you about your orders."
+          {missingEmail
+            ? "Add an email if you would like receipts and order updates by email."
             : "Keep these up to date so we can reach you about your orders."}
         </p>
 
@@ -130,36 +133,32 @@ export default function Account() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="profile-email">Email</Label>
+            <Label htmlFor="profile-mobile">Mobile number</Label>
             <Input
-              id="profile-email"
-              value={user?.email || ""}
+              id="profile-mobile"
+              value={user?.mobile || ""}
               readOnly
               disabled
               className="h-11 bg-[#F8FAFC]"
-              data-testid="profile-email-input"
+              data-testid="profile-mobile-input"
             />
             <p className="text-xs text-[#64748B]">
-              Your email identifies the account and cannot be changed here.
+              Your mobile number identifies the account and cannot be changed here.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="mobile">Mobile number</Label>
+            <Label htmlFor="email">Email (optional)</Label>
             <Input
-              id="mobile"
-              name="mobile"
-              type="tel"
-              inputMode="numeric"
-              value={profile.mobile}
+              id="email"
+              name="email"
+              type="email"
+              value={profile.email}
               onChange={updateProfileField}
-              autoComplete="tel"
-              placeholder="10-digit Indian mobile number"
-              minLength={10}
-              maxLength={20}
-              required
+              autoComplete="email"
+              maxLength={254}
               className="h-11"
-              data-testid="profile-mobile-input"
+              data-testid="profile-email-input"
             />
           </div>
 

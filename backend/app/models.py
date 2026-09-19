@@ -70,8 +70,8 @@ class BulkInquiryStatus(str, Enum):
 
 class User(BaseModel):
     user_id: str
-    email: str
-    mobile: Optional[str] = None
+    mobile: str
+    email: Optional[str] = None
     name: str
     picture: Optional[str] = ""
     is_admin: bool = False
@@ -80,9 +80,11 @@ class User(BaseModel):
 
 class RegisterRequest(BaseModel):
     name: str = Field(min_length=2, max_length=100)
-    email: EmailStr
     mobile: str = Field(min_length=10, max_length=20)
     password: str = Field(min_length=8, max_length=128)
+    # Optional because many Indian customers have an address they never read,
+    # so demanding one costs sign-ups without giving a usable contact.
+    email: Optional[EmailStr] = None
 
 
 class LoginRequest(BaseModel):
@@ -97,7 +99,8 @@ class PasswordChangeRequest(BaseModel):
 
 class ProfileUpdateRequest(ContentModel):
     name: str = Field(min_length=2, max_length=100)
-    mobile: str = Field(min_length=10, max_length=20)
+    # The mobile number is the account's identifier and is not changed here.
+    email: Optional[EmailStr] = None
 
 
 class ProductCreate(ContentModel):
@@ -228,7 +231,8 @@ class OrderItemSnapshot(ContentModel):
 class Order(ContentModel):
     order_id: str = Field(default_factory=lambda: f"ord_{uuid.uuid4().hex[:10]}")
     user_id: str
-    user_email: str
+    user_mobile: str
+    user_email: Optional[str] = None
     items: List[OrderItemSnapshot] = Field(min_length=1)
     subtotal: float = Field(ge=0)
     shipping: float = Field(ge=0)

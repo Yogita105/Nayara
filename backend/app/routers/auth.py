@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pymongo.errors import DuplicateKeyError
 
-from ..config import ADMIN_EMAILS
+from ..config import ADMIN_MOBILES
 from ..database import db
 from ..models import (
     LoginRequest,
@@ -64,7 +64,6 @@ async def register(body: RegisterRequest, request: Request, response: Response):
         REGISTER_IP_RULE,
         TOO_MANY_REGISTRATIONS,
     )
-    email = str(body.email).lower()
     name = body.name.strip()
     if len(name) < 2:
         raise HTTPException(status_code=422, detail="Name must contain at least 2 characters")
@@ -72,27 +71,39 @@ async def register(body: RegisterRequest, request: Request, response: Response):
         mobile = normalize_indian_mobile(body.mobile)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    if await db.users.find_one({"email": email}, {"_id": 1}):
-        raise HTTPException(status_code=409, detail="An account with this email already exists")
+
+    email = str(body.email).lower() if body.email else None
     if await db.users.find_one({"mobile": mobile}, {"_id": 1}):
-        raise HTTPException(status_code=409, detail="An account with this mobile number already exists")
+        raise HTTPException(
+            status_code=409,
+            detail="An account with this mobile number already exists",
+        )
+    if email and await db.users.find_one({"email": email}, {"_id": 1}):
+        raise HTTPException(
+            status_code=409,
+            detail="An account with this email already exists",
+        )
 
     user = {
         "user_id": f"user_{uuid.uuid4().hex[:12]}",
-        "email": email,
         "mobile": mobile,
         "name": name,
         "picture": "",
         "password_hash": await hash_password(body.password),
-        "is_admin": email in ADMIN_EMAILS,
+        "is_admin": mobile in ADMIN_MOBILES,
         "created_at": datetime.now(timezone.utc),
     }
+    # The key is left out entirely when there is no address, so the unique
+    # index does not treat every account without one as a duplicate.
+    if email:
+        user["email"] = email
+
     try:
         await db.users.insert_one(user)
     except DuplicateKeyError as error:
         raise HTTPException(
             status_code=409,
-            detail="An account with this email or mobile number already exists",
+            detail="An account with this mobile number or email already exists",
         ) from error
     csrf_token = await create_user_session(user["user_id"], response)
     return {"user": public_user(user), "csrf_token": csrf_token}
@@ -148,8 +159,7 @@ async def login(body: LoginRequest, request: Request, response: Response):
 
     await reset_rate_limit(LOGIN_IDENTIFIER_SCOPE, lookup_value)
 
-    email = user["email"]
-    is_admin = bool(user.get("is_admin")) or email in ADMIN_EMAILS
+    is_admin = bool(user.get("is_admin")) or user.get("mobile") in ADMIN_MOBILES
     if user.get("is_admin", False) != is_admin:
         await db.users.update_one(
             {"user_id": user["user_id"]},
@@ -195,34 +205,36 @@ async def update_profile(
 ):
     """Update the details a customer can correct themselves.
 
-    The email address is not editable here: it identifies the account and
-    grants administrator access through the allowlist, so changing it safely
-    needs a verified-email flow.
+    The mobile number is not editable here: it identifies the account, is how
+    people sign in, and grants administrator access through the allowlist.
+    Changing it safely needs a verified-number flow.
     """
-    try:
-        mobile = normalize_indian_mobile(body.mobile)
-    except ValueError as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
+    email = str(body.email).lower() if body.email else None
 
-    clash = await db.users.find_one(
-        {"mobile": mobile, "user_id": {"$ne": user["user_id"]}},
-        {"_id": 1},
-    )
-    if clash:
-        raise HTTPException(
-            status_code=409,
-            detail="Another account already uses this mobile number",
+    if email:
+        clash = await db.users.find_one(
+            {"email": email, "user_id": {"$ne": user["user_id"]}},
+            {"_id": 1},
         )
+        if clash:
+            raise HTTPException(
+                status_code=409,
+                detail="Another account already uses this email",
+            )
+
+    changes = {"$set": {"name": body.name}}
+    if email:
+        changes["$set"]["email"] = email
+    else:
+        # Removing the key keeps the unique index from seeing many blanks.
+        changes["$unset"] = {"email": ""}
 
     try:
-        await db.users.update_one(
-            {"user_id": user["user_id"]},
-            {"$set": {"name": body.name, "mobile": mobile}},
-        )
+        await db.users.update_one({"user_id": user["user_id"]}, changes)
     except DuplicateKeyError as error:
         raise HTTPException(
             status_code=409,
-            detail="Another account already uses this mobile number",
+            detail="Another account already uses this email",
         ) from error
 
     updated = await db.users.find_one(

@@ -6,6 +6,8 @@ from typing import Mapping, Optional, Tuple
 import cloudinary
 from dotenv import load_dotenv
 
+from .utils import normalize_indian_mobile
+
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BACKEND_DIR / ".env")
@@ -26,7 +28,7 @@ class Settings:
     mongo_url: str
     db_name: str
     secret_key: str
-    admin_emails: frozenset[str]
+    admin_mobiles: frozenset[str]
     cookie_secure: bool
     cookie_samesite: str
     cors_origins: Tuple[str, ...]
@@ -48,6 +50,17 @@ def parse_boolean(value: str, variable_name: str) -> bool:
     if normalized in {"false", "0", "no"}:
         return False
     raise RuntimeError(f"{variable_name} must be true or false")
+
+
+def _normalize_admin_mobile(entry: str) -> str:
+    """Accept an administrator number in any of the usual written forms."""
+    candidate = entry.strip()
+    if not candidate:
+        return ""
+    try:
+        return normalize_indian_mobile(candidate)
+    except ValueError as error:
+        raise RuntimeError(f"ADMIN_MOBILES contains an invalid number: {entry}") from error
 
 
 def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
@@ -124,10 +137,13 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
         mongo_url=mongo_url,
         db_name=db_name,
         secret_key=secret_key,
-        admin_emails=frozenset(
-            email.strip().lower()
-            for email in values.get("ADMIN_EMAILS", "").split(",")
-            if email.strip()
+        admin_mobiles=frozenset(
+            normalized
+            for normalized in (
+                _normalize_admin_mobile(entry)
+                for entry in values.get("ADMIN_MOBILES", "").split(",")
+            )
+            if normalized
         ),
         cookie_secure=cookie_secure,
         cookie_samesite="none" if cookie_secure else "lax",
@@ -156,7 +172,7 @@ MONGO_URL = settings.mongo_url
 DB_NAME = settings.db_name
 ENVIRONMENT = settings.environment
 SECRET_KEY = settings.secret_key
-ADMIN_EMAILS = settings.admin_emails
+ADMIN_MOBILES = settings.admin_mobiles
 COOKIE_SECURE = settings.cookie_secure
 COOKIE_SAMESITE = settings.cookie_samesite
 CORS_ORIGINS = settings.cors_origins

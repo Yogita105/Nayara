@@ -2,6 +2,7 @@ import logging
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ASCENDING, DESCENDING
+from pymongo.errors import OperationFailure
 
 from .config import DB_NAME, MONGO_URL
 
@@ -15,8 +16,16 @@ db = client[DB_NAME]
 # covered here so queries keep using an index as the collections grow.
 INDEXES = (
     ("users", [("user_id", ASCENDING)], {"unique": True}),
-    ("users", [("email", ASCENDING)], {"unique": True}),
-    ("users", [("mobile", ASCENDING)], {"unique": True, "sparse": True}),
+    # Email is optional, so only accounts that actually have one are indexed.
+    (
+        "users",
+        [("email", ASCENDING)],
+        {
+            "unique": True,
+            "partialFilterExpression": {"email": {"$type": "string"}},
+        },
+    ),
+    ("users", [("mobile", ASCENDING)], {"unique": True}),
     ("users", [("created_at", DESCENDING)], {}),
     (
         "user_sessions",
@@ -59,10 +68,31 @@ async def create_indexes() -> None:
     for collection, keys, options in INDEXES:
         try:
             await db[collection].create_index(keys, **options)
+        except OperationFailure as error:
+            # An index already exists on these keys with different options,
+            # so replace it rather than leaving the old rules in force.
+            if error.code not in (85, 86):
+                logger.error(
+                    "Could not create index %s on %s: %s", keys, collection, error
+                )
+                continue
+            try:
+                await db[collection].drop_index(_index_name(keys))
+                await db[collection].create_index(keys, **options)
+                logger.info("Replaced index %s on %s", keys, collection)
+            except Exception as replace_error:
+                logger.error(
+                    "Could not replace index %s on %s: %s",
+                    keys, collection, replace_error,
+                )
         except Exception as error:
             logger.error(
                 "Could not create index %s on %s: %s", keys, collection, error
             )
+
+
+def _index_name(keys) -> str:
+    return "_".join(f"{field}_{direction}" for field, direction in keys)
 
 
 def close_database() -> None:

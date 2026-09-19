@@ -68,7 +68,7 @@ function OrdersAdmin() {
             {orders.map((o) => (
               <tr key={o.order_id} className="border-t border-[var(--nayara-border)]">
                 <td className="px-4 py-3 font-mono text-xs">{o.order_id}</td>
-                <td className="px-4 py-3">{o.user_email}</td>
+                <td className="px-4 py-3">{o.user_mobile || o.user_email || "—"}</td>
                 <td className="px-4 py-3">{formatINR(o.total)}</td>
                 <td className="px-4 py-3"><span className="badge-soft px-2 py-1 rounded-full text-xs">{o.payment_method}</span></td>
                 <td className="px-4 py-3">
@@ -257,14 +257,14 @@ function UsersAdmin() {
       <div className="rounded-2xl border border-[var(--nayara-border)] bg-white overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-[#FFFFFF] text-[#64748B] text-left">
-            <tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Email</th><th className="px-4 py-3">Mobile</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Joined</th></tr>
+            <tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Mobile</th><th className="px-4 py-3">Email</th><th className="px-4 py-3">Role</th><th className="px-4 py-3">Joined</th></tr>
           </thead>
           <tbody>
             {users.map((u) => (
               <tr key={u.user_id} className="border-t border-[var(--nayara-border)]">
                 <td className="px-4 py-3">{u.name}</td>
-                <td className="px-4 py-3">{u.email}</td>
                 <td className="px-4 py-3">{u.mobile || "—"}</td>
+                <td className="px-4 py-3">{u.email || "—"}</td>
                 <td className="px-4 py-3">{u.is_admin ? <span className="badge-soft px-2 py-1 rounded-full text-xs">Admin</span> : "Customer"}</td>
                 <td className="px-4 py-3 text-xs text-[#64748B]">{u.created_at?.slice(0, 10)}</td>
               </tr>

@@ -11,8 +11,7 @@ export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ name: "", email: "", mobile: "", password: "" });
-  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: "", identifier: "", email: "", mobile: "", password: "" });  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const redirect = new URLSearchParams(location.search).get("redirect")
     || location.state?.from
@@ -32,9 +31,15 @@ export default function Login() {
     setError("");
     try {
       if (mode === "register") {
-        await register(form);
+        await register({
+          name: form.name,
+          mobile: form.mobile,
+          password: form.password,
+          // Sent only when given, since an address is optional.
+          ...(form.email.trim() ? { email: form.email.trim() } : {}),
+        });
       } else {
-        await login({ identifier: form.email, password: form.password });
+        await login({ identifier: form.identifier, password: form.password });
       }
       navigate(redirect, { replace: true });
     } catch (requestError) {
@@ -85,42 +90,62 @@ export default function Login() {
               />
             </div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="email">
-              {mode === "login" ? "Email or mobile number" : "Email"}
-            </Label>
-            <Input
-              id="email"
-              name="email"
-              type={mode === "login" ? "text" : "email"}
-              value={form.email}
-              onChange={updateField}
-              autoComplete={mode === "login" ? "username" : "email"}
-              placeholder={mode === "login" ? "Email or 10-digit mobile number" : ""}
-              required
-              className="h-11"
-              data-testid="auth-email-input"
-            />
-          </div>
-          {mode === "register" && (
+          {mode === "login" ? (
             <div className="space-y-2">
-              <Label htmlFor="mobile">Mobile number</Label>
+              <Label htmlFor="identifier">Mobile number or email</Label>
               <Input
-                id="mobile"
-                name="mobile"
-                type="tel"
-                inputMode="numeric"
-                value={form.mobile}
+                id="identifier"
+                name="identifier"
+                type="text"
+                value={form.identifier}
                 onChange={updateField}
-                autoComplete="tel"
-                placeholder="10-digit Indian mobile number"
-                minLength={10}
-                maxLength={20}
+                autoComplete="username"
+                placeholder="10-digit mobile number or email"
                 required
                 className="h-11"
-                data-testid="auth-mobile-input"
+                data-testid="auth-email-input"
               />
             </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="mobile">Mobile number</Label>
+                <Input
+                  id="mobile"
+                  name="mobile"
+                  type="tel"
+                  inputMode="numeric"
+                  value={form.mobile}
+                  onChange={updateField}
+                  autoComplete="tel"
+                  placeholder="10-digit Indian mobile number"
+                  minLength={10}
+                  maxLength={20}
+                  required
+                  className="h-11"
+                  data-testid="auth-mobile-input"
+                />
+                <p className="text-xs text-[#64748B]">
+                  We use this to reach you about your orders.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email (optional)</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={updateField}
+                  autoComplete="email"
+                  className="h-11"
+                  data-testid="auth-email-optional-input"
+                />
+                <p className="text-xs text-[#64748B]">
+                  Add one if you would like receipts by email.
+                </p>
+              </div>
+            </>
           )}
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
