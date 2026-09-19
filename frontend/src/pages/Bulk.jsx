@@ -3,6 +3,7 @@ import { Factory, TrendingUp, BadgeCheck, Truck, ShieldCheck, MapPin, Briefcase,
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Checkbox } from "../components/ui/checkbox";
+import RequiredMark from "../components/RequiredMark";
 import { api } from "../lib/api";
 import { toast } from "sonner";
 
@@ -206,27 +207,27 @@ export default function Bulk() {
           <form onSubmit={submit} className="rounded-3xl border border-[var(--nayara-border)] bg-white p-8 md:p-10 space-y-6" data-testid="bulk-inquiry-form">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Your Name *</label>
+                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Your Name<RequiredMark /></label>
                 <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="bulk-name" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Business Name *</label>
+                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Business Name<RequiredMark /></label>
                 <Input required value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} data-testid="bulk-business" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Phone Number *</label>
+                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Phone Number<RequiredMark /></label>
                 <Input required type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} data-testid="bulk-phone" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Email *</label>
+                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Email<RequiredMark /></label>
                 <Input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} data-testid="bulk-email" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">City / Location *</label>
+                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">City / Location<RequiredMark /></label>
                 <Input required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} data-testid="bulk-city" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Quantity Required *</label>
+                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Quantity Required<RequiredMark /></label>
                 <Input required placeholder="e.g. 500 kg / 1000 units / monthly" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} data-testid="bulk-quantity" />
               </div>
             </div>

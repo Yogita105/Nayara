@@ -65,19 +65,19 @@ export default function Checkout() {
             <h2 className="font-heading text-lg font-semibold mb-5">Shipping Address</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]">Full name</Label>
+                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>Full name</Label>
                 <Input value={address.full_name} onChange={(e) => setAddress({ ...address, full_name: e.target.value })} required data-testid="addr-name" />
               </div>
               <div>
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]">Phone</Label>
+                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>Phone</Label>
                 <Input value={address.phone} onChange={(e) => setAddress({ ...address, phone: e.target.value })} required data-testid="addr-phone" />
               </div>
               <div>
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]">Pincode</Label>
+                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>Pincode</Label>
                 <Input value={address.pincode} onChange={(e) => setAddress({ ...address, pincode: e.target.value })} required data-testid="addr-pincode" />
               </div>
               <div className="md:col-span-2">
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]">Address line 1</Label>
+                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>Address line 1</Label>
                 <Input value={address.line1} onChange={(e) => setAddress({ ...address, line1: e.target.value })} required data-testid="addr-line1" />
               </div>
               <div className="md:col-span-2">
@@ -85,11 +85,11 @@ export default function Checkout() {
                 <Input value={address.line2} onChange={(e) => setAddress({ ...address, line2: e.target.value })} data-testid="addr-line2" />
               </div>
               <div>
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]">City</Label>
+                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>City</Label>
                 <Input value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} required data-testid="addr-city" />
               </div>
               <div>
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]">State</Label>
+                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>State</Label>
                 <Input value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })} required data-testid="addr-state" />
               </div>
             </div>

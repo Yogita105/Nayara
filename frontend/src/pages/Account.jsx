@@ -117,7 +117,7 @@ export default function Account() {
 
         <form onSubmit={saveProfile} className="space-y-4" data-testid="profile-form">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name" required>Name</Label>
             <Input
               id="name"
               name="name"
@@ -189,7 +189,7 @@ export default function Account() {
 
         <form onSubmit={changePassword} className="space-y-4" data-testid="password-form">
           <div className="space-y-2">
-            <Label htmlFor="current_password">Current password</Label>
+            <Label htmlFor="current_password" required>Current password</Label>
             <Input
               id="current_password"
               name="current_password"
@@ -203,7 +203,7 @@ export default function Account() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new_password">New password</Label>
+            <Label htmlFor="new_password" required>New password</Label>
             <Input
               id="new_password"
               name="new_password"
@@ -219,7 +219,7 @@ export default function Account() {
             <p className="text-xs text-[#64748B]">Use at least 8 characters.</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirm_password">Confirm new password</Label>
+            <Label htmlFor="confirm_password" required>Confirm new password</Label>
             <Input
               id="confirm_password"
               name="confirm_password"

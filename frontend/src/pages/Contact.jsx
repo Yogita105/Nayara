@@ -3,6 +3,7 @@ import { Mail, Phone, MapPin, Send } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Button } from "../components/ui/button";
+import RequiredMark from "../components/RequiredMark";
 import { api } from "../lib/api";
 import { toast } from "sonner";
 
@@ -31,11 +32,11 @@ export default function Contact() {
         <form onSubmit={submit} className="rounded-3xl border border-[var(--nayara-border)] bg-white p-8 space-y-4" data-testid="contact-form">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Name</label>
+              <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Name<RequiredMark /></label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required data-testid="contact-name" />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Email</label>
+              <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Email<RequiredMark /></label>
               <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required data-testid="contact-email" />
             </div>
           </div>
@@ -45,12 +46,12 @@ export default function Contact() {
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} data-testid="contact-phone" />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Subject</label>
+              <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Subject<RequiredMark /></label>
               <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required data-testid="contact-subject" />
             </div>
           </div>
           <div>
-            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Message</label>
+            <label className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Message<RequiredMark /></label>
             <Textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={6} required data-testid="contact-message" />
           </div>
           <Button type="submit" disabled={submitting} className="w-full bg-[var(--nayara-primary)] hover:bg-[var(--nayara-primary-hover)]" data-testid="contact-submit">

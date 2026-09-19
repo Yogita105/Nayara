@@ -75,7 +75,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="mt-8 space-y-5" data-testid="auth-form">
           {mode === "register" && (
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name" required>Name</Label>
               <Input
                 id="name"
                 name="name"
@@ -92,7 +92,7 @@ export default function Login() {
           )}
           {mode === "login" ? (
             <div className="space-y-2">
-              <Label htmlFor="identifier">Mobile number or email</Label>
+              <Label htmlFor="identifier" required>Mobile number or email</Label>
               <Input
                 id="identifier"
                 name="identifier"
@@ -109,7 +109,7 @@ export default function Login() {
           ) : (
             <>
               <div className="space-y-2">
-                <Label htmlFor="mobile">Mobile number</Label>
+                <Label htmlFor="mobile" required>Mobile number</Label>
                 <Input
                   id="mobile"
                   name="mobile"
@@ -148,7 +148,7 @@ export default function Login() {
             </>
           )}
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" required>Password</Label>
             <Input
               id="password"
               name="password"

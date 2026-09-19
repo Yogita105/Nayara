@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
 import ProductImage from "../components/ProductImage";
+import RequiredMark from "../components/RequiredMark";
 import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 
@@ -198,7 +199,7 @@ function ProductEditor({ initial, onClose }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Name</label>
+              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Name<RequiredMark /></label>
               <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-name-input" />
             </div>
             <div>
@@ -210,15 +211,15 @@ function ProductEditor({ initial, onClose }) {
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Price (₹)</label>
+              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Price (₹)<RequiredMark /></label>
               <input required type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-price-input" />
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">MRP (₹)</label>
+              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">MRP (₹)<RequiredMark /></label>
               <input required type="number" min="0" step="0.01" value={form.mrp} onChange={(e) => setForm({ ...form, mrp: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-mrp-input" />
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Stock</label>
+              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Stock<RequiredMark /></label>
               <input required type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-stock-input" />
             </div>
             <div className="flex items-center gap-2 mt-6">
