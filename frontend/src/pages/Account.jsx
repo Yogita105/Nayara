@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { KeyRound, LogOut, ShieldCheck } from "lucide-react";
+import { KeyRound, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { api, setCsrfToken } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -17,6 +17,35 @@ export default function Account() {
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState("");
+
+  const [profile, setProfile] = useState({
+    name: user?.name || "",
+    mobile: user?.mobile || "",
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const missingMobile = !user?.mobile;
+
+  const updateProfileField = (event) =>
+    setProfile((current) => ({ ...current, [event.target.name]: event.target.value }));
+
+  const saveProfile = async (event) => {
+    event.preventDefault();
+    setProfileError("");
+    setSavingProfile(true);
+    try {
+      const { data } = await api.put("/auth/profile", profile);
+      setProfile({ name: data.name, mobile: data.mobile || "" });
+      await checkAuth();
+      toast.success("Details saved.");
+    } catch (requestError) {
+      setProfileError(
+        requestError.response?.data?.detail || "Could not save your details."
+      );
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const updateField = (event) =>
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -72,6 +101,84 @@ export default function Account() {
         Account
       </h1>
       <p className="text-[#64748B] mb-8">{user?.email}</p>
+
+      <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6 mb-6">
+        <h2 className="font-heading text-lg font-semibold flex items-center gap-2">
+          <UserRound className="w-4 h-4" /> Your details
+        </h2>
+        <p className="text-sm text-[#64748B] mt-1 mb-5">
+          {missingMobile
+            ? "Add a mobile number so we can reach you about your orders."
+            : "Keep these up to date so we can reach you about your orders."}
+        </p>
+
+        <form onSubmit={saveProfile} className="space-y-4" data-testid="profile-form">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              name="name"
+              value={profile.name}
+              onChange={updateProfileField}
+              autoComplete="name"
+              minLength={2}
+              maxLength={100}
+              required
+              className="h-11"
+              data-testid="profile-name-input"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="profile-email">Email</Label>
+            <Input
+              id="profile-email"
+              value={user?.email || ""}
+              readOnly
+              disabled
+              className="h-11 bg-[#F8FAFC]"
+              data-testid="profile-email-input"
+            />
+            <p className="text-xs text-[#64748B]">
+              Your email identifies the account and cannot be changed here.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mobile">Mobile number</Label>
+            <Input
+              id="mobile"
+              name="mobile"
+              type="tel"
+              inputMode="numeric"
+              value={profile.mobile}
+              onChange={updateProfileField}
+              autoComplete="tel"
+              placeholder="10-digit Indian mobile number"
+              minLength={10}
+              maxLength={20}
+              required
+              className="h-11"
+              data-testid="profile-mobile-input"
+            />
+          </div>
+
+          {profileError && (
+            <p role="alert" className="text-sm text-red-600" data-testid="profile-error">
+              {profileError}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            disabled={savingProfile}
+            className="h-11 rounded-full bg-[var(--nayara-primary)] hover:bg-[var(--nayara-primary-hover)]"
+            data-testid="profile-submit-btn"
+          >
+            {savingProfile ? "Saving..." : "Save details"}
+          </Button>
+        </form>
+      </section>
 
       <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6 mb-6">
         <h2 className="font-heading text-lg font-semibold flex items-center gap-2">

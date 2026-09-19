@@ -8,7 +8,12 @@ from pymongo.errors import DuplicateKeyError
 
 from ..config import ADMIN_EMAILS
 from ..database import db
-from ..models import LoginRequest, PasswordChangeRequest, RegisterRequest
+from ..models import (
+    LoginRequest,
+    PasswordChangeRequest,
+    ProfileUpdateRequest,
+    RegisterRequest,
+)
 from ..rate_limit import (
     LOGIN_IDENTIFIER_RULE,
     LOGIN_IP_RULE,
@@ -181,6 +186,50 @@ async def logout(
         )
     clear_session_cookies(response)
     return {"ok": True}
+
+
+@router.put("/profile")
+async def update_profile(
+    body: ProfileUpdateRequest,
+    user: dict = Depends(get_current_user),
+):
+    """Update the details a customer can correct themselves.
+
+    The email address is not editable here: it identifies the account and
+    grants administrator access through the allowlist, so changing it safely
+    needs a verified-email flow.
+    """
+    try:
+        mobile = normalize_indian_mobile(body.mobile)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    clash = await db.users.find_one(
+        {"mobile": mobile, "user_id": {"$ne": user["user_id"]}},
+        {"_id": 1},
+    )
+    if clash:
+        raise HTTPException(
+            status_code=409,
+            detail="Another account already uses this mobile number",
+        )
+
+    try:
+        await db.users.update_one(
+            {"user_id": user["user_id"]},
+            {"$set": {"name": body.name, "mobile": mobile}},
+        )
+    except DuplicateKeyError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="Another account already uses this mobile number",
+        ) from error
+
+    updated = await db.users.find_one(
+        {"user_id": user["user_id"]},
+        {"_id": 0, "password_hash": 0},
+    )
+    return public_user(updated)
 
 
 @router.post("/password")

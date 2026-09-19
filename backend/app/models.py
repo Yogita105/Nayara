@@ -95,6 +95,11 @@ class PasswordChangeRequest(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class ProfileUpdateRequest(ContentModel):
+    name: str = Field(min_length=2, max_length=100)
+    mobile: str = Field(min_length=10, max_length=20)
+
+
 class ProductCreate(ContentModel):
     name: str = Field(min_length=2, max_length=200)
     slug: str = Field(min_length=2, max_length=200, pattern=SLUG_PATTERN)

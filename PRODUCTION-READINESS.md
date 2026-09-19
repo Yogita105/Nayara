@@ -187,6 +187,7 @@ production-ready ecommerce application.
 - [ ] Add global API error handling and user-friendly retry states.
 - [ ] Add loading and empty states across every data-driven screen.
 - [ ] Add accessible form validation and error summaries.
+- [x] Let customers correct their own name and mobile number.
 - [ ] Evaluate migration from Create React App to Vite.
 - [ ] Evaluate server-side rendering only if SEO requirements justify it.
 - [ ] Build and serve production assets through a CDN.

@@ -63,8 +63,9 @@ def main() -> int:
         "TEST_DB_NAME": test_database,
         "ENVIRONMENT": "test",
         "REACT_APP_BACKEND_URL": BASE_URL,
-        # Keep pytest output readable; failures still surface through asserts.
-        "LOG_LEVEL": os.environ.get("LOG_LEVEL", "WARNING"),
+        # Keep pytest output readable; many tests deliberately provoke 4xx
+        # responses, which the API records as warnings.
+        "LOG_LEVEL": os.environ.get("LOG_LEVEL", "ERROR"),
     }
 
     print(f"Starting an API on port {TEST_PORT} using database '{test_database}'.")

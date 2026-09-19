@@ -66,6 +66,7 @@ to expire:
 
 | Endpoint | Effect |
 | --- | --- |
+| `PUT /api/auth/profile` | Updates the name and mobile number |
 | `POST /api/auth/password` | Replaces the password after checking the current one, then ends every other session |
 | `POST /api/auth/logout-all` | Ends every session, including the caller's |
 
@@ -74,7 +75,10 @@ else, so someone who suspects their account is being used can lock it down witho
 losing the device in front of them. Password attempts are throttled per account, which
 matters because the current password can otherwise be guessed through a stolen session.
 
-Both are reachable from the Account screen at `/account`.
+Both are reachable from the Account screen at `/account`, alongside the name and mobile
+number. The email address is not editable there: it identifies the account and grants
+administrator access through the allowlist, so changing it safely needs a verified-email
+flow. Accounts created before mobile numbers were collected show a prompt to add one.
 
 ## Rate limiting
 
