@@ -4,12 +4,29 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import OperationFailure
 
-from .config import DB_NAME, MONGO_URL
+from .config import (
+    DB_NAME,
+    MONGO_MAX_POOL_SIZE,
+    MONGO_SOCKET_TIMEOUT_MS,
+    MONGO_TIMEOUT_MS,
+    MONGO_URL,
+)
 
 
 logger = logging.getLogger(__name__)
 
-client = AsyncIOMotorClient(MONGO_URL)
+client = AsyncIOMotorClient(
+    MONGO_URL,
+    # Each worker keeps its own pool, and the cluster caps total connections,
+    # so an unbounded default would let a few workers exhaust it.
+    maxPoolSize=MONGO_MAX_POOL_SIZE,
+    minPoolSize=0,
+    maxIdleTimeMS=60_000,
+    serverSelectionTimeoutMS=MONGO_TIMEOUT_MS,
+    connectTimeoutMS=MONGO_TIMEOUT_MS,
+    socketTimeoutMS=MONGO_SOCKET_TIMEOUT_MS,
+    retryWrites=True,
+)
 db = client[DB_NAME]
 
 # (collection, keys, options). Every filter and sort used by the API should be

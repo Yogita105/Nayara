@@ -37,6 +37,9 @@ class Settings:
     log_level: str
     log_json: bool
     auto_seed_products: bool
+    mongo_max_pool_size: int
+    mongo_timeout_ms: int
+    mongo_socket_timeout_ms: int
     session_days: int
     cloudinary_cloud_name: str
     cloudinary_api_key: str
@@ -50,6 +53,16 @@ def parse_boolean(value: str, variable_name: str) -> bool:
     if normalized in {"false", "0", "no"}:
         return False
     raise RuntimeError(f"{variable_name} must be true or false")
+
+
+def parse_positive_int(value: str, variable_name: str) -> int:
+    try:
+        parsed = int(str(value).strip())
+    except ValueError as error:
+        raise RuntimeError(f"{variable_name} must be a whole number") from error
+    if parsed < 1:
+        raise RuntimeError(f"{variable_name} must be greater than zero")
+    return parsed
 
 
 def _normalize_admin_mobile(entry: str) -> str:
@@ -159,6 +172,16 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
         log_level=log_level,
         log_json=log_json,
         auto_seed_products=auto_seed_products,
+        mongo_max_pool_size=parse_positive_int(
+            values.get("MONGO_MAX_POOL_SIZE", "20"), "MONGO_MAX_POOL_SIZE"
+        ),
+        mongo_timeout_ms=parse_positive_int(
+            values.get("MONGO_TIMEOUT_MS", "10000"), "MONGO_TIMEOUT_MS"
+        ),
+        mongo_socket_timeout_ms=parse_positive_int(
+            values.get("MONGO_SOCKET_TIMEOUT_MS", "20000"),
+            "MONGO_SOCKET_TIMEOUT_MS",
+        ),
         session_days=7,
         cloudinary_cloud_name=values.get("CLOUDINARY_CLOUD_NAME", ""),
         cloudinary_api_key=values.get("CLOUDINARY_API_KEY", ""),
@@ -181,6 +204,9 @@ TRUST_PROXY_HEADERS = settings.trust_proxy_headers
 LOG_LEVEL = settings.log_level
 LOG_JSON = settings.log_json
 AUTO_SEED_PRODUCTS = settings.auto_seed_products
+MONGO_MAX_POOL_SIZE = settings.mongo_max_pool_size
+MONGO_TIMEOUT_MS = settings.mongo_timeout_ms
+MONGO_SOCKET_TIMEOUT_MS = settings.mongo_socket_timeout_ms
 SESSION_DAYS = settings.session_days
 
 cloudinary.config(

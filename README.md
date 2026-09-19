@@ -295,6 +295,52 @@ The database name defaults to the local name with any `_dev` suffix replaced by
 Running `pytest` directly fails with an explanatory error when it would otherwise use
 the database this project is configured for, so the mistake cannot be made by accident.
 
+## Deploying
+
+The API serves the built frontend, so the whole site is one container on one origin.
+That keeps cookies first-party, which is what the CSRF protection depends on, and means
+there is no CORS configuration to maintain in production.
+
+### Build and run locally
+
+```powershell
+docker build -t nayara .
+docker run --rm -p 8080:8080 --env-file backend\.env nayara
+```
+
+### Deploy to Fly.io
+
+`fly.toml` targets Mumbai, because the MongoDB Atlas cluster answers in single-digit
+milliseconds from India. Hosting further away would add that distance to every query on
+every page.
+
+```powershell
+fly launch --no-deploy        # first time only, reuses the committed fly.toml
+fly secrets set MONGO_URL="..." DB_NAME="Nayara" SECRET_KEY="..." ADMIN_MOBILES="..." `
+                CLOUDINARY_CLOUD_NAME="..." CLOUDINARY_API_KEY="..." CLOUDINARY_API_SECRET="..."
+fly deploy
+```
+
+`ENVIRONMENT`, `PORT`, `WEB_CONCURRENCY` and `MONGO_MAX_POOL_SIZE` are already set in
+`fly.toml`. Everything secret belongs in `fly secrets`, never in that file.
+
+Setting `ENVIRONMENT=production` turns on secure cookies and JSON logging, requires a
+real `SECRET_KEY`, and stops products being seeded automatically.
+
+### Connections
+
+Each worker keeps its own MongoDB pool, so the two multiply. The defaults hold two
+workers at twenty connections each, which is forty of the five hundred a shared Atlas
+cluster allows. Raising `WEB_CONCURRENCY` without lowering `MONGO_MAX_POOL_SIZE` is the
+quickest way to exhaust that limit, and it presents as a database outage rather than a
+configuration mistake.
+
+### A local build is not the deployed build
+
+`yarn build` run by hand reads `frontend/.env` and bakes `REACT_APP_BACKEND_URL` into
+the bundle. The image builds without that file, so the bundle calls `/api` on whatever
+origin served it. Never copy a locally built `frontend/build` into a deployment.
+
 Legacy OAuth accounts do not have passwords. Set one without exposing it in shell
 history by running:
 

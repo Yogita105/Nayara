@@ -11,6 +11,7 @@ from .config import (
     LOG_LEVEL,
 )
 from .database import close_database, create_indexes
+from .frontend import mount_frontend
 from .middleware import csrf_protection, request_context
 from .observability import REQUEST_ID_HEADER, configure_logging
 from .pagination import TOTAL_COUNT_HEADER
@@ -42,6 +43,9 @@ async def root():
 
 
 app.include_router(root_router)
+
+# Registered after the API so its catch-all cannot shadow a route.
+mount_frontend(app)
 
 # Middleware runs outermost-last, so CORS is added after the others and can
 # attach its headers even to responses they generate.

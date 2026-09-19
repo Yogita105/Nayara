@@ -116,3 +116,7 @@ credentials.json
 *.pem
 *.key
 .credentials
+
+# The template carries placeholders only, never real values. This exception
+# must stay last: the ignore rules above would otherwise exclude it.
+!.env.example

@@ -1,0 +1,26 @@
+# Keep the build context small and secrets out of the image.
+**/.env
+**/.env.*
+!**/.env.example
+
+.git
+.gitignore
+.github
+
+**/node_modules
+frontend/build
+frontend/.yarn
+**/__pycache__
+**/*.pyc
+.pytest_cache
+backend/tests
+test_reports
+tests
+memory
+
+**/.vscode
+**/.idea
+**/.DS_Store
+
+*.md
+!README.md

@@ -79,6 +79,7 @@ production-ready ecommerce application.
 - [ ] Use separate development, staging, and production environments.
 - [ ] Store production secrets in a managed secret store.
 - [x] Require a strong, non-default signing secret in production.
+- [x] Document every setting in a committed template.
 - [ ] Use separate credentials for development and production.
 - [ ] Restrict third-party credentials to minimum required permissions.
 - [ ] Document credential rotation and incident-response procedures.
@@ -96,7 +97,7 @@ production-ready ecommerce application.
 - [x] Add an index for review product ID.
 - [x] Add indexes for contact and bulk-inquiry creation dates.
 - [x] Add unique indexes for cart, wishlist, and file owners.
-- [ ] Configure MongoDB connection-pool limits and timeouts.
+- [x] Configure MongoDB connection-pool limits and timeouts.
 - [ ] Enable managed backups and test restoration.
 - [ ] Configure production replication.
 - [ ] Define retention policies for personal and operational data.
@@ -218,13 +219,13 @@ production-ready ecommerce application.
 
 ## 14. Deployment
 
-- [ ] Select production hosting for the frontend, API, database, and workers.
-- [ ] Serve the application exclusively over HTTPS.
-- [ ] Run multiple Uvicorn workers or API containers.
-- [ ] Add a managed reverse proxy or load balancer.
+- [x] Select production hosting for the frontend, API, database, and workers.
+- [x] Serve the application exclusively over HTTPS.
+- [x] Run multiple Uvicorn workers or API containers.
+- [x] Add a managed reverse proxy or load balancer.
 - [ ] Configure request-body and upload-size limits at the edge.
 - [ ] Add automated staging and production deployments.
-- [ ] Add health-based deployment checks.
+- [x] Add health-based deployment checks.
 - [ ] Add rollback support.
 - [ ] Add database backup verification before risky releases.
 - [ ] Document the release and rollback process.

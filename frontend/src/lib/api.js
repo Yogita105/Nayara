@@ -1,7 +1,9 @@
 import axios from "axios";
 
 export const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-export const API = `${BACKEND_URL}/api`;
+// In production the API is served from the same origin, so a relative path
+// needs no build-time address and keeps cookies first-party.
+export const API = BACKEND_URL ? `${BACKEND_URL}/api` : "/api";
 
 const SAFE_METHODS = ["get", "head", "options"];
 
