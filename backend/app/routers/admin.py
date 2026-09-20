@@ -3,9 +3,18 @@ import uuid
 from datetime import datetime, timezone
 
 import cloudinary.uploader
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+)
 from fastapi.responses import RedirectResponse
 
+from .. import audit
 from ..config import MAX_UPLOAD_BYTES
 from ..database import db
 from ..inventory import release_stock
@@ -86,7 +95,8 @@ async def admin_bulk_inquiries(
 async def admin_update_bulk_inquiry(
     inquiry_id: str,
     payload: BulkInquiryUpdate,
-    _: dict = Depends(require_admin),
+    request: Request,
+    user: dict = Depends(require_admin),
 ):
     result = await db.bulk_inquiries.update_one(
         {"inquiry_id": inquiry_id},
@@ -97,6 +107,13 @@ async def admin_update_bulk_inquiry(
     doc = await db.bulk_inquiries.find_one(
         {"inquiry_id": inquiry_id},
         {"_id": 0},
+    )
+    await audit.record(
+        "admin.bulk_inquiry_updated",
+        actor_id=user["user_id"],
+        request=request,
+        inquiry_id=inquiry_id,
+        status=payload.status,
     )
     return serialize_doc(doc)
 
@@ -139,7 +156,8 @@ async def admin_all_orders(
 async def admin_update_order(
     order_id: str,
     payload: OrderUpdate,
-    _: dict = Depends(require_admin),
+    request: Request,
+    user: dict = Depends(require_admin),
 ):
     order = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
     if not order:
@@ -169,6 +187,15 @@ async def admin_update_order(
         )
 
     doc = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
+    await audit.record(
+        "admin.order_updated",
+        actor_id=user["user_id"],
+        request=request,
+        order_id=order_id,
+        status_from=current_status,
+        status_to=doc.get("status") if doc else None,
+        payment_status=payload.payment_status,
+    )
     return serialize_doc(doc)
 
 
@@ -284,6 +311,12 @@ async def admin_upload(
         "is_deleted": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
+    await audit.record(
+        "admin.image_uploaded",
+        actor_id=user["user_id"],
+        file_id=file_id,
+        size_bytes=len(data),
+    )
     return {"file_id": file_id, "url": cloudinary_url}
 
 

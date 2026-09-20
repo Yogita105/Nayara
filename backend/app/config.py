@@ -43,6 +43,7 @@ class Settings:
     mongo_socket_timeout_ms: int
     max_request_body_bytes: int
     max_upload_bytes: int
+    audit_retention_days: int
     session_days: int
     cloudinary_cloud_name: str
     cloudinary_api_key: str
@@ -207,6 +208,11 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
             values.get("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)),
             "MAX_UPLOAD_BYTES",
         ),
+        # Long enough to investigate something noticed late, short enough that
+        # the shop is not holding records of who signed in indefinitely.
+        audit_retention_days=parse_positive_int(
+            values.get("AUDIT_RETENTION_DAYS", "180"), "AUDIT_RETENTION_DAYS"
+        ),
         session_days=7,
         cloudinary_cloud_name=values.get("CLOUDINARY_CLOUD_NAME", ""),
         cloudinary_api_key=values.get("CLOUDINARY_API_KEY", ""),
@@ -235,6 +241,7 @@ MONGO_TIMEOUT_MS = settings.mongo_timeout_ms
 MONGO_SOCKET_TIMEOUT_MS = settings.mongo_socket_timeout_ms
 MAX_REQUEST_BODY_BYTES = settings.max_request_body_bytes
 MAX_UPLOAD_BYTES = settings.max_upload_bytes
+AUDIT_RETENTION_DAYS = settings.audit_retention_days
 SESSION_DAYS = settings.session_days
 
 cloudinary.config(

@@ -51,6 +51,7 @@ the built-in default. An exported variable therefore always wins.
 | `MONGO_SOCKET_TIMEOUT_MS` | `20000` | Socket timeout. |
 | `MAX_REQUEST_BODY_BYTES` | `1048576` | Largest accepted request body, in bytes. |
 | `MAX_UPLOAD_BYTES` | `5242880` | Largest accepted image upload, in bytes. |
+| `AUDIT_RETENTION_DAYS` | `180` | How long security audit records are kept before MongoDB removes them. |
 
 ### Image uploads
 
@@ -257,8 +258,42 @@ second one, and a request arriving while the first is still running is rejected 
 released, so a shopper can correct the problem and submit again. The checkout page
 generates one key per visit.
 
-## Logging and health
+## Security audit trail
 
+Security-relevant actions are recorded in the `audit_events` collection, so there is
+something to look at afterwards: which account changed an order, whether a run of
+failed sign-ins preceded a successful one, when a password was last changed.
+
+| Event | Recorded when |
+| --- | --- |
+| `auth.account_created` | A new account is registered |
+| `auth.signed_in` | A sign-in succeeds |
+| `auth.sign_in_failed` | A sign-in is refused |
+| `auth.signed_out`, `auth.signed_out_everywhere` | A session ends |
+| `auth.password_changed`, `auth.password_change_refused` | A password change is attempted |
+| `auth.profile_updated` | A name or email address is changed |
+| `auth.admin_granted` | An account gains administrator access through the allowlist |
+| `admin.order_updated`, `admin.bulk_inquiry_updated` | An administrator changes a record |
+| `admin.product_created`, `admin.product_updated`, `admin.product_deleted` | The catalogue changes |
+| `admin.image_uploaded` | An image is published |
+
+**Nothing recorded may be a credential.** A log holding passwords or session tokens
+would be worth stealing in its own right, and would hand over the accounts it exists to
+protect. Values are scrubbed on the way in: any field whose *name* suggests a password,
+token, secret or key is replaced with `[redacted]` rather than stored.
+
+Two details follow from that:
+
+- A failed sign-in for an unknown account records no identifier. Someone may type their
+  password into the mobile-number box, and storing what was typed would keep that
+  password as plainly as if it had been asked for. When the account *is* known, the
+  failure is recorded against it, which is what makes a run of attempts visible.
+- A profile change records *which* fields changed, not what they were changed to.
+
+Writing a record never fails a request that has already succeeded. Records expire after
+`AUDIT_RETENTION_DAYS`, so the shop does not hold a sign-in history indefinitely.
+
+## Logging and health
 Each request is tagged with an id, returned as `X-Request-ID`. A caller may supply its
 own id to trace a request across services; otherwise one is generated. Every log line
 written while handling that request carries the same id, so one customer report can be

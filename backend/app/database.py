@@ -67,6 +67,12 @@ INDEXES = (
     ("orders", [("created_at", DESCENDING)], {}),
     ("orders", [("payment_status", ASCENDING)], {}),
     ("order_claims", [("expires_at", ASCENDING)], {"expireAfterSeconds": 0}),
+    ("audit_events", [("at", DESCENDING)], {}),
+    ("audit_events", [("actor_id", ASCENDING), ("at", DESCENDING)], {}),
+    ("audit_events", [("event", ASCENDING), ("at", DESCENDING)], {}),
+    # Retention: records are removed once they are older than the configured
+    # window, so the shop is not holding a sign-in history indefinitely.
+    ("audit_events", [("expires_at", ASCENDING)], {"expireAfterSeconds": 0}),
     ("reviews", [("review_id", ASCENDING)], {"unique": True}),
     ("reviews", [("product_id", ASCENDING), ("created_at", ASCENDING)], {}),
     ("contacts", [("contact_id", ASCENDING)], {"unique": True}),

@@ -1,10 +1,11 @@
 import re
 from typing import Any, Dict, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import DuplicateKeyError
 
+from .. import audit
 from ..database import db
 from ..models import Product, ProductCreate, Review, ReviewCreate
 from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
@@ -79,7 +80,8 @@ async def get_product(product_id: str):
 @router.post("/products")
 async def create_product(
     payload: ProductCreate,
-    _: dict = Depends(require_admin),
+    request: Request,
+    user: dict = Depends(require_admin),
 ):
     product = Product(**payload.model_dump())
     doc = product.model_dump()
@@ -88,6 +90,13 @@ async def create_product(
         await db.products.insert_one(doc)
     except DuplicateKeyError as error:
         raise HTTPException(status_code=409, detail=DUPLICATE_SLUG_DETAIL) from error
+    await audit.record(
+        "admin.product_created",
+        actor_id=user["user_id"],
+        request=request,
+        product_id=doc["product_id"],
+        slug=doc["slug"],
+    )
     return serialize_doc(doc)
 
 
@@ -95,8 +104,12 @@ async def create_product(
 async def update_product(
     product_id: str,
     payload: ProductCreate,
-    _: dict = Depends(require_admin),
+    request: Request,
+    user: dict = Depends(require_admin),
 ):
+    previous = await db.products.find_one(
+        {"product_id": product_id}, {"_id": 0, "price": 1, "stock": 1}
+    )
     try:
         result = await db.products.update_one(
             {"product_id": product_id},
@@ -107,15 +120,34 @@ async def update_product(
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     doc = await db.products.find_one({"product_id": product_id}, {"_id": 0})
+    await audit.record(
+        "admin.product_updated",
+        actor_id=user["user_id"],
+        request=request,
+        product_id=product_id,
+        # Price and stock are the fields worth being able to trace later.
+        price_from=(previous or {}).get("price"),
+        price_to=doc.get("price"),
+        stock_from=(previous or {}).get("stock"),
+        stock_to=doc.get("stock"),
+    )
     return serialize_doc(doc)
 
 
 @router.delete("/products/{product_id}")
 async def delete_product(
     product_id: str,
-    _: dict = Depends(require_admin),
+    request: Request,
+    user: dict = Depends(require_admin),
 ):
-    await db.products.delete_one({"product_id": product_id})
+    result = await db.products.delete_one({"product_id": product_id})
+    await audit.record(
+        "admin.product_deleted",
+        actor_id=user["user_id"],
+        request=request,
+        product_id=product_id,
+        existed=result.deleted_count > 0,
+    )
     return {"ok": True}
 
 

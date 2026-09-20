@@ -6,6 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pymongo.errors import DuplicateKeyError
 
+from .. import audit
 from ..config import ADMIN_MOBILES
 from ..database import db
 from ..models import (
@@ -106,6 +107,13 @@ async def register(body: RegisterRequest, request: Request, response: Response):
             detail="An account with this mobile number or email already exists",
         ) from error
     csrf_token = await create_user_session(user["user_id"], response)
+    await audit.record(
+        "auth.account_created",
+        actor_id=user["user_id"],
+        request=request,
+        is_admin=user["is_admin"],
+        has_email=bool(email),
+    )
     return {"user": public_user(user), "csrf_token": csrf_token}
 
 
@@ -153,8 +161,18 @@ async def login(body: LoginRequest, request: Request, response: Response):
 
     user = await db.users.find_one(query, {"_id": 0})
     if not user or not user.get("password_hash"):
+        # The identifier someone typed is deliberately not recorded: a
+        # password entered in the wrong box would be stored as plainly as if
+        # it had been asked for.
+        await audit.record("auth.sign_in_failed", request=request, reason="no_account")
         raise await reject_invalid_credentials()
     if not await verify_password(body.password, user["password_hash"]):
+        await audit.record(
+            "auth.sign_in_failed",
+            actor_id=user["user_id"],
+            request=request,
+            reason="wrong_password",
+        )
         raise await reject_invalid_credentials()
 
     await reset_rate_limit(LOGIN_IDENTIFIER_SCOPE, lookup_value)
@@ -166,8 +184,19 @@ async def login(body: LoginRequest, request: Request, response: Response):
             {"$set": {"is_admin": is_admin}},
         )
         user["is_admin"] = is_admin
+        await audit.record(
+            "auth.admin_granted",
+            actor_id=user["user_id"],
+            request=request,
+        )
 
     csrf_token = await create_user_session(user["user_id"], response)
+    await audit.record(
+        "auth.signed_in",
+        actor_id=user["user_id"],
+        request=request,
+        is_admin=user["is_admin"],
+    )
     return {"user": public_user(user), "csrf_token": csrf_token}
 
 
@@ -191,9 +220,15 @@ async def logout(
 ):
     token = get_request_token(request, authorization)
     if token:
-        await db.user_sessions.delete_one(
+        session = await db.user_sessions.find_one_and_delete(
             {"session_token_hash": hash_session_token(token)}
         )
+        if session:
+            await audit.record(
+                "auth.signed_out",
+                actor_id=session.get("user_id"),
+                request=request,
+            )
     clear_session_cookies(response)
     return {"ok": True}
 
@@ -241,6 +276,13 @@ async def update_profile(
         {"user_id": user["user_id"]},
         {"_id": 0, "password_hash": 0},
     )
+    await audit.record(
+        "auth.profile_updated",
+        actor_id=user["user_id"],
+        # Which details changed, not what they were changed to.
+        name_changed=user.get("name") != body.name,
+        email_changed=user.get("email") != email,
+    )
     return public_user(updated)
 
 
@@ -267,6 +309,12 @@ async def change_password(
     if not current_hash or not await verify_password(
         body.current_password, current_hash
     ):
+        await audit.record(
+            "auth.password_change_refused",
+            actor_id=user["user_id"],
+            request=request,
+            reason="wrong_current_password",
+        )
         raise HTTPException(status_code=403, detail="Current password is incorrect")
 
     if await verify_password(body.new_password, current_hash):
@@ -288,6 +336,12 @@ async def change_password(
         "Password changed",
         extra={"user_id": user["user_id"], "sessions_ended": ended},
     )
+    await audit.record(
+        "auth.password_changed",
+        actor_id=user["user_id"],
+        request=request,
+        other_sessions_ended=ended,
+    )
     return {"ok": True, "other_sessions_ended": ended}
 
 
@@ -302,5 +356,10 @@ async def logout_everywhere(
     logger.info(
         "Signed out of all devices",
         extra={"user_id": user["user_id"], "sessions_ended": ended},
+    )
+    await audit.record(
+        "auth.signed_out_everywhere",
+        actor_id=user["user_id"],
+        sessions_ended=ended,
     )
     return {"ok": True, "sessions_ended": ended}

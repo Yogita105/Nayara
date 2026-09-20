@@ -51,7 +51,7 @@ production-ready ecommerce application.
 - [x] Invalidate other sessions after a password change.
 - [x] Add a "log out from all devices" feature.
 - [ ] Add breached-password checks and document password requirements.
-- [ ] Record security audit events without recording passwords or raw tokens.
+- [x] Record security audit events without recording passwords or raw tokens.
 
 ## 3. Contact verification
 

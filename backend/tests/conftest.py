@@ -74,6 +74,7 @@ def _remove_user_data(mongo_db, user_ids):
     mongo_db.carts.delete_many(owner)
     mongo_db.wishlists.delete_many(owner)
     mongo_db.orders.delete_many(owner)
+    mongo_db.audit_events.delete_many({"actor_id": {"$in": list(user_ids)}})
 
 
 def _purge_test_artifacts(mongo_db):
@@ -84,6 +85,7 @@ def _purge_test_artifacts(mongo_db):
     """
     mongo_db.rate_limits.delete_many({})
     mongo_db.order_claims.delete_many({})
+    mongo_db.audit_events.delete_many({})
     mongo_db.contacts.delete_many({"name": "TEST_ctc", "email": "t@e.com"})
 
     leftovers = [
