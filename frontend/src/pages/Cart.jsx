@@ -53,7 +53,7 @@ export default function Cart() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-heading font-medium">{item.name}</h3>
                 {item.variant_label && (
-                  <p className="text-xs uppercase tracking-[0.12em] text-[#64748B] mt-0.5" data-testid={`cart-variant-${key}`}>
+                  <p className="text-xs tracking-[0.08em] text-[#64748B] mt-0.5" data-testid={`cart-variant-${key}`}>
                     {item.variant_label}
                   </p>
                 )}

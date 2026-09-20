@@ -278,6 +278,19 @@ python scripts\add_product_variants.py --apply    # make the change
 
 It is safe to run twice; a product that already has variants is left alone.
 
+Once the size is a choice, carrying it in the product's name repeats it and dates the
+name. `rename_product_sizes.py` drops it, but only where the size the name ends with is
+genuinely one of that product's own variant labels, so it cannot mangle a name it has
+misread:
+
+```powershell
+python scripts\rename_product_sizes.py            # report what would change
+python scripts\rename_product_sizes.py --apply    # make the change
+```
+
+`show_catalogue.py` prints every product with its forms, which is the quickest way to
+see what a database actually holds.
+
 ## Orders and stock
 
 Placing an order reserves stock. Stock belongs to the variant, so a kilo bag and a
