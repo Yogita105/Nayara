@@ -175,6 +175,15 @@ Each paged query sorts on an indexed field and ends with `product_id` as a tiebr
 Without a total order, two products sharing a price could swap places between requests,
 showing one of them on two pages and hiding the other entirely.
 
+The tiebreaker follows the direction of the field before it wherever that lets an
+existing index supply the order. An index can only be read backwards when every one of
+its keys reverses together, so a mixed-direction sort needs an index of its own.
+
+`backend/tests/test_query_performance.py` asks MongoDB for its plan and refuses a
+collection scan, so an index that stops being used is reported rather than discovered in
+production. The plans are read against a populated collection, because with a handful of
+records the planner's choice says little about what it would do later.
+
 The catalogue is sorted and filtered by the API, not the browser. Ordering only the
 records already fetched would rank one page against itself, so the cheapest product
 could sit on the last page. `sort` accepts `popular`, `newest`, `price_asc`,

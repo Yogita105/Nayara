@@ -34,12 +34,17 @@ db = client[DB_NAME]
 INDEXES = (
     ("users", [("user_id", ASCENDING)], {"unique": True}),
     # Email is optional, so only accounts that actually have one are indexed.
+    # The filter matches on presence rather than type: MongoDB only uses a
+    # partial index when the query provably implies its filter, and an
+    # equality match on an address implies the field exists but says nothing
+    # about its type. With a type filter the index was skipped and signing in
+    # by email read every account in the collection.
     (
         "users",
         [("email", ASCENDING)],
         {
             "unique": True,
-            "partialFilterExpression": {"email": {"$type": "string"}},
+            "partialFilterExpression": {"email": {"$exists": True}},
         },
     ),
     ("users", [("mobile", ASCENDING)], {"unique": True}),
@@ -56,7 +61,11 @@ INDEXES = (
     ("products", [("slug", ASCENDING)], {"unique": True}),
     ("products", [("category", ASCENDING), ("created_at", ASCENDING)], {}),
     ("products", [("featured", ASCENDING), ("created_at", ASCENDING)], {}),
-    ("products", [("created_at", ASCENDING)], {}),
+    # The date ordering carries the product_id tiebreaker so the unfiltered
+    # shop page, which is the most visited one, is answered from the index
+    # rather than by sorting the whole catalogue in memory. Reading it
+    # backwards serves the newest-first ordering too.
+    ("products", [("created_at", ASCENDING), ("product_id", ASCENDING)], {}),
     # Storefront sorting. The trailing product_id matches the tiebreaker the
     # catalogue query appends, so paging stays stable when prices or ratings
     # are equal.

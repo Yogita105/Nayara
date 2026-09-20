@@ -16,7 +16,9 @@ production-ready ecommerce application.
 - [x] Document the backend package structure and local startup commands.
 - [ ] Add clear service and repository layers when business logic becomes more
       complex.
-- [ ] Establish database migration and index-deployment tooling.
+- [ ] Establish database migration and index-deployment tooling. Indexes are
+      created at startup but never removed, so an index dropped from the table
+      lingers in a database that already has it.
 - [x] Seed product data only in development and test, never automatically in
       production, so an emptied catalogue is not silently refilled.
 - [ ] Review uploaded images before they are published, so an accidental upload
@@ -130,7 +132,7 @@ production-ready ecommerce application.
 - [x] Avoid loading every review when recalculating a product rating.
 - [x] Escape user input used in product search patterns.
 - [x] Use the paging parameters in the storefront and admin screens.
-- [ ] Add query-level performance tests for growing collections.
+- [x] Add query-level performance tests for growing collections.
 - [ ] Add caching only after measuring production access patterns.
 
 ## 8. Orders and inventory

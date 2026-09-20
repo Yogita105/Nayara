@@ -20,12 +20,17 @@ DUPLICATE_SLUG_DETAIL = "Another product already uses this slug"
 # Paging a sort that leaves ties in an arbitrary order can show the same
 # product on two pages and hide another entirely, so every option ends with a
 # unique field to make the order total.
+#
+# The tiebreaker follows the direction of the field before it wherever that
+# lets an existing index supply the order. An index is only readable backwards
+# when every one of its keys reverses together, so a mixed-direction sort
+# would need an index of its own and otherwise reads the whole catalogue.
 PRODUCT_SORTS: Dict[str, list] = {
-    "popular": [("created_at", ASCENDING)],
-    "newest": [("created_at", DESCENDING)],
-    "price_asc": [("price", ASCENDING)],
-    "price_desc": [("price", DESCENDING)],
-    "rating": [("rating", DESCENDING)],
+    "popular": [("created_at", ASCENDING), ("product_id", ASCENDING)],
+    "newest": [("created_at", DESCENDING), ("product_id", DESCENDING)],
+    "price_asc": [("price", ASCENDING), ("product_id", ASCENDING)],
+    "price_desc": [("price", DESCENDING), ("product_id", DESCENDING)],
+    "rating": [("rating", DESCENDING), ("product_id", ASCENDING)],
 }
 ProductSort = Literal["popular", "newest", "price_asc", "price_desc", "rating"]
 
@@ -61,7 +66,7 @@ async def list_products(
     )
     docs = await (
         db.products.find(query, {"_id": 0})
-        .sort([*PRODUCT_SORTS[sort], ("product_id", ASCENDING)])
+        .sort(PRODUCT_SORTS[sort])
         .skip(offset)
         .limit(limit)
         .to_list(limit)

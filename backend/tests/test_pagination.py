@@ -21,6 +21,7 @@ class TestIndexDefinitions:
             ("products", ("slug",)),
             ("products", ("category", "created_at")),
             ("products", ("featured", "created_at")),
+            ("products", ("created_at", "product_id")),
             ("products", ("price", "product_id")),
             ("products", ("rating", "product_id")),
             ("orders", ("order_id",)),
@@ -129,15 +130,19 @@ class TestProductSorting:
         response = anon_client.get(f"{base_url}/api/products?sort=cheapest")
         assert response.status_code == 422
 
+    @pytest.mark.parametrize(
+        "sort", ["popular", "newest", "price_asc", "price_desc", "rating"]
+    )
     def test_sorted_paging_covers_every_product_exactly_once(
-        self, base_url, anon_client
+        self, base_url, anon_client, sort
     ):
-        everything = anon_client.get(f"{base_url}/api/products?sort=price_asc").json()
+        """Every ordering, because each carries its own tiebreaker direction."""
+        everything = anon_client.get(f"{base_url}/api/products?sort={sort}").json()
 
         collected = []
         for offset in range(0, len(everything), 2):
             collected += anon_client.get(
-                f"{base_url}/api/products?sort=price_asc&limit=2&offset={offset}"
+                f"{base_url}/api/products?sort={sort}&limit=2&offset={offset}"
             ).json()
 
         ids = [item["product_id"] for item in collected]
