@@ -32,6 +32,9 @@ variables:
   `INFO`.
 - `LOG_JSON`: defaults to `true` in production and staging, `false` elsewhere.
 - `AUTO_SEED_PRODUCTS`: defaults to `true` in development and test, `false` elsewhere.
+- `API_DOCS_ENABLED`: serves `/docs`, `/redoc` and `/openapi.json`. Defaults to
+  `true` in development and test, `false` elsewhere, because the schema
+  describes every admin endpoint.
 
 For example:
 

@@ -37,6 +37,7 @@ class Settings:
     log_level: str
     log_json: bool
     auto_seed_products: bool
+    api_docs_enabled: bool
     mongo_max_pool_size: int
     mongo_timeout_ms: int
     mongo_socket_timeout_ms: int
@@ -145,9 +146,19 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
         else parse_boolean(auto_seed_value, "AUTO_SEED_PRODUCTS")
     )
 
+    # The interactive documentation publishes every route and request shape,
+    # including the admin API. That is useful while building, but on an
+    # internet-facing deployment it hands out a map of the attack surface, so
+    # it stays off anywhere the public can reach.
+    api_docs_value = values.get("API_DOCS_ENABLED")
+    api_docs_enabled = (
+        runtime_environment in {"development", "test"}
+        if api_docs_value is None
+        else parse_boolean(api_docs_value, "API_DOCS_ENABLED")
+    )
+
     return Settings(
-        environment=runtime_environment,
-        mongo_url=mongo_url,
+        environment=runtime_environment,        mongo_url=mongo_url,
         db_name=db_name,
         secret_key=secret_key,
         admin_mobiles=frozenset(
@@ -172,6 +183,7 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
         log_level=log_level,
         log_json=log_json,
         auto_seed_products=auto_seed_products,
+        api_docs_enabled=api_docs_enabled,
         mongo_max_pool_size=parse_positive_int(
             values.get("MONGO_MAX_POOL_SIZE", "20"), "MONGO_MAX_POOL_SIZE"
         ),
@@ -204,6 +216,7 @@ TRUST_PROXY_HEADERS = settings.trust_proxy_headers
 LOG_LEVEL = settings.log_level
 LOG_JSON = settings.log_json
 AUTO_SEED_PRODUCTS = settings.auto_seed_products
+API_DOCS_ENABLED = settings.api_docs_enabled
 MONGO_MAX_POOL_SIZE = settings.mongo_max_pool_size
 MONGO_TIMEOUT_MS = settings.mongo_timeout_ms
 MONGO_SOCKET_TIMEOUT_MS = settings.mongo_socket_timeout_ms

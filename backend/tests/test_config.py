@@ -118,6 +118,40 @@ class TestAutomaticSeeding:
             load_settings({**BASE_ENVIRONMENT, "AUTO_SEED_PRODUCTS": "maybe"})
 
 
+class TestApiDocumentationExposure:
+    """The schema lists the admin API, so the public must not be handed it."""
+
+    @pytest.mark.parametrize("environment", ["development", "test"])
+    def test_documentation_is_available_while_building(self, environment):
+        settings = load_settings({**BASE_ENVIRONMENT, "ENVIRONMENT": environment})
+
+        assert settings.api_docs_enabled is True
+
+    def test_documentation_is_withheld_in_production(self):
+        assert load_settings(PRODUCTION_ENVIRONMENT).api_docs_enabled is False
+
+    def test_documentation_is_withheld_in_staging(self):
+        settings = load_settings({
+            **BASE_ENVIRONMENT,
+            "ENVIRONMENT": "staging",
+            "CORS_ORIGINS": "https://staging.example.com",
+        })
+
+        assert settings.api_docs_enabled is False
+
+    def test_the_default_can_be_overridden(self):
+        settings = load_settings({
+            **PRODUCTION_ENVIRONMENT,
+            "API_DOCS_ENABLED": "true",
+        })
+
+        assert settings.api_docs_enabled is True
+
+    def test_an_unreadable_value_is_rejected(self):
+        with pytest.raises(RuntimeError, match="API_DOCS_ENABLED"):
+            load_settings({**BASE_ENVIRONMENT, "API_DOCS_ENABLED": "maybe"})
+
+
 class TestLogSettings:
     def test_production_logs_as_json(self):
         assert load_settings(PRODUCTION_ENVIRONMENT).log_json is True

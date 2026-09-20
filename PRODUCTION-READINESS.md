@@ -76,6 +76,7 @@ production-ready ecommerce application.
 - [x] Validate all required environment variables during startup.
 - [x] Refuse to start production with insecure cookie settings.
 - [x] Restrict CORS to explicitly configured frontend origins.
+- [x] Withhold the interactive API documentation outside development and test.
 - [ ] Use separate development, staging, and production environments.
 - [ ] Store production secrets in a managed secret store.
 - [x] Require a strong, non-default signing secret in production.

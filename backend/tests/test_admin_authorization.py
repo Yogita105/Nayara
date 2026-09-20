@@ -169,3 +169,21 @@ def test_admin_rejection_does_not_reveal_whether_record_exists(user_client, base
     assert response.status_code == 403
     body = response.json()
     assert PROBE_ID not in str(body)
+
+
+def test_documentation_routes_follow_the_configured_setting():
+    """The schema lists the whole admin API, so its exposure stays deliberate.
+
+    Guards against the documentation being switched back on unconditionally,
+    which would publish a map of the admin API on a live deployment.
+    """
+    from app.config import API_DOCS_ENABLED
+
+    doc_paths = {"/docs", "/redoc", "/openapi.json"}
+    registered = {getattr(route, "path", "") for route in app.routes}
+    exposed = doc_paths & registered
+
+    if API_DOCS_ENABLED:
+        assert exposed == doc_paths, f"Expected documentation routes, found {exposed}"
+    else:
+        assert not exposed, f"Documentation should be withheld, found {exposed}"
