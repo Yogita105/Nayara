@@ -207,33 +207,35 @@ export default function Bulk() {
           <form onSubmit={submit} className="rounded-3xl border border-[var(--nayara-border)] bg-white p-8 md:p-10 space-y-6" data-testid="bulk-inquiry-form">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Your Name<RequiredMark /></label>
-                <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="bulk-name" />
+                <label htmlFor="name" className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Your Name<RequiredMark /></label>
+                <Input id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="bulk-name" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Business Name<RequiredMark /></label>
-                <Input required value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} data-testid="bulk-business" />
+                <label htmlFor="business_name" className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Business Name<RequiredMark /></label>
+                <Input id="business_name" required value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} data-testid="bulk-business" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Phone Number<RequiredMark /></label>
-                <Input required type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} data-testid="bulk-phone" />
+                <label htmlFor="phone" className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Phone Number<RequiredMark /></label>
+                <Input id="phone" required type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} data-testid="bulk-phone" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Email<RequiredMark /></label>
-                <Input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} data-testid="bulk-email" />
+                <label htmlFor="email" className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Email<RequiredMark /></label>
+                <Input id="email" required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} data-testid="bulk-email" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">City / Location<RequiredMark /></label>
-                <Input required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} data-testid="bulk-city" />
+                <label htmlFor="city" className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">City / Location<RequiredMark /></label>
+                <Input id="city" required value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} data-testid="bulk-city" />
               </div>
               <div>
-                <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Quantity Required<RequiredMark /></label>
-                <Input required placeholder="e.g. 500 kg / 1000 units / monthly" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} data-testid="bulk-quantity" />
+                <label htmlFor="quantity" className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Quantity Required<RequiredMark /></label>
+                <Input id="quantity" required placeholder="e.g. 500 kg / 1000 units / monthly" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} data-testid="bulk-quantity" />
               </div>
             </div>
 
-            <div>
-              <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-3 block">Products Interested In</label>
+            <fieldset>
+              {/* A set of checkboxes is one question, so it is grouped and the
+                  heading is its legend rather than a label for any one box. */}
+              <legend className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-3 block">Products Interested In</legend>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2" data-testid="bulk-products">
                 {PRODUCT_OPTIONS.map((p) => (
                   <label key={p} className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition ${form.products_interested.includes(p) ? "border-[var(--nayara-primary)] bg-[#FBEEE4]" : "border-[var(--nayara-border)] hover:border-[var(--nayara-primary)]"}`}>
@@ -242,11 +244,11 @@ export default function Bulk() {
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
 
             <div>
-              <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Message / Requirements</label>
-              <Textarea rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Share any specific requirements — packaging, delivery location, timelines, private labelling, etc." data-testid="bulk-message" />
+              <label htmlFor="message" className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B] mb-2 block">Message / Requirements</label>
+              <Textarea id="message" rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Share any specific requirements — packaging, delivery location, timelines, private labelling, etc." data-testid="bulk-message" />
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[var(--nayara-border)]">

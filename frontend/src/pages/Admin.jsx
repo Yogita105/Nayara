@@ -264,38 +264,38 @@ function ProductEditor({ initial, onClose }) {
               {form.image ? <ProductImage src={form.image} alt="Product preview" className="w-full h-full object-cover" /> : <span className="text-xs text-[#64748B]">No image</span>}
             </div>
             <div className="flex-1">
-              <label className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B]">Product image</label>
-              <input type="file" accept="image/*" onChange={onUpload} className="mt-2 block text-sm" disabled={uploading} data-testid="product-image-upload" />
+              <label htmlFor="product-image" className="text-xs uppercase tracking-[0.15em] font-bold text-[#64748B]">Product image</label>
+              <input id="product-image" type="file" accept="image/*" onChange={onUpload} className="mt-2 block text-sm" disabled={uploading} data-testid="product-image-upload" />
               {uploading && <p className="text-xs text-[#64748B] mt-2">Uploading...</p>}
-              <p className="text-xs text-[#64748B] mt-2">Or paste an image URL below.</p>
-              <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://..." className="mt-1 w-full border border-[var(--nayara-border)] rounded h-9 px-3 text-sm" />
+              <label htmlFor="product-image-url" className="text-xs text-[#64748B] mt-2 block">Or paste an image URL below.</label>
+              <input id="product-image-url" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://..." className="mt-1 w-full border border-[var(--nayara-border)] rounded h-9 px-3 text-sm" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Name<RequiredMark /></label>
-              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-name-input" />
+              <label htmlFor="product-name" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Name<RequiredMark /></label>
+              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" id="product-name" data-testid="product-name-input" />
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Category</label>
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm bg-white" data-testid="product-category-input">
+              <label htmlFor="product-category" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Category</label>
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm bg-white" id="product-category" data-testid="product-category-input">
                 <option value="laundry">Laundry</option>
                 <option value="personal-care">Personal Care</option>
                 <option value="home-care">Home Care</option>
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Price (₹)<RequiredMark /></label>
-              <input required type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-price-input" />
+              <label htmlFor="product-price" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Price (₹)<RequiredMark /></label>
+              <input required type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" id="product-price" data-testid="product-price-input" />
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">MRP (₹)<RequiredMark /></label>
-              <input required type="number" min="0" step="0.01" value={form.mrp} onChange={(e) => setForm({ ...form, mrp: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-mrp-input" />
+              <label htmlFor="product-mrp" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">MRP (₹)<RequiredMark /></label>
+              <input required type="number" min="0" step="0.01" value={form.mrp} onChange={(e) => setForm({ ...form, mrp: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" id="product-mrp" data-testid="product-mrp-input" />
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Stock<RequiredMark /></label>
-              <input required type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-stock-input" />
+              <label htmlFor="product-stock" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Stock<RequiredMark /></label>
+              <input required type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" id="product-stock" data-testid="product-stock-input" />
             </div>
             <div className="flex items-center gap-2 mt-6">
               <input id="featured" type="checkbox" checked={!!form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} data-testid="product-featured-input" />
@@ -303,16 +303,16 @@ function ProductEditor({ initial, onClose }) {
             </div>
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Short description</label>
-            <input value={form.short_description} onChange={(e) => setForm({ ...form, short_description: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" data-testid="product-short-desc-input" />
+            <label htmlFor="product-short-desc" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Short description</label>
+            <input value={form.short_description} onChange={(e) => setForm({ ...form, short_description: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" id="product-short-desc" data-testid="product-short-desc-input" />
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Description</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full border border-[var(--nayara-border)] rounded px-3 py-2 mt-1 text-sm" data-testid="product-desc-input" />
+            <label htmlFor="product-description" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Description</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className="w-full border border-[var(--nayara-border)] rounded px-3 py-2 mt-1 text-sm" id="product-description" data-testid="product-desc-input" />
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Badges (comma-separated)</label>
-            <input value={(form.badges || []).join(", ")} onChange={(e) => setForm({ ...form, badges: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" placeholder="Made in India, Herbal" data-testid="product-badges-input" />
+            <label htmlFor="product-badges" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Badges (comma-separated)</label>
+            <input value={(form.badges || []).join(", ")} onChange={(e) => setForm({ ...form, badges: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" placeholder="Made in India, Herbal" id="product-badges" data-testid="product-badges-input" />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-5 py-2 rounded-md border border-[var(--nayara-border)]" data-testid="product-cancel-btn">Cancel</button>

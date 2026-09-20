@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Leaf, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { errorMessage } from "../lib/api";
+import { errorMessage, fieldErrors } from "../lib/api";
+import { ErrorSummary, FieldError, describedBy } from "../components/FormErrors";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -12,8 +13,10 @@ export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
   const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ name: "", identifier: "", email: "", mobile: "", password: "" });  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: "", identifier: "", email: "", mobile: "", password: "" });
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [fields, setFields] = useState({});
   const redirect = new URLSearchParams(location.search).get("redirect")
     || location.state?.from
     || "/";
@@ -23,13 +26,29 @@ export default function Login() {
   }
 
   const updateField = (event) => {
-    setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+    // Clear a field's complaint as soon as it is being corrected.
+    setFields((current) => {
+      if (!current[name]) return current;
+      const next = { ...current };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const problems = findProblems();
+    if (Object.keys(problems).length > 0) {
+      setError("");
+      setFields(problems);
+      return;
+    }
+
     setSubmitting(true);
     setError("");
+    setFields({});
     try {
       if (mode === "register") {
         await register({
@@ -45,6 +64,7 @@ export default function Login() {
       navigate(redirect, { replace: true });
     } catch (requestError) {
       setError(errorMessage(requestError, "Authentication failed. Please try again."));
+      setFields(fieldErrors(requestError));
     } finally {
       setSubmitting(false);
     }
@@ -53,6 +73,37 @@ export default function Login() {
   const switchMode = () => {
     setMode((current) => current === "login" ? "register" : "login");
     setError("");
+    setFields({});
+  };
+
+  /**
+   * Catch what can be judged without asking the server.
+   *
+   * Only emptiness and length are checked here. Whether a mobile number is a
+   * real Indian one is the API's rule, and repeating it in the browser would
+   * mean two places to keep in step.
+   */
+  const findProblems = () => {
+    const problems = {};
+    if (mode === "register") {
+      if (form.name.trim().length < 2) {
+        problems.name = "Enter your name, using at least 2 characters.";
+      }
+      if (!form.mobile.trim()) {
+        problems.mobile = "Enter your mobile number.";
+      }
+      if (form.password.length < 8) {
+        problems.password = "Use a password of at least 8 characters.";
+      }
+    } else {
+      if (!form.identifier.trim()) {
+        problems.identifier = "Enter your mobile number or email.";
+      }
+      if (!form.password) {
+        problems.password = "Enter your password.";
+      }
+    }
+    return problems;
   };
 
   return (
@@ -70,7 +121,9 @@ export default function Login() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5" data-testid="auth-form">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5" data-testid="auth-form" noValidate>
+          <ErrorSummary message={error} fields={fields} />
+
           {mode === "register" && (
             <div className="space-y-2">
               <Label htmlFor="name" required>Name</Label>
@@ -85,7 +138,9 @@ export default function Login() {
                 required
                 className="h-11"
                 data-testid="auth-name-input"
+                {...describedBy("name", { error: Boolean(fields.name) })}
               />
+              <FieldError name="name">{fields.name}</FieldError>
             </div>
           )}
           {mode === "login" ? (
@@ -102,7 +157,9 @@ export default function Login() {
                 required
                 className="h-11"
                 data-testid="auth-email-input"
+                {...describedBy("identifier", { error: Boolean(fields.identifier) })}
               />
+              <FieldError name="identifier">{fields.identifier}</FieldError>
             </div>
           ) : (
             <>
@@ -122,10 +179,12 @@ export default function Login() {
                   required
                   className="h-11"
                   data-testid="auth-mobile-input"
+                  {...describedBy("mobile", { hint: true, error: Boolean(fields.mobile) })}
                 />
-                <p className="text-xs text-[#64748B]">
+                <p id="mobile-hint" className="text-xs text-[#64748B]">
                   We use this to reach you about your orders.
                 </p>
+                <FieldError name="mobile">{fields.mobile}</FieldError>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -138,10 +197,12 @@ export default function Login() {
                   autoComplete="email"
                   className="h-11"
                   data-testid="auth-email-optional-input"
+                  {...describedBy("email", { hint: true, error: Boolean(fields.email) })}
                 />
-                <p className="text-xs text-[#64748B]">
+                <p id="email-hint" className="text-xs text-[#64748B]">
                   You can skip this, or add one for receipts by email.
                 </p>
+                <FieldError name="email">{fields.email}</FieldError>
               </div>
             </>
           )}
@@ -159,17 +220,18 @@ export default function Login() {
               required
               className="h-11"
               data-testid="auth-password-input"
+              {...describedBy("password", {
+                hint: mode === "register",
+                error: Boolean(fields.password),
+              })}
             />
             {mode === "register" && (
-              <p className="text-xs text-[#64748B]">Use at least 8 characters.</p>
+              <p id="password-hint" className="text-xs text-[#64748B]">
+                Use at least 8 characters.
+              </p>
             )}
+            <FieldError name="password">{fields.password}</FieldError>
           </div>
-
-          {error && (
-            <p role="alert" className="text-sm text-red-600" data-testid="auth-error">
-              {error}
-            </p>
-          )}
 
           <Button
             type="submit"

@@ -9,6 +9,7 @@ from pymongo.errors import DuplicateKeyError
 from .. import audit
 from ..config import ADMIN_MOBILES
 from ..database import db
+from ..errors import FieldError
 from ..models import (
     LoginRequest,
     PasswordChangeRequest,
@@ -67,22 +68,20 @@ async def register(body: RegisterRequest, request: Request, response: Response):
     )
     name = body.name.strip()
     if len(name) < 2:
-        raise HTTPException(status_code=422, detail="Name must contain at least 2 characters")
+        raise FieldError(422, "name", "Name must contain at least 2 characters")
     try:
         mobile = normalize_indian_mobile(body.mobile)
     except ValueError as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
+        raise FieldError(422, "mobile", str(error)) from error
 
     email = str(body.email).lower() if body.email else None
     if await db.users.find_one({"mobile": mobile}, {"_id": 1}):
-        raise HTTPException(
-            status_code=409,
-            detail="An account with this mobile number already exists",
+        raise FieldError(
+            409, "mobile", "An account with this mobile number already exists"
         )
     if email and await db.users.find_one({"email": email}, {"_id": 1}):
-        raise HTTPException(
-            status_code=409,
-            detail="An account with this email already exists",
+        raise FieldError(
+            409, "email", "An account with this email already exists"
         )
 
     user = {
@@ -252,9 +251,8 @@ async def update_profile(
             {"_id": 1},
         )
         if clash:
-            raise HTTPException(
-                status_code=409,
-                detail="Another account already uses this email",
+            raise FieldError(
+                409, "email", "Another account already uses this email"
             )
 
     changes = {"$set": {"name": body.name}}
@@ -315,12 +313,11 @@ async def change_password(
             request=request,
             reason="wrong_current_password",
         )
-        raise HTTPException(status_code=403, detail="Current password is incorrect")
+        raise FieldError(403, "current_password", "Current password is incorrect")
 
     if await verify_password(body.new_password, current_hash):
-        raise HTTPException(
-            status_code=422,
-            detail="The new password must differ from the current one",
+        raise FieldError(
+            422, "new_password", "The new password must differ from the current one"
         )
 
     await db.users.update_one(

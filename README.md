@@ -451,6 +451,29 @@ before the response is built.
 `request_id` matches the `X-Request-ID` header, so a customer can quote it and the
 matching log line can be found.
 
+A refusal raised by hand can name the field responsible with `FieldError`, so a form can
+mark the box itself rather than showing a sentence with nothing to attach it to:
+
+```python
+raise FieldError(409, "email", "Another account already uses this email")
+```
+
+## Forms and accessibility
+
+Every input is associated with its label, so a screen reader announces what the box is
+for. When a submission is refused:
+
+- an error summary appears at the top of the form, takes focus, and is announced;
+- each message links to the field it belongs to;
+- the field carries `aria-invalid` and points at its message through `aria-describedby`;
+- correcting a field clears its own message and leaves the others alone.
+
+The browser's own validation is switched off so that one set of messages is used
+throughout, presented the same way whether the objection came from the browser or the
+API. Only emptiness and length are judged in the browser. Rules such as what makes a
+valid Indian mobile number belong to the API, and repeating them would mean two places
+to keep in step.
+
 ## Deploying
 
 The API serves the built frontend, so the whole site is one container on one origin.

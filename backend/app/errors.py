@@ -14,7 +14,7 @@ Every error now returns:
 submitted value.
 """
 
-from typing import List
+from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -22,6 +22,19 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .observability import REQUEST_ID_HEADER, get_request_id
+
+
+class FieldError(HTTPException):
+    """A refusal that names the field responsible.
+
+    A plain message tells someone that something is wrong; naming the field
+    lets the form mark the box itself, which is the difference between a
+    sighted guess and a screen reader announcing what to correct.
+    """
+
+    def __init__(self, status_code: int, field: str, detail: str):
+        super().__init__(status_code=status_code, detail=detail)
+        self.field = field
 
 
 def field_name(location: tuple) -> str:
@@ -72,7 +85,9 @@ def register_error_handlers(app: FastAPI) -> None:
         detail = error.detail
         if not isinstance(detail, str):
             detail = "Something went wrong"
-        response = build_response(error.status_code, detail, [])
+        field: Optional[str] = getattr(error, "field", None)
+        errors = [{"field": field, "message": detail}] if field else []
+        response = build_response(error.status_code, detail, errors)
         # Preserve headers such as Retry-After from rate limiting.
         for key, value in (getattr(error, "headers", None) or {}).items():
             response.headers[key] = value

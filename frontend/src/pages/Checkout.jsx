@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { formatINR, api, errorMessage } from "../lib/api";
+import { formatINR, api, errorMessage, fieldErrors } from "../lib/api";
 import { Input } from "../components/ui/input";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Label } from "../components/ui/label";
+import { ErrorSummary, FieldError, describedBy } from "../components/FormErrors";
 import ProductImage from "../components/ProductImage";
 import { Smartphone, Package, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -33,10 +34,47 @@ export default function Checkout() {
   const shipping = cartTotal >= 499 ? 0 : 49;
   const grand = cartTotal + shipping;
 
+  const [error, setError] = useState("");
+  const [fields, setFields] = useState({});
+
+  const updateAddress = (name) => (event) => {
+    const { value } = event.target;
+    setAddress((current) => ({ ...current, [name]: value }));
+    setFields((current) => {
+      if (!current[name]) return current;
+      const next = { ...current };
+      delete next[name];
+      return next;
+    });
+  };
+
+  const findProblems = () => {
+    const problems = {};
+    if (address.full_name.trim().length < 2) {
+      problems.full_name = "Enter the name for this delivery.";
+    }
+    if (!address.phone.trim()) problems.phone = "Enter a phone number for the courier.";
+    if (!address.line1.trim()) problems.line1 = "Enter the street address.";
+    if (!address.city.trim()) problems.city = "Enter the city.";
+    if (!address.state.trim()) problems.state = "Enter the state.";
+    if (!address.pincode.trim()) problems.pincode = "Enter the pincode.";
+    return problems;
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     if (cart.length === 0) { toast.error("Cart is empty"); return; }
+
+    const problems = findProblems();
+    if (Object.keys(problems).length > 0) {
+      setError("");
+      setFields(problems);
+      return;
+    }
+
     setSubmitting(true);
+    setError("");
+    setFields({});
     try {
       const { data: order } = await api.post("/orders", {
         items: cart.map((c) => ({ product_id: c.product_id, quantity: c.quantity })),
@@ -48,7 +86,10 @@ export default function Checkout() {
       toast.success("Order placed successfully!");
       navigate(`/order-success?order_id=${order.order_id}`);
     } catch (err) {
-      toast.error(errorMessage(err, "Could not place the order"));
+      const message = errorMessage(err, "Could not place the order");
+      setError(message);
+      setFields(fieldErrors(err));
+      toast.error(message);
     } finally { setSubmitting(false); }
   };
 
@@ -59,38 +100,90 @@ export default function Checkout() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-10" data-testid="checkout-page">
       <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tight mb-8">Checkout</h1>
-      <form onSubmit={submit} className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
+      <form onSubmit={submit} className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10" noValidate>
         <div className="space-y-8">
           <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <h2 className="font-heading text-lg font-semibold mb-5">Shipping Address</h2>
+            <div className="mb-4">
+              <ErrorSummary message={error} fields={fields} />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>Full name</Label>
-                <Input value={address.full_name} onChange={(e) => setAddress({ ...address, full_name: e.target.value })} required data-testid="addr-name" />
+                <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-[0.15em]" required>Full name</Label>
+                <Input
+                  id="full_name"
+                  value={address.full_name}
+                  onChange={updateAddress("full_name")} required
+                  data-testid="addr-name"
+                  {...describedBy("full_name", { error: Boolean(fields.full_name) })}
+                />
+                <FieldError name="full_name">{fields.full_name}</FieldError>
               </div>
               <div>
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>Phone</Label>
-                <Input value={address.phone} onChange={(e) => setAddress({ ...address, phone: e.target.value })} required data-testid="addr-phone" />
+                <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-[0.15em]" required>Phone</Label>
+                <Input
+                  id="phone"
+                  value={address.phone}
+                  onChange={updateAddress("phone")} required
+                  data-testid="addr-phone"
+                  {...describedBy("phone", { error: Boolean(fields.phone) })}
+                />
+                <FieldError name="phone">{fields.phone}</FieldError>
               </div>
               <div>
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>Pincode</Label>
-                <Input value={address.pincode} onChange={(e) => setAddress({ ...address, pincode: e.target.value })} required data-testid="addr-pincode" />
+                <Label htmlFor="pincode" className="text-xs font-bold uppercase tracking-[0.15em]" required>Pincode</Label>
+                <Input
+                  id="pincode"
+                  value={address.pincode}
+                  onChange={updateAddress("pincode")} required
+                  data-testid="addr-pincode"
+                  {...describedBy("pincode", { error: Boolean(fields.pincode) })}
+                />
+                <FieldError name="pincode">{fields.pincode}</FieldError>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>Address line 1</Label>
-                <Input value={address.line1} onChange={(e) => setAddress({ ...address, line1: e.target.value })} required data-testid="addr-line1" />
+                <Label htmlFor="line1" className="text-xs font-bold uppercase tracking-[0.15em]" required>Address line 1</Label>
+                <Input
+                  id="line1"
+                  value={address.line1}
+                  onChange={updateAddress("line1")} required
+                  data-testid="addr-line1"
+                  {...describedBy("line1", { error: Boolean(fields.line1) })}
+                />
+                <FieldError name="line1">{fields.line1}</FieldError>
               </div>
               <div className="md:col-span-2">
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]">Address line 2</Label>
-                <Input value={address.line2} onChange={(e) => setAddress({ ...address, line2: e.target.value })} data-testid="addr-line2" />
+                <Label htmlFor="line2" className="text-xs font-bold uppercase tracking-[0.15em]">Address line 2</Label>
+                <Input
+                  id="line2"
+                  value={address.line2}
+                  onChange={updateAddress("line2")}
+                  data-testid="addr-line2"
+                  {...describedBy("line2", { error: Boolean(fields.line2) })}
+                />
+                <FieldError name="line2">{fields.line2}</FieldError>
               </div>
               <div>
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>City</Label>
-                <Input value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} required data-testid="addr-city" />
+                <Label htmlFor="city" className="text-xs font-bold uppercase tracking-[0.15em]" required>City</Label>
+                <Input
+                  id="city"
+                  value={address.city}
+                  onChange={updateAddress("city")} required
+                  data-testid="addr-city"
+                  {...describedBy("city", { error: Boolean(fields.city) })}
+                />
+                <FieldError name="city">{fields.city}</FieldError>
               </div>
               <div>
-                <Label className="text-xs font-bold uppercase tracking-[0.15em]" required>State</Label>
-                <Input value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })} required data-testid="addr-state" />
+                <Label htmlFor="state" className="text-xs font-bold uppercase tracking-[0.15em]" required>State</Label>
+                <Input
+                  id="state"
+                  value={address.state}
+                  onChange={updateAddress("state")} required
+                  data-testid="addr-state"
+                  {...describedBy("state", { error: Boolean(fields.state) })}
+                />
+                <FieldError name="state">{fields.state}</FieldError>
               </div>
             </div>
           </section>

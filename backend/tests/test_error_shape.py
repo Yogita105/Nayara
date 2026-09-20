@@ -1,4 +1,6 @@
 """Every error should reach a client in the same shape."""
+import uuid
+
 import requests
 
 
@@ -107,3 +109,64 @@ class TestOtherErrors:
         assert response.headers["Retry-After"]
         assert isinstance(response.json()["detail"], str)
         mongo_db.rate_limits.delete_many({})
+
+
+class TestRefusalsNameTheirField:
+    """A form can only mark the offending box if the API says which it is.
+
+    These refusals are raised by hand rather than by request validation, so
+    without naming the field they arrive as a sentence with nothing to attach
+    it to, and a screen reader announces a problem without saying where.
+    """
+
+    def test_an_unusable_mobile_number_names_the_field(self, base_url, anon_client):
+        response = anon_client.post(
+            f"{base_url}/api/auth/register",
+            json={"name": "A B", "mobile": "1234567890", "password": "GoodPassword1!"},
+        )
+
+        assert response.status_code == 422
+        assert response.json()["errors"][0]["field"] == "mobile"
+
+    def test_a_short_name_names_the_field(self, base_url, anon_client):
+        response = anon_client.post(
+            f"{base_url}/api/auth/register",
+            json={"name": "A", "mobile": "9876512345", "password": "GoodPassword1!"},
+        )
+
+        assert response.status_code == 422
+        assert response.json()["errors"][0]["field"] == "name"
+
+    def test_a_taken_mobile_number_names_the_field(self, base_url, anon_client, mongo_db):
+        mobile = f"9{uuid.uuid4().int % 10**9:09d}"
+        payload = {
+            "name": "First Owner",
+            "mobile": mobile,
+            "password": "GoodPassword1!",
+        }
+        first = anon_client.post(f"{base_url}/api/auth/register", json=payload)
+        assert first.status_code == 201
+
+        # A fresh caller: the first registration left a session cookie on that
+        # client, which CSRF protection would refuse before the API ever
+        # reached the duplicate check.
+        second = requests.post(f"{base_url}/api/auth/register", json=payload)
+
+        assert second.status_code == 409
+        assert second.json()["errors"][0]["field"] == "mobile"
+
+        user = mongo_db.users.find_one({"mobile": f"+91{mobile}"})
+        mongo_db.user_sessions.delete_many({"user_id": user["user_id"]})
+        mongo_db.audit_events.delete_many({"actor_id": user["user_id"]})
+        mongo_db.users.delete_one({"user_id": user["user_id"]})
+        mongo_db.rate_limits.delete_many({})
+
+    def test_the_message_is_still_a_readable_sentence(self, base_url, anon_client):
+        response = anon_client.post(
+            f"{base_url}/api/auth/register",
+            json={"name": "A B", "mobile": "1234567890", "password": "GoodPassword1!"},
+        )
+
+        body = response.json()
+        assert isinstance(body["detail"], str)
+        assert body["detail"] == body["errors"][0]["message"]

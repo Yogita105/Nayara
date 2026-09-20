@@ -58,3 +58,25 @@ export const errorMessage = (error, fallback = "Something went wrong. Please try
   }
   return fallback;
 };
+
+/**
+ * Map the API's per-field errors onto the fields that caused them.
+ *
+ * Lets a form put each message beside the input it belongs to, rather than
+ * showing one sentence and leaving the customer to work out which box is
+ * wrong.
+ */
+export const fieldErrors = (error) => {
+  const reported = error?.response?.data?.errors;
+  if (!Array.isArray(reported)) return {};
+
+  const byField = {};
+  reported.forEach((item) => {
+    const field = typeof item?.field === "string" ? item.field : "";
+    const message = typeof item?.message === "string" ? item.message : "";
+    // Nested paths such as "address.pincode" belong to the last part.
+    const name = field.split(".").pop();
+    if (name && message && !byField[name]) byField[name] = message;
+  });
+  return byField;
+};
