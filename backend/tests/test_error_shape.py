@@ -1,7 +1,7 @@
 """Every error should reach a client in the same shape."""
 
 import uuid
-
+import pytest
 import requests
 
 
@@ -120,6 +120,27 @@ class TestRefusalsNameTheirField:
     it to, and a screen reader announces a problem without saying where.
     """
 
+    @pytest.fixture
+    def claimable_mobile(self, mongo_db):
+        """A number to register, cleared away however the test ends.
+
+        Cleaning up at the end of the test body only happens when the test
+        passes, so a failing run leaves an account behind. This account has no
+        email address, which is what the suite's safety net matches on, so
+        nothing else would ever collect it.
+        """
+        mobile = f"9{uuid.uuid4().int % 10**9:09d}"
+
+        yield mobile
+
+        stored = f"+91{mobile}"
+        for user in mongo_db.users.find({"mobile": stored}, {"user_id": 1}):
+            mongo_db.user_sessions.delete_many({"user_id": user["user_id"]})
+            mongo_db.audit_events.delete_many({"actor_id": user["user_id"]})
+            mongo_db.carts.delete_many({"user_id": user["user_id"]})
+        mongo_db.users.delete_many({"mobile": stored})
+        mongo_db.rate_limits.delete_many({})
+
     def test_an_unusable_mobile_number_names_the_field(self, base_url, anon_client):
         response = anon_client.post(
             f"{base_url}/api/auth/register",
@@ -138,11 +159,10 @@ class TestRefusalsNameTheirField:
         assert response.status_code == 422
         assert response.json()["errors"][0]["field"] == "name"
 
-    def test_a_taken_mobile_number_names_the_field(self, base_url, anon_client, mongo_db):
-        mobile = f"9{uuid.uuid4().int % 10**9:09d}"
+    def test_a_taken_mobile_number_names_the_field(self, base_url, anon_client, claimable_mobile):
         payload = {
             "name": "First Owner",
-            "mobile": mobile,
+            "mobile": claimable_mobile,
             "password": "GoodPassword1!",
         }
         first = anon_client.post(f"{base_url}/api/auth/register", json=payload)
@@ -155,12 +175,6 @@ class TestRefusalsNameTheirField:
 
         assert second.status_code == 409
         assert second.json()["errors"][0]["field"] == "mobile"
-
-        user = mongo_db.users.find_one({"mobile": f"+91{mobile}"})
-        mongo_db.user_sessions.delete_many({"user_id": user["user_id"]})
-        mongo_db.audit_events.delete_many({"actor_id": user["user_id"]})
-        mongo_db.users.delete_one({"user_id": user["user_id"]})
-        mongo_db.rate_limits.delete_many({})
 
     def test_the_message_is_still_a_readable_sentence(self, base_url, anon_client):
         response = anon_client.post(
