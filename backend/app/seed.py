@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, List
 
 from .database import db
-from .models import Product, cheapest_price, default_variant
+from .models import Product, default_variant, variant_mirrors
 
 logger = logging.getLogger(__name__)
 
@@ -113,13 +113,12 @@ async def seed_products() -> int:
 
     documents = []
     for seed_product in SEED_PRODUCTS:
-        document = Product(**seed_product).model_dump()
-        document["created_at"] = document["created_at"].isoformat()
         # Seeded products satisfy the same rule as any other: at least one
         # variant, and an advertised price taken from it.
-        if not document["variants"]:
-            document["variants"] = [default_variant(document)]
-        document["price_from"] = cheapest_price(document["variants"], document["price"])
+        data = {**seed_product, "variants": [default_variant(seed_product)]}
+        document = Product(**data).model_dump()
+        document["created_at"] = document["created_at"].isoformat()
+        document.update(variant_mirrors(document["variants"]))
         documents.append(document)
 
     await db.products.insert_many(documents)

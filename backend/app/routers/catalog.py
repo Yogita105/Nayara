@@ -7,13 +7,14 @@ from pymongo.errors import DuplicateKeyError
 
 from .. import audit
 from ..database import db
+from ..errors import FieldError
 from ..models import (
     Product,
     ProductCreate,
     Review,
     ReviewCreate,
-    cheapest_price,
     default_variant,
+    variant_mirrors,
 )
 from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
 from ..security import get_current_user, require_admin
@@ -22,6 +23,10 @@ from ..utils import serialize_doc
 router = APIRouter(prefix="/api", tags=["catalog"])
 
 DUPLICATE_SLUG_DETAIL = "Another product already uses this slug"
+
+# An order can still hand its stock back until it is delivered or cancelled,
+# and handing it back means finding the variant the units came from.
+RETURNABLE_STATUSES = ["placed", "processing", "shipped"]
 
 # Paging a sort that leaves ties in an arbitrary order can show the same
 # product on two pages and hide another entirely, so every option ends with a
@@ -92,14 +97,15 @@ async def create_product(
     request: Request,
     user: dict = Depends(require_admin),
 ):
-    product = Product(**payload.model_dump())
+    data = payload.model_dump()
+    # Every product carries at least one variant, so nothing downstream has
+    # to handle a product that has none. Settling it before the product is
+    # built means the variant is validated with everything else.
+    data["variants"] = data.get("variants") or [default_variant(data)]
+    product = Product(**data)
     doc = product.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
-    # Every product carries at least one variant, so nothing downstream has
-    # to handle a product that has none.
-    if not doc["variants"]:
-        doc["variants"] = [default_variant(doc)]
-    doc["price_from"] = cheapest_price(doc["variants"], doc["price"])
+    doc.update(variant_mirrors(doc["variants"]))
     try:
         await db.products.insert_one(doc)
     except DuplicateKeyError as error:
@@ -110,8 +116,57 @@ async def create_product(
         request=request,
         product_id=doc["product_id"],
         slug=doc["slug"],
+        variants=len(doc["variants"]),
     )
     return serialize_doc(doc)
+
+
+async def orders_still_holding(product_id: str, variant_ids: set) -> int:
+    """How many open orders would lose their stock if these forms went away.
+
+    Cancelling an order returns its units to the variant they were taken
+    from. If that variant no longer exists there is nothing to return them
+    to and they are lost without a word, so the removal is refused while any
+    order could still be cancelled.
+    """
+    if not variant_ids:
+        return 0
+    return await db.orders.count_documents(
+        {
+            "status": {"$in": RETURNABLE_STATUSES},
+            "items": {
+                "$elemMatch": {
+                    "product_id": product_id,
+                    "variant_id": {"$in": sorted(variant_ids)},
+                }
+            },
+        }
+    )
+
+
+def settle_variants(changes: dict, incoming: Optional[list], existing: list) -> list:
+    """Which variants the product should end up with.
+
+    A request that names them is taken at its word. One that does not comes
+    from something that predates variants or does not manage them, and must
+    not be allowed to wipe them: a product with a single form lets that form
+    follow the price and stock it sets, and a product with several keeps them
+    untouched.
+    """
+    if incoming is not None:
+        return list(incoming)
+    if len(existing) == 1:
+        return [
+            {
+                **existing[0],
+                "price": changes["price"],
+                "mrp": changes["mrp"],
+                "stock": changes["stock"],
+            }
+        ]
+    if existing:
+        return existing
+    return [default_variant(changes)]
 
 
 @router.put("/products/{product_id}")
@@ -125,22 +180,28 @@ async def update_product(
         {"product_id": product_id}, {"_id": 0, "price": 1, "stock": 1, "variants": 1}
     )
     changes = payload.model_dump()
-    # Until variants can be edited in their own right, a product that has
-    # only the one created for it keeps in step with the price and stock on
-    # the product itself. Without this the two drift apart silently, and the
-    # variant becomes authoritative later holding a stale figure.
-    existing_variants = (previous or {}).get("variants") or []
-    if len(existing_variants) == 1:
-        only = dict(existing_variants[0])
-        only.update(
-            {
-                "price": changes["price"],
-                "mrp": changes["mrp"],
-                "stock": changes["stock"],
-            }
-        )
-        changes["variants"] = [only]
-        changes["price_from"] = only["price"]
+    incoming = changes.pop("variants", None)
+    existing = (previous or {}).get("variants") or []
+
+    if incoming is not None:
+        removed = {variant["variant_id"] for variant in existing} - {
+            variant["variant_id"] for variant in incoming
+        }
+        held = await orders_still_holding(product_id, removed)
+        if held:
+            word = "order" if held == 1 else "orders"
+            raise FieldError(
+                409,
+                "variants",
+                f"Cannot remove an option while {held} open {word} "
+                f"still {'holds' if held == 1 else 'hold'} it.",
+            )
+
+    variants = settle_variants(changes, incoming, existing)
+    changes["variants"] = variants
+    # The product's own figures are always recomputed rather than taken from
+    # the request, so the two cannot be saved out of step.
+    changes.update(variant_mirrors(variants))
 
     try:
         result = await db.products.update_one(
@@ -161,11 +222,14 @@ async def update_product(
         actor_id=user["user_id"],
         request=request,
         product_id=product_id,
-        # Price and stock are the fields worth being able to trace later.
+        # Price and stock are the fields worth being able to trace later, and
+        # so is a form appearing or disappearing.
         price_from=(previous or {}).get("price"),
         price_to=doc.get("price"),
         stock_from=(previous or {}).get("stock"),
         stock_to=doc.get("stock"),
+        variants_from=len(existing),
+        variants_to=len(variants),
     )
     return serialize_doc(doc)
 

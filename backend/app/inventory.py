@@ -51,12 +51,20 @@ async def release_stock(items: Sequence[dict]) -> None:
             criteria = {"product_id": item["product_id"]}
             field = "variants.0.stock"
 
-        await db.products.update_one(
+        result = await db.products.update_one(
             criteria,
             # The product's own count mirrors its variants while anything
             # still reads it, and is dropped once nothing does.
             {"$inc": {field: item["quantity"], "stock": item["quantity"]}},
         )
+        if result.matched_count == 0:
+            # There is nothing to return the units to. Removing a variant an
+            # open order holds is refused, so this means the product itself
+            # has been deleted. Saying so beats losing the count in silence.
+            logger.warning(
+                "stock could not be returned",
+                extra={"product_id": item["product_id"], "variant_id": variant_id},
+            )
 
 
 async def reserve_stock(items: Sequence[dict]) -> None:

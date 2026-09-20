@@ -175,10 +175,39 @@ class ProductCreate(ContentModel):
     badges: List[str] = Field(default_factory=list, max_length=10)
     featured: bool = False
 
+    # What the variants of this product differ by: "Weight", "Volume",
+    # "Colour". One axis per product, so a kilo bag of powder is not also
+    # asked to be a colour.
+    option_name: str = Field(default="Size", min_length=1, max_length=40)
+    # Left unset by anything that does not manage variants, which then leaves
+    # whatever the product already has alone rather than wiping it.
+    variants: Optional[List[ProductVariant]] = Field(default=None, max_length=MAX_VARIANTS)
+
     @model_validator(mode="after")
     def check_mrp_covers_price(self) -> "ProductCreate":
         if self.mrp < self.price:
             raise ValueError("MRP must be greater than or equal to the price")
+        return self
+
+    @model_validator(mode="after")
+    def check_variants_can_be_told_apart(self) -> "ProductCreate":
+        """Two forms a customer cannot distinguish are worse than one.
+
+        Labels are compared without case or surrounding space, because "1kg"
+        and "1KG " are the same choice to everyone but the database.
+        """
+        if self.variants is None:
+            return self
+        if not self.variants:
+            raise ValueError("A product needs at least one variant")
+
+        labels = [variant.label.strip().lower() for variant in self.variants]
+        if len(set(labels)) != len(labels):
+            raise ValueError("Two variants cannot share a label")
+
+        identities = [variant.variant_id for variant in self.variants]
+        if len(set(identities)) != len(identities):
+            raise ValueError("Two variants cannot share an identity")
         return self
 
 
@@ -188,15 +217,31 @@ class Product(ProductCreate):
     reviews_count: int = Field(default=0, ge=0)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    # What the variants of this product differ by: "Weight", "Volume",
-    # "Colour". One axis per product, so a kilo bag of powder is not also
-    # asked to be a colour.
-    option_name: str = Field(default="Size", min_length=1, max_length=40)
+    # A stored product always has them, whatever the request that made it
+    # chose to send.
     variants: List[ProductVariant] = Field(default_factory=list, max_length=MAX_VARIANTS)
     # The cheapest variant, held here so the catalogue can be sorted and
     # filtered by price with a plain indexed field. Recalculated whenever the
     # variants change; never edited directly.
     price_from: float = Field(default=0, ge=0, le=10_000_000)
+
+
+def variant_mirrors(variants: List[dict]) -> dict:
+    """What a product's own price, MRP and stock should read.
+
+    These are a summary of the variants rather than anything an administrator
+    sets: the price shown before a choice is made is the cheapest on offer,
+    and the stock is everything on hand across the forms. Deriving them is
+    what stops the product and its variants quietly disagreeing.
+    """
+    cheapest = min(variants, key=lambda variant: variant.get("price", 0))
+    price = cheapest.get("price", 0)
+    return {
+        "price": price,
+        "mrp": cheapest.get("mrp", price),
+        "price_from": price,
+        "stock": sum(variant.get("stock", 0) for variant in variants),
+    }
 
 
 def cheapest_price(variants: List[dict], fallback: float = 0) -> float:

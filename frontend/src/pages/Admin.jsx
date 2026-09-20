@@ -186,7 +186,14 @@ function ProductsAdmin() {
               <div className="flex-1 min-w-0">
                 <h3 className="font-heading font-medium text-sm truncate">{p.name}</h3>
                 <div className="text-xs text-[#64748B] mt-1">Stock: {p.stock} · {p.category}</div>
-                <div className="font-heading font-semibold mt-2">{formatINR(p.price)}</div>
+                <div className="font-heading font-semibold mt-2">
+                  {(p.variants || []).length > 1 ? `from ${formatINR(p.price)}` : formatINR(p.price)}
+                </div>
+                {(p.variants || []).length > 1 && (
+                  <div className="text-xs text-[#64748B] mt-1" data-testid={`variant-count-${p.product_id}`}>
+                    {p.variants.length} {(p.option_name || "size").toLowerCase()} options
+                  </div>
+                )}
                 <div className="flex gap-2 mt-2">
                   <button onClick={() => setEditing(p)} className="text-xs px-3 py-1 rounded-md border border-[var(--nayara-border)] hover:bg-[#FBEEE4]" data-testid={`edit-product-${p.product_id}`}>Edit</button>
                   <button onClick={() => onDelete(p.product_id)} className="text-xs px-3 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50" data-testid={`delete-product-${p.product_id}`}>Delete</button>
@@ -201,33 +208,102 @@ function ProductsAdmin() {
   );
 }
 
+// The axis a product's forms differ along. One per product: a kilo bag of
+// powder is a weight, and is not also asked to be a colour.
+const OPTION_NAMES = ["Weight", "Volume", "Colour", "Size", "Pack"];
+
+const blankVariant = () => ({ label: "", price: "", mrp: "", stock: 0, image: "" });
+
+// The product's own price and stock summarise its forms. The server works
+// these out again on save; they are computed here so the editor can show what
+// the shop will say before anyone saves.
+function variantSummary(variants) {
+  const rows = variants || [];
+  const cheapest = rows.reduce(
+    (best, row) =>
+      Number(row.price) > 0 && (!best || Number(row.price) < Number(best.price)) ? row : best,
+    null
+  );
+  return {
+    price: cheapest ? Number(cheapest.price) : 0,
+    mrp: cheapest ? Number(cheapest.mrp) || Number(cheapest.price) : 0,
+    stock: rows.reduce((total, row) => total + (parseInt(row.stock, 10) || 0), 0),
+  };
+}
+
 function ProductEditor({ initial, onClose }) {
-  const [form, setForm] = useState(initial || {
-    name: "", slug: "", category: "laundry",
-    short_description: "", description: "",
-    price: 0, mrp: 0, stock: 100, image: "",
-    badges: ["Made in India"], featured: false,
-  });
+  const [form, setForm] = useState(() =>
+    initial
+      ? {
+          ...initial,
+          option_name: initial.option_name || "Size",
+          variants: (initial.variants || []).map((variant) => ({ ...variant })),
+        }
+      : {
+          name: "", slug: "", category: "laundry",
+          short_description: "", description: "", image: "",
+          badges: ["Made in India"], featured: false,
+          option_name: "Size",
+          variants: [{ ...blankVariant(), label: "Standard", stock: 100 }],
+        }
+  );
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const onUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("File too large (max 5MB)"); return; }
+  const variants = form.variants || [];
+  const summary = variantSummary(variants);
+
+  const setVariant = (index, patch) =>
+    setForm((f) => ({
+      ...f,
+      variants: f.variants.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    }));
+  const addVariant = () => setForm((f) => ({ ...f, variants: [...f.variants, blankVariant()] }));
+  const removeVariant = (index) =>
+    setForm((f) => ({ ...f, variants: f.variants.filter((_, i) => i !== index) }));
+
+  const uploadImage = async (file) => {
+    if (file.size > 5 * 1024 * 1024) { toast.error("File too large (max 5MB)"); return null; }
     setUploading(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
       const { data } = await api.post("/admin/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-      setForm((f) => ({ ...f, image: data.url }));
       toast.success("Image uploaded");
-    } catch { toast.error("Upload failed"); }
+      return data.url;
+    } catch { toast.error("Upload failed"); return null; }
     finally { setUploading(false); }
+  };
+
+  const onUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await uploadImage(file);
+    if (url) setForm((f) => ({ ...f, image: url }));
+  };
+
+  const onVariantUpload = async (index, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await uploadImage(file);
+    if (url) setVariant(index, { image: url });
+  };
+
+  // The server refuses these too. Saying so here means the answer arrives
+  // before a round trip, and points at the row responsible.
+  const variantProblem = () => {
+    if (variants.length === 0) return "A product needs at least one option.";
+    const labels = variants.map((row) => row.label.trim().toLowerCase());
+    if (new Set(labels).size !== labels.length) return "Two options cannot share a name.";
+    const overpriced = variants.find((row) => Number(row.mrp) < Number(row.price));
+    if (overpriced) return `MRP cannot be below the price for “${overpriced.label}”.`;
+    return null;
   };
 
   const save = async (e) => {
     e.preventDefault();
+    const problem = variantProblem();
+    if (problem) { toast.error(problem); return; }
     setSaving(true);
     try {
       const payload = {
@@ -236,13 +312,24 @@ function ProductEditor({ initial, onClose }) {
         category: form.category,
         short_description: form.short_description,
         description: form.description,
-        price: Number(form.price),
-        mrp: Number(form.mrp),
-        stock: parseInt(form.stock) || 0,
+        // Derived from the options below, and derived again on the server so
+        // the two cannot be saved disagreeing.
+        price: summary.price,
+        mrp: summary.mrp,
+        stock: summary.stock,
         image: form.image,
         images: form.images || [],
         badges: form.badges || [],
         featured: !!form.featured,
+        option_name: form.option_name,
+        variants: variants.map((row) => ({
+          ...(row.variant_id ? { variant_id: row.variant_id } : {}),
+          label: row.label.trim(),
+          price: Number(row.price),
+          mrp: Number(row.mrp) || Number(row.price),
+          stock: parseInt(row.stock, 10) || 0,
+          image: row.image || "",
+        })),
       };
       if (initial && initial.product_id) await api.put(`/products/${initial.product_id}`, payload);
       else await api.post("/products", payload);
@@ -255,7 +342,7 @@ function ProductEditor({ initial, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} data-testid="product-editor">
+      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()} data-testid="product-editor">
         <form onSubmit={save} className="p-6 space-y-4">
           <h2 className="font-heading text-2xl font-medium">{initial ? "Edit Product" : "New Product"}</h2>
 
@@ -286,22 +373,68 @@ function ProductEditor({ initial, onClose }) {
               </select>
             </div>
             <div>
-              <label htmlFor="product-price" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Price (₹)<RequiredMark /></label>
-              <input required type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" id="product-price" data-testid="product-price-input" />
-            </div>
-            <div>
-              <label htmlFor="product-mrp" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">MRP (₹)<RequiredMark /></label>
-              <input required type="number" min="0" step="0.01" value={form.mrp} onChange={(e) => setForm({ ...form, mrp: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" id="product-mrp" data-testid="product-mrp-input" />
-            </div>
-            <div>
-              <label htmlFor="product-stock" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Stock<RequiredMark /></label>
-              <input required type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" id="product-stock" data-testid="product-stock-input" />
+              <label htmlFor="product-option-name" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Options differ by</label>
+              <select value={form.option_name} onChange={(e) => setForm({ ...form, option_name: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm bg-white" id="product-option-name" data-testid="product-option-name-input">
+                {OPTION_NAMES.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
             </div>
             <div className="flex items-center gap-2 mt-6">
               <input id="featured" type="checkbox" checked={!!form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} data-testid="product-featured-input" />
               <label htmlFor="featured" className="text-sm">Featured on home page</label>
             </div>
           </div>
+
+          <fieldset className="border border-[var(--nayara-border)] rounded-xl p-4" data-testid="product-variants">
+            <legend className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B] px-2">
+              {form.option_name} options<RequiredMark />
+            </legend>
+            <p className="text-xs text-[#64748B] mb-3">
+              Each option is priced and stocked on its own. The shop shows the cheapest price until a customer picks one.
+            </p>
+
+            <div className="space-y-3">
+              {variants.map((row, index) => (
+                <div key={row.variant_id || `new-${index}`} className="grid grid-cols-12 gap-2 items-end" data-testid={`variant-row-${index}`}>
+                  <div className="col-span-12 md:col-span-3">
+                    <label htmlFor={`variant-label-${index}`} className="text-[10px] uppercase tracking-[0.15em] font-bold text-[#64748B]">{form.option_name}</label>
+                    <input required id={`variant-label-${index}`} value={row.label} onChange={(e) => setVariant(index, { label: e.target.value })} placeholder="1kg" className="w-full border border-[var(--nayara-border)] rounded h-9 px-2 mt-1 text-sm" data-testid={`variant-label-input-${index}`} />
+                  </div>
+                  <div className="col-span-4 md:col-span-2">
+                    <label htmlFor={`variant-price-${index}`} className="text-[10px] uppercase tracking-[0.15em] font-bold text-[#64748B]">Price (₹)</label>
+                    <input required type="number" min="0.01" step="0.01" id={`variant-price-${index}`} value={row.price} onChange={(e) => setVariant(index, { price: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-9 px-2 mt-1 text-sm" data-testid={`variant-price-input-${index}`} />
+                  </div>
+                  <div className="col-span-4 md:col-span-2">
+                    <label htmlFor={`variant-mrp-${index}`} className="text-[10px] uppercase tracking-[0.15em] font-bold text-[#64748B]">MRP (₹)</label>
+                    <input required type="number" min="0.01" step="0.01" id={`variant-mrp-${index}`} value={row.mrp} onChange={(e) => setVariant(index, { mrp: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-9 px-2 mt-1 text-sm" data-testid={`variant-mrp-input-${index}`} />
+                  </div>
+                  <div className="col-span-4 md:col-span-2">
+                    <label htmlFor={`variant-stock-${index}`} className="text-[10px] uppercase tracking-[0.15em] font-bold text-[#64748B]">Stock</label>
+                    <input required type="number" min="0" id={`variant-stock-${index}`} value={row.stock} onChange={(e) => setVariant(index, { stock: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-9 px-2 mt-1 text-sm" data-testid={`variant-stock-input-${index}`} />
+                  </div>
+                  <div className="col-span-9 md:col-span-2">
+                    <label htmlFor={`variant-image-${index}`} className="text-[10px] uppercase tracking-[0.15em] font-bold text-[#64748B]">Photo</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      {row.image ? <ProductImage src={row.image} alt={`${row.label} option`} className="w-9 h-9 rounded object-cover bg-[#F1F5F9] shrink-0" /> : null}
+                      <input id={`variant-image-${index}`} type="file" accept="image/*" onChange={(e) => onVariantUpload(index, e)} disabled={uploading} className="block text-[11px] w-full" data-testid={`variant-image-input-${index}`} />
+                    </div>
+                  </div>
+                  <div className="col-span-3 md:col-span-1">
+                    <button type="button" onClick={() => removeVariant(index)} disabled={variants.length === 1} title={variants.length === 1 ? "A product needs at least one option" : "Remove this option"} className="w-full h-9 rounded-md border border-red-200 text-red-600 text-xs disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-50" data-testid={`variant-remove-${index}`}>Remove</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
+              <button type="button" onClick={addVariant} disabled={variants.length >= 20} className="text-sm px-4 py-2 rounded-md border border-[var(--nayara-border)] hover:bg-[#FBEEE4] disabled:opacity-40" data-testid="variant-add">
+                + Add {form.option_name.toLowerCase()}
+              </button>
+              <p className="text-xs text-[#64748B]" data-testid="variant-summary">
+                Shop shows {variants.length > 1 ? "from " : ""}{formatINR(summary.price)} · {summary.stock} in stock
+                {variants.length > 1 ? ` across ${variants.length} options` : ""}
+              </p>
+            </div>
+          </fieldset>
           <div>
             <label htmlFor="product-short-desc" className="text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]">Short description</label>
             <input value={form.short_description} onChange={(e) => setForm({ ...form, short_description: e.target.value })} className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm" id="product-short-desc" data-testid="product-short-desc-input" />

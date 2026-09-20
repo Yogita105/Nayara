@@ -242,15 +242,22 @@ a plain indexed field. Reviews and wishlists stay on the **product**.
 One axis per product. A matrix of size against colour needs option sets and generated
 combinations, which is a great deal of machinery for a catalogue this size.
 
-**This is being introduced in steps.** The cart, orders and stock reservation now work
-from the variant: a cart line names one, an order records which was bought, and stock is
-held against it. What is not done yet is the admin screen for managing variants and the
-selector on the product page, so every product still has exactly one.
+The product's own `price`, `mrp` and `stock` are a **summary** of its variants, not
+something anyone sets: the price is the cheapest on offer, the MRP belongs to that same
+form, and the stock is everything on hand across the forms. The server recomputes them
+on every save, so the two cannot be stored disagreeing. They exist because the
+storefront still reads them, and are removed once it does not.
 
-The product's own `price` and `stock` remain as a mirror of that single variant while
-the storefront still reads them, and are removed once it does not. A request that names
-no variant resolves to the product's only one, which is what keeps the existing site
-working; a product with a real choice refuses and asks which.
+A form can be added, priced, stocked and photographed in **Admin → Products**. Two forms
+cannot share a label, a product cannot be left with none, and a form cannot be removed
+while an open order still holds it — cancelling that order would return its units to a
+variant that no longer exists, and the stock would vanish without a word.
+
+A request that names no variant resolves to the product's only one, which is what keeps
+the existing site working. A product with a real choice refuses and asks which.
+
+> **Not finished.** The storefront has no selector yet, so a product given a second form
+> cannot be bought until that is built. Give a product two forms only once it can.
 
 Databases that predate this are brought up to date with:
 
