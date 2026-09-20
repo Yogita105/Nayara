@@ -83,6 +83,32 @@ jobs:
           CI: "true"
         run: yarn build
 
+  secrets:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks reads the commit history, and the default shallow clone
+          # would hand it a single commit.
+          fetch-depth: 0
+
+      # The command-line tool is used rather than the marketplace action
+      # because the action asks organisations for a licence key, and pinning
+      # the version keeps the scan reproducible.
+      - name: Scan the history for secrets
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          chmod +x gitleaks
+          # --redact keeps any finding out of the public build log.
+          ./gitleaks detect --source . --redact --no-banner
+
   dependencies:
     name: Dependency vulnerabilities
     runs-on: ubuntu-latest

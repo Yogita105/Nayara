@@ -216,7 +216,7 @@ production-ready ecommerce application.
 - [x] Refuse to run the suite against the live database.
 - [x] Keep local development off the production database.
 - [x] Add dependency vulnerability scanning.
-- [ ] Add secret scanning.
+- [x] Add secret scanning.
 - [x] Enforce linting and tests in CI.
 - [ ] Enforce formatting and type checks in CI.
 

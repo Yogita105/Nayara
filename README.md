@@ -365,6 +365,7 @@ the database this project is configured for, so the mistake cannot be made by ac
 | --- | --- |
 | Backend | `flake8` over `app`, `scripts` and `tests`, then the full suite against a MongoDB service container |
 | Frontend | `yarn lint`, then `yarn build` with `CI=true` so build warnings fail the run |
+| Secret scanning | `gitleaks` over the whole commit history, with findings redacted from the log |
 | Dependencies | `pip-audit` against `backend/requirements.txt`, and `yarn audit` for JavaScript |
 
 Run the same checks locally before pushing:
