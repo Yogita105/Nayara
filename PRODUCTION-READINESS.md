@@ -85,7 +85,7 @@ production-ready ecommerce application.
 - [x] Document every setting in the README.
 - [ ] Use separate credentials for development and production.
 - [ ] Restrict third-party credentials to minimum required permissions.
-- [ ] Document credential rotation and incident-response procedures.
+- [x] Document credential rotation and incident-response procedures.
 
 ## 5. Database reliability and performance
 
@@ -232,9 +232,11 @@ production-ready ecommerce application.
 - [ ] Cap request size at the proxy as a second layer.
 - [ ] Add automated staging and production deployments.
 - [x] Add health-based deployment checks.
-- [ ] Add rollback support.
+- [ ] Rehearse a rollback against the deployed app. Deployments are immutable
+      images and Fly keeps the previous ones, so the mechanism exists and is
+      written down, but it has never actually been run.
 - [ ] Add database backup verification before risky releases.
-- [ ] Document the release and rollback process.
+- [x] Document the release and rollback process.
 
 ## Recommended execution order
 

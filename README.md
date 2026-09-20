@@ -535,6 +535,130 @@ cd backend
 python scripts\set_user_password.py user@example.com
 ```
 
+## Releasing and rolling back
+
+Every deployment is a new image, and Fly keeps the previous ones, so going back is
+redeploying an earlier image rather than rebuilding an earlier commit.
+
+### Before releasing
+
+1. `git status` is clean and the change is pushed, so the running image matches a commit
+   somebody else can find.
+2. Continuous integration is green on that commit. It runs the same checks locally
+   available, against a real database.
+3. Note the current release, so the way back is known before it is needed:
+
+```powershell
+fly releases --image
+```
+
+### Releasing
+
+```powershell
+fly deploy
+```
+
+The default strategy replaces machines one at a time and waits for the health checks in
+`fly.toml`, so a container that fails to start does not take the site down with it.
+Watch it with `fly logs`, and confirm `/api/health/ready` answers before walking away:
+that probe reports whether MongoDB is reachable, not merely whether the process is up.
+
+### Rolling back
+
+```powershell
+fly releases --image                       # find the last good image reference
+fly deploy --image registry.fly.io/<app>:deployment-XXXXXXXX
+```
+
+**What rolling back does not undo:**
+
+- **Data.** Orders placed, accounts created and stock reserved by the newer version stay
+  exactly as they are. Only the code goes back.
+- **Indexes.** They are created at startup and never dropped, so an index added by the
+  newer version remains. That is harmless — an unused index costs a little write time
+  and nothing else — but it means the database is not returned to its earlier shape.
+- **Anything a newer version wrote in a shape the older one cannot read.** There is no
+  such case today, because no field has been renamed or removed. It is the thing to
+  check before releasing a change that alters stored documents.
+
+If a release has to be reverted, revert the commit too. An image running ahead of
+`main` is the state nobody expects when they next deploy.
+
+## Rotating credentials
+
+Secrets live in `fly secrets`, which stores them encrypted and exposes them to the
+container as environment variables. `fly secrets list` shows names and digests, never
+values.
+
+Setting a secret restarts the machines, so each rotation is a small deployment.
+
+| Credential | How to rotate | What it costs |
+| --- | --- | --- |
+| `MONGO_URL` | Create a second Atlas user, set the new URL, then delete the old user | Nothing, provided the new user exists *before* the switch |
+| `SECRET_KEY` | `fly secrets set SECRET_KEY="..."` | Every CSRF token stops matching until each browser reloads |
+| `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Rotate in Cloudinary, then set both together | New uploads only; images already served keep working |
+| `ADMIN_MOBILES` | `fly secrets set ADMIN_MOBILES="..."` | Grants access. It does **not** revoke it — see below |
+
+Generate a signing key without it reaching the shell history of a machine you share:
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+### What rotating the signing key actually breaks
+
+A CSRF token is an HMAC of the session token under `SECRET_KEY`, so changing the key
+makes every token in a browser stop matching. Sessions themselves survive, because those
+are rows in MongoDB. The first call to `/api/auth/me` reissues the cookie, which the site
+makes when a page loads, so the window is short: a write attempted between the restart
+and that call is refused with `403` and succeeds on retry.
+
+Rotate it deliberately, not routinely, and never as a way of signing people out — it
+does not do that.
+
+### Removing an administrator
+
+Taking a number out of `ADMIN_MOBILES` does not demote anybody. The allowlist grants
+`is_admin` when an account is created or signs in, and the flag then lives on the
+account, so that an administrator added before the allowlist existed keeps working.
+
+To actually remove access, clear the flag and end the sessions:
+
+```javascript
+db.users.updateOne({ mobile: "+919876500000" }, { $set: { is_admin: false } })
+db.user_sessions.deleteMany({ user_id: "<their user_id>" })
+```
+
+## If a credential leaks
+
+Order matters: revoke first, investigate second. An investigation that begins before the
+credential is dead is a decision to let it be used a while longer.
+
+1. **Revoke.** Rotate the exposed credential as above. For a database password, delete
+   the Atlas user outright rather than changing it.
+2. **Close the sessions** if account data may have been reached:
+
+   ```javascript
+   db.user_sessions.deleteMany({})   // everybody signs in again
+   ```
+
+3. **Read the audit trail.** `audit_events` records sign-ins, failed attempts and every
+   administrator action, with the address each came from:
+
+   ```javascript
+   db.audit_events.find({ at: { $gt: ISODate("2026-01-01") } }).sort({ at: -1 })
+   ```
+
+4. **Purge it from history if it was committed.** Rotating is not enough: the value
+   stays in every clone of the repository. The secret scan in continuous integration
+   reads the whole history for this reason.
+5. **Write down what happened** — what leaked, how, when it was revoked, and what the
+   audit trail showed — before the detail is lost.
+
+Nothing in this repository should ever hold a real credential. `.gitignore` excludes
+both `.env.*` and `*.env`, which between them cover every form these files take, and
+settings are documented by name only.
+
 ## Backend structure
 
 The Uvicorn entry point remains `backend/server.py`. Application code lives in the
