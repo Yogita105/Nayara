@@ -241,6 +241,11 @@ what the shop holds, and means nothing to somebody buying one.
 The browser is never the authority here. It reports what it last read, while the
 reservation above decides what actually happens.
 
+The cart refuses a quantity the shop cannot fill, whether it arrives in one request or
+by adding one at a time, and names what is left. That check reads stock at the moment
+of adding, so it is a courtesy rather than a guarantee: stock can fall between filling
+a cart and paying for it, which is why the reservation still decides.
+
 Cancelling an order returns its stock. The update matches only orders that are not yet
 cancelled, so repeating the request cannot inflate the catalogue.
 

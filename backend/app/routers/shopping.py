@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..database import db
+from ..errors import FieldError
 from ..models import AddToCartRequest, UpdateCartRequest, WishlistRequest
 from ..security import get_current_user
 from ..utils import serialize_doc
@@ -14,6 +15,34 @@ async def get_or_create_cart(user_id: str) -> dict:
         cart = {"user_id": user_id, "items": []}
         await db.carts.insert_one(dict(cart))
     return cart
+
+
+async def require_available(product_id: str, wanted: int, already_held: int = 0) -> dict:
+    """Refuse a cart quantity the shop cannot fill.
+
+    An order is all or nothing, so a cart holding more than exists is an order
+    that will be refused. Saying so when the item is added means the customer
+    finds out while they are still shopping, rather than after filling in an
+    address. The reservation at checkout remains the real guard: stock can
+    fall between the two moments.
+    """
+    product = await db.products.find_one(
+        {"product_id": product_id}, {"_id": 0, "name": 1, "stock": 1}
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    stock = product.get("stock", 0)
+    name = product.get("name", "This product")
+    if stock <= 0:
+        raise FieldError(409, "quantity", f"{name} is out of stock.")
+    if wanted > stock:
+        if already_held:
+            detail = f"Only {stock} left of {name}, and your cart already has " f"{already_held}."
+        else:
+            detail = f"Only {stock} left of {name}."
+        raise FieldError(409, "quantity", detail)
+    return product
 
 
 @router.get("/cart")
@@ -46,6 +75,15 @@ async def add_to_cart(
 ):
     cart = await get_or_create_cart(user["user_id"])
     items = cart.get("items", [])
+    already_held = next(
+        (item["quantity"] for item in items if item["product_id"] == request.product_id),
+        0,
+    )
+    await require_available(
+        request.product_id,
+        already_held + request.quantity,
+        already_held,
+    )
     for item in items:
         if item["product_id"] == request.product_id:
             item["quantity"] += request.quantity
@@ -73,6 +111,9 @@ async def update_cart(
     cart = await get_or_create_cart(user["user_id"])
     items = [item for item in cart.get("items", []) if item["product_id"] != product_id]
     if request.quantity > 0:
+        # Setting a quantity replaces whatever was there, so the whole amount
+        # is what has to be available.
+        await require_available(product_id, request.quantity)
         items.append({"product_id": product_id, "quantity": request.quantity})
     await db.carts.update_one(
         {"user_id": user["user_id"]},

@@ -55,30 +55,50 @@ export const CartProvider = ({ children }) => {
   useEffect(() => { refreshCart(); refreshWishlist(); }, [refreshCart, refreshWishlist]);
 
   const addToCart = async (product, qty = 1) => {
-    if (user) {
-      await api.post("/cart", { product_id: product.product_id, quantity: qty });
-      await refreshCart();
-    } else {
-      const existing = readLocal(LOCAL_KEY);
-      const i = existing.findIndex((x) => x.product_id === product.product_id);
-      if (i >= 0) existing[i].quantity += qty;
-      else existing.push({ ...product, quantity: qty });
-      writeLocal(LOCAL_KEY, existing);
-      setCart(existing);
+    try {
+      if (user) {
+        await api.post("/cart", { product_id: product.product_id, quantity: qty });
+        await refreshCart();
+      } else {
+        const existing = readLocal(LOCAL_KEY);
+        const i = existing.findIndex((x) => x.product_id === product.product_id);
+        const wanted = (i >= 0 ? existing[i].quantity : 0) + qty;
+        if (typeof product.stock === "number" && wanted > product.stock) {
+          toast.error(
+            product.stock > 0
+              ? `Only ${product.stock} left of ${product.name}.`
+              : `${product.name} is out of stock.`
+          );
+          return;
+        }
+        if (i >= 0) existing[i].quantity = wanted;
+        else existing.push({ ...product, quantity: qty });
+        writeLocal(LOCAL_KEY, existing);
+        setCart(existing);
+      }
+      toast.success(`${product.name} added to cart`);
+    } catch (failure) {
+      // The API refuses a cart it could not fill, and that refusal names the
+      // product and what is left of it.
+      toast.error(errorMessage(failure, "Could not add that to your cart."));
     }
-    toast.success(`${product.name} added to cart`);
   };
 
   const updateQuantity = async (product_id, quantity) => {
-    if (user) {
-      await api.put(`/cart/${product_id}`, { quantity });
+    try {
+      if (user) {
+        await api.put(`/cart/${product_id}`, { quantity });
+        await refreshCart();
+      } else {
+        let items = readLocal(LOCAL_KEY);
+        if (quantity <= 0) items = items.filter((x) => x.product_id !== product_id);
+        else items = items.map((x) => (x.product_id === product_id ? { ...x, quantity } : x));
+        writeLocal(LOCAL_KEY, items);
+        setCart(items);
+      }
+    } catch (failure) {
+      toast.error(errorMessage(failure, "Could not change that quantity."));
       await refreshCart();
-    } else {
-      let items = readLocal(LOCAL_KEY);
-      if (quantity <= 0) items = items.filter((x) => x.product_id !== product_id);
-      else items = items.map((x) => (x.product_id === product_id ? { ...x, quantity } : x));
-      writeLocal(LOCAL_KEY, items);
-      setCart(items);
     }
   };
 

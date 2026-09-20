@@ -7,11 +7,16 @@ import { isOutOfStock, stockNotice } from "../lib/stock";
 import ProductImage from "./ProductImage";
 
 export default function ProductCard({ product, index = 0 }) {
-  const { addToCart, toggleWishlist, isInWishlist } = useCart();
+  const { addToCart, toggleWishlist, isInWishlist, cart } = useCart();
   const saved = isInWishlist(product.product_id);
   const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100) || 0;
   const notice = stockNotice(product.stock);
   const soldOut = isOutOfStock(product);
+  // Adding one at a time from the grid would otherwise walk past the limit
+  // that the product page enforces.
+  const held = cart.find((item) => item.product_id === product.product_id)?.quantity || 0;
+  const atLimit = typeof product.stock === "number" && held >= product.stock;
+  const cannotAdd = soldOut || atLimit;
 
   return (
     <div
@@ -76,10 +81,16 @@ export default function ProductCard({ product, index = 0 }) {
           </div>
           <button
             onClick={() => addToCart(product, 1)}
-            disabled={soldOut}
+            disabled={cannotAdd}
             className="w-10 h-10 rounded-full bg-[var(--nayara-primary)] text-white flex items-center justify-center hover:bg-[var(--nayara-primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed"
             data-testid={`add-to-cart-${product.product_id}`}
-            aria-label={soldOut ? `${product.name} is out of stock` : `Add ${product.name} to cart`}
+            aria-label={
+              soldOut
+                ? `${product.name} is out of stock`
+                : atLimit
+                  ? `Your cart already holds every ${product.name} we have`
+                  : `Add ${product.name} to cart`
+            }
           >
             <ShoppingCart className="w-4 h-4" />
           </button>

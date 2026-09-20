@@ -329,3 +329,103 @@ class TestCancellationRestoresStock:
             f"{base_url}/api/admin/orders/does_not_exist", json={"status": "shipped"}
         )
         assert response.status_code == 404
+
+
+class TestCartRespectsStock:
+    """A cart holding more than exists is an order that will be refused, so
+    the refusal is brought forward to the moment it is added."""
+
+    def test_more_than_exists_is_refused(self, base_url, user_client, stocked_product):
+        product = stocked_product(2)
+
+        response = user_client.post(
+            f"{base_url}/api/cart",
+            json={"product_id": product["product_id"], "quantity": 3},
+        )
+
+        assert response.status_code == 409
+        assert "2" in response.json()["detail"]
+
+    def test_exactly_what_exists_is_allowed(self, base_url, user_client, stocked_product):
+        product = stocked_product(2)
+
+        response = user_client.post(
+            f"{base_url}/api/cart",
+            json={"product_id": product["product_id"], "quantity": 2},
+        )
+
+        assert response.status_code == 200
+
+    def test_repeated_adds_cannot_walk_past_the_limit(self, base_url, user_client, stocked_product):
+        """Adding one at a time is the way round a check made only on arrival."""
+        product = stocked_product(2)
+        url = f"{base_url}/api/cart"
+        body = {"product_id": product["product_id"], "quantity": 1}
+
+        assert user_client.post(url, json=body).status_code == 200
+        assert user_client.post(url, json=body).status_code == 200
+        third = user_client.post(url, json=body)
+
+        assert third.status_code == 409
+        assert "already has 2" in third.json()["detail"]
+
+    def test_the_cart_still_holds_only_what_is_available(
+        self, base_url, user_client, stocked_product
+    ):
+        product = stocked_product(2)
+        url = f"{base_url}/api/cart"
+        body = {"product_id": product["product_id"], "quantity": 1}
+        user_client.post(url, json=body)
+        user_client.post(url, json=body)
+        user_client.post(url, json=body)
+
+        cart = user_client.get(f"{base_url}/api/cart").json()
+        line = next(item for item in cart["items"] if item["product_id"] == product["product_id"])
+
+        assert line["quantity"] == 2
+
+    def test_setting_a_quantity_beyond_stock_is_refused(
+        self, base_url, user_client, stocked_product
+    ):
+        product = stocked_product(2)
+        user_client.post(
+            f"{base_url}/api/cart",
+            json={"product_id": product["product_id"], "quantity": 1},
+        )
+
+        response = user_client.put(
+            f"{base_url}/api/cart/{product['product_id']}",
+            json={"quantity": 5},
+        )
+
+        assert response.status_code == 409
+
+    def test_an_out_of_stock_product_cannot_be_added(self, base_url, user_client, stocked_product):
+        product = stocked_product(0)
+
+        response = user_client.post(
+            f"{base_url}/api/cart",
+            json={"product_id": product["product_id"], "quantity": 1},
+        )
+
+        assert response.status_code == 409
+        assert "out of stock" in response.json()["detail"].lower()
+
+    def test_a_product_that_does_not_exist_is_refused(self, base_url, user_client):
+        response = user_client.post(
+            f"{base_url}/api/cart",
+            json={"product_id": "prod_not_a_real_product", "quantity": 1},
+        )
+
+        assert response.status_code == 404
+
+    def test_the_refusal_names_the_field(self, base_url, user_client, stocked_product):
+        """So the quantity control can be marked rather than a bare sentence."""
+        product = stocked_product(1)
+
+        response = user_client.post(
+            f"{base_url}/api/cart",
+            json={"product_id": product["product_id"], "quantity": 4},
+        )
+
+        assert response.json()["errors"][0]["field"] == "quantity"
