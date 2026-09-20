@@ -207,8 +207,8 @@ production-ready ecommerce application.
 - [x] Add authorization tests for every admin endpoint.
 - [x] Add invalid-input and boundary tests.
 - [x] Make tests clean up the records they create.
-- [ ] Add concurrent registration and order tests.
-- [ ] Add session-expiration tests.
+- [x] Add concurrent registration and order tests.
+- [x] Add session-expiration tests.
 - [ ] Add frontend component tests.
 - [ ] Add complete browser tests for registration, cart, checkout, orders, and
       admin access.

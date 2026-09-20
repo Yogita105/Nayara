@@ -95,6 +95,18 @@ def _purge_test_artifacts(mongo_db):
     if leftovers:
         _remove_user_data(mongo_db, leftovers)
 
+    # An account is matched here by its address, so one created without an
+    # email leaves its session behind when the account itself is removed.
+    # Sessions that no longer belong to anybody are safe to drop outright.
+    known = {user["user_id"] for user in mongo_db.users.find({}, {"user_id": 1})}
+    orphaned = [
+        session["_id"]
+        for session in mongo_db.user_sessions.find({}, {"_id": 1, "user_id": 1})
+        if session.get("user_id") not in known
+    ]
+    if orphaned:
+        mongo_db.user_sessions.delete_many({"_id": {"$in": orphaned}})
+
 
 @pytest.fixture(scope="session", autouse=True)
 def clean_test_artifacts(mongo_db):

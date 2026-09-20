@@ -31,13 +31,19 @@ class TestValidationErrors:
         assert "required" in response.json()["detail"].lower()
 
     def test_submitted_values_are_never_echoed(self, base_url, anon_client):
-        """A rejected sign-up must not send the password back."""
-        secret = "notlongenough"
+        """A rejected sign-up must not send the password back.
+
+        The password has to be one the request actually fails on. A valid one
+        would be accepted, and a successful response never echoes it, so the
+        check would pass without testing anything.
+        """
+        secret = "short1"
         response = anon_client.post(
             f"{base_url}/api/auth/register",
             json={"name": "A B", "mobile": "9876500009", "password": secret},
         )
 
+        assert response.status_code == 422, "the sign-up should have been refused"
         assert secret not in response.text
         assert "input" not in response.text
 
