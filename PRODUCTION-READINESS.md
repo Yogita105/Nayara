@@ -203,7 +203,7 @@ production-ready ecommerce application.
 - [x] Fix the product-count fixture mismatch.
 - [x] Implement or remove the test for the missing payment endpoint.
 - [ ] Add unit tests for security and normalization helpers.
-- [ ] Add authorization tests for every admin endpoint.
+- [x] Add authorization tests for every admin endpoint.
 - [x] Add invalid-input and boundary tests.
 - [x] Make tests clean up the records they create.
 - [ ] Add concurrent registration and order tests.
