@@ -71,8 +71,16 @@ def main() -> int:
     print(f"Starting an API on port {TEST_PORT} using database '{test_database}'.")
     server = subprocess.Popen(
         [
-            sys.executable, "-m", "uvicorn", "server:app",
-            "--host", "127.0.0.1", "--port", str(TEST_PORT), "--log-level", "warning",
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "server:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(TEST_PORT),
+            "--log-level",
+            "warning",
         ],
         cwd=BACKEND_DIR,
         env=environment,

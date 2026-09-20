@@ -5,7 +5,6 @@ from ..models import AddToCartRequest, UpdateCartRequest, WishlistRequest
 from ..security import get_current_user
 from ..utils import serialize_doc
 
-
 router = APIRouter(prefix="/api", tags=["shopping"])
 
 
@@ -52,10 +51,12 @@ async def add_to_cart(
             item["quantity"] += request.quantity
             break
     else:
-        items.append({
-            "product_id": request.product_id,
-            "quantity": request.quantity,
-        })
+        items.append(
+            {
+                "product_id": request.product_id,
+                "quantity": request.quantity,
+            }
+        )
     await db.carts.update_one(
         {"user_id": user["user_id"]},
         {"$set": {"items": items}},
@@ -70,11 +71,7 @@ async def update_cart(
     user: dict = Depends(get_current_user),
 ):
     cart = await get_or_create_cart(user["user_id"])
-    items = [
-        item
-        for item in cart.get("items", [])
-        if item["product_id"] != product_id
-    ]
+    items = [item for item in cart.get("items", []) if item["product_id"] != product_id]
     if request.quantity > 0:
         items.append({"product_id": product_id, "quantity": request.quantity})
     await db.carts.update_one(
@@ -90,11 +87,7 @@ async def delete_cart_item(
     user: dict = Depends(get_current_user),
 ):
     cart = await get_or_create_cart(user["user_id"])
-    items = [
-        item
-        for item in cart.get("items", [])
-        if item["product_id"] != product_id
-    ]
+    items = [item for item in cart.get("items", []) if item["product_id"] != product_id]
     await db.carts.update_one(
         {"user_id": user["user_id"]},
         {"$set": {"items": items}},

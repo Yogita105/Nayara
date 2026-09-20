@@ -3,7 +3,6 @@ import logging
 from .database import db
 from .models import Product
 
-
 logger = logging.getLogger(__name__)
 
 SEED_PRODUCTS = [

@@ -28,21 +28,25 @@ def session_factory(mongo_db):
         user_id = f"test-user-{uuid.uuid4().hex[:10]}"
         token = f"test_session_{uuid.uuid4().hex}"
         now = datetime.now(timezone.utc)
-        mongo_db.users.insert_one({
-            "user_id": user_id,
-            "mobile": f"+91{uuid.uuid4().int % 10**9:09d}",
-            "email": f"test.{user_id}@example.com",
-            "name": "Expiry Test",
-            "picture": "",
-            "is_admin": is_admin,
-            "created_at": now.isoformat(),
-        })
-        mongo_db.user_sessions.insert_one({
-            "user_id": user_id,
-            "session_token_hash": _hash(token),
-            "expires_at": expires_at,
-            "created_at": now.isoformat(),
-        })
+        mongo_db.users.insert_one(
+            {
+                "user_id": user_id,
+                "mobile": f"+91{uuid.uuid4().int % 10**9:09d}",
+                "email": f"test.{user_id}@example.com",
+                "name": "Expiry Test",
+                "picture": "",
+                "is_admin": is_admin,
+                "created_at": now.isoformat(),
+            }
+        )
+        mongo_db.user_sessions.insert_one(
+            {
+                "user_id": user_id,
+                "session_token_hash": _hash(token),
+                "expires_at": expires_at,
+                "created_at": now.isoformat(),
+            }
+        )
         created.append(user_id)
         return {"token": token, "user_id": user_id}
 
@@ -107,16 +111,12 @@ class TestStoredTimestampForms:
     others. A date without a zone must not be read as local time, or a token
     would outlive its week wherever the server is not on UTC."""
 
-    def test_a_past_date_without_a_zone_is_refused(
-        self, base_url, session_factory
-    ):
+    def test_a_past_date_without_a_zone_is_refused(self, base_url, session_factory):
         session = session_factory(PAST.replace(tzinfo=None))
 
         assert whoami(base_url, session["token"]).status_code == 401
 
-    def test_a_future_date_without_a_zone_is_accepted(
-        self, base_url, session_factory
-    ):
+    def test_a_future_date_without_a_zone_is_accepted(self, base_url, session_factory):
         session = session_factory(FUTURE.replace(tzinfo=None))
 
         assert whoami(base_url, session["token"]).status_code == 200
@@ -131,21 +131,15 @@ class TestRevokedSessions:
     def test_an_unknown_token_is_refused(self, base_url):
         assert whoami(base_url, f"test_session_{uuid.uuid4().hex}").status_code == 401
 
-    def test_a_deleted_session_is_refused(
-        self, base_url, session_factory, mongo_db
-    ):
+    def test_a_deleted_session_is_refused(self, base_url, session_factory, mongo_db):
         session = session_factory(FUTURE.isoformat())
         assert whoami(base_url, session["token"]).status_code == 200
 
-        mongo_db.user_sessions.delete_one(
-            {"session_token_hash": _hash(session["token"])}
-        )
+        mongo_db.user_sessions.delete_one({"session_token_hash": _hash(session["token"])})
 
         assert whoami(base_url, session["token"]).status_code == 401
 
-    def test_a_session_without_its_account_is_refused(
-        self, base_url, session_factory, mongo_db
-    ):
+    def test_a_session_without_its_account_is_refused(self, base_url, session_factory, mongo_db):
         """A closed account must not keep working through an open session."""
         session = session_factory(FUTURE.isoformat())
         assert whoami(base_url, session["token"]).status_code == 200

@@ -28,8 +28,7 @@ async def run() -> int:
         return 1
 
     inserted = await seed_products()
-    print(f"Inserted {inserted} of {len(SEED_PRODUCTS)} starter products "
-          f"into {ENVIRONMENT}.")
+    print(f"Inserted {inserted} of {len(SEED_PRODUCTS)} starter products " f"into {ENVIRONMENT}.")
     return 0
 
 

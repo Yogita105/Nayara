@@ -10,9 +10,7 @@ from pymongo import MongoClient
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Set a password for an existing Nayara user."
-    )
+    parser = argparse.ArgumentParser(description="Set a password for an existing Nayara user.")
     parser.add_argument("email", help="Email address of the existing user")
     args = parser.parse_args()
 

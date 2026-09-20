@@ -12,7 +12,6 @@ from .config import (
     MONGO_URL,
 )
 
-
 logger = logging.getLogger(__name__)
 
 client = AsyncIOMotorClient(
@@ -109,9 +108,7 @@ async def create_indexes() -> None:
             # An index already exists on these keys with different options,
             # so replace it rather than leaving the old rules in force.
             if error.code not in (85, 86):
-                logger.error(
-                    "Could not create index %s on %s: %s", keys, collection, error
-                )
+                logger.error("Could not create index %s on %s: %s", keys, collection, error)
                 continue
             try:
                 await db[collection].drop_index(_index_name(keys))
@@ -120,12 +117,12 @@ async def create_indexes() -> None:
             except Exception as replace_error:
                 logger.error(
                     "Could not replace index %s on %s: %s",
-                    keys, collection, replace_error,
+                    keys,
+                    collection,
+                    replace_error,
                 )
         except Exception as error:
-            logger.error(
-                "Could not create index %s on %s: %s", keys, collection, error
-            )
+            logger.error("Could not create index %s on %s: %s", keys, collection, error)
 
 
 def _index_name(keys) -> str:

@@ -11,7 +11,6 @@ from fastapi import Depends, Header, HTTPException, Request, Response
 from .config import COOKIE_SAMESITE, COOKIE_SECURE, SECRET_KEY, SESSION_DAYS
 from .database import db
 
-
 SESSION_COOKIE_NAME = "session_token"
 CSRF_COOKIE_NAME = "csrf_token"
 CSRF_HEADER_NAME = "x-csrf-token"
@@ -111,12 +110,14 @@ def clear_session_cookies(response: Response) -> None:
 async def create_user_session(user_id: str, response: Response) -> str:
     token = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)
-    await db.user_sessions.insert_one({
-        "user_id": user_id,
-        "session_token_hash": hash_session_token(token),
-        "expires_at": now + timedelta(days=SESSION_DAYS),
-        "created_at": now,
-    })
+    await db.user_sessions.insert_one(
+        {
+            "user_id": user_id,
+            "session_token_hash": hash_session_token(token),
+            "expires_at": now + timedelta(days=SESSION_DAYS),
+            "created_at": now,
+        }
+    )
     set_session_cookie(response, token)
     set_csrf_cookie(response, token)
     return derive_csrf_token(token)

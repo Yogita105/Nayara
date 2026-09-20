@@ -162,7 +162,13 @@ class TestRecordsSentToClients:
         shared = public_user(stored)
 
         assert set(shared) == {
-            "user_id", "mobile", "email", "name", "picture", "is_admin", "created_at",
+            "user_id",
+            "mobile",
+            "email",
+            "name",
+            "picture",
+            "is_admin",
+            "created_at",
         }
 
 

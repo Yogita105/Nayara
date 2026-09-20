@@ -1,4 +1,5 @@
 """Nayara backend API tests - products, auth, cart, wishlist, reviews, orders, stripe, admin."""
+
 import uuid
 import pytest
 import requests
@@ -101,9 +102,7 @@ class TestAuth:
             # A cookie session must present the CSRF token on writes.
             assert client.post(f"{base_url}/api/auth/logout").status_code == 403
 
-            assert client.post(
-                f"{base_url}/api/auth/logout", headers=csrf
-            ).status_code == 200
+            assert client.post(f"{base_url}/api/auth/logout", headers=csrf).status_code == 200
             assert client.get(f"{base_url}/api/auth/me").status_code == 401
 
             login = client.post(
@@ -114,9 +113,7 @@ class TestAuth:
             csrf = {"X-CSRF-Token": login.json()["csrf_token"]}
             assert client.get(f"{base_url}/api/auth/me").status_code == 200
 
-            assert client.post(
-                f"{base_url}/api/auth/logout", headers=csrf
-            ).status_code == 200
+            assert client.post(f"{base_url}/api/auth/logout", headers=csrf).status_code == 200
             login = client.post(
                 f"{base_url}/api/auth/login",
                 json={"identifier": email, "password": password},
@@ -191,14 +188,14 @@ class TestWishlist:
 
 # ---------- Reviews ----------
 class TestReviews:
-    def test_review_creates_and_bumps_rating(
-        self, base_url, user_client, anon_client, mongo_db
-    ):
+    def test_review_creates_and_bumps_rating(self, base_url, user_client, anon_client, mongo_db):
         pid = anon_client.get(f"{base_url}/api/products").json()[0]["product_id"]
         review_id = None
         try:
-            r = user_client.post(f"{base_url}/api/products/{pid}/reviews",
-                                 json={"rating": 5, "title": "Great", "comment": "Loved it"})
+            r = user_client.post(
+                f"{base_url}/api/products/{pid}/reviews",
+                json={"rating": 5, "title": "Great", "comment": "Loved it"},
+            )
             assert r.status_code == 200
             data = r.json()
             review_id = data["review_id"]
@@ -216,10 +213,14 @@ class TestReviews:
 
 def _restore_product_rating(mongo_db, product_id):
     """Recalculate a product rating so tests leave the catalogue untouched."""
-    summary = list(mongo_db.reviews.aggregate([
-        {"$match": {"product_id": product_id}},
-        {"$group": {"_id": None, "average": {"$avg": "$rating"}, "count": {"$sum": 1}}},
-    ]))
+    summary = list(
+        mongo_db.reviews.aggregate(
+            [
+                {"$match": {"product_id": product_id}},
+                {"$group": {"_id": None, "average": {"$avg": "$rating"}, "count": {"$sum": 1}}},
+            ]
+        )
+    )
     average = summary[0]["average"] if summary else 0
     count = summary[0]["count"] if summary else 0
     mongo_db.products.update_one(
@@ -233,9 +234,10 @@ class TestContact:
     def test_contact_submit(self, base_url, anon_client, mongo_db):
         contact_id = None
         try:
-            r = anon_client.post(f"{base_url}/api/contact", json={
-                "name": "TEST_ctc", "email": "t@e.com", "subject": "Hi", "message": "Hello"
-            })
+            r = anon_client.post(
+                f"{base_url}/api/contact",
+                json={"name": "TEST_ctc", "email": "t@e.com", "subject": "Hi", "message": "Hello"},
+            )
             assert r.status_code == 200
             contact_id = r.json().get("contact_id")
             assert contact_id
@@ -245,8 +247,15 @@ class TestContact:
 
 
 # ---------- Orders ----------
-ADDRESS = {"full_name": "Test", "phone": "9999999999", "line1": "Addr1",
-           "line2": "", "city": "Mumbai", "state": "MH", "pincode": "400001"}
+ADDRESS = {
+    "full_name": "Test",
+    "phone": "9999999999",
+    "line1": "Addr1",
+    "line2": "",
+    "city": "Mumbai",
+    "state": "MH",
+    "pincode": "400001",
+}
 
 
 @pytest.fixture
@@ -262,9 +271,10 @@ class TestOrders:
             f"{base_url}/api/cart",
             json={"product_id": sample_items[0]["product_id"], "quantity": 1},
         )
-        r = user_client.post(f"{base_url}/api/orders", json={
-            "items": sample_items, "address": ADDRESS, "payment_method": "cod"
-        })
+        r = user_client.post(
+            f"{base_url}/api/orders",
+            json={"items": sample_items, "address": ADDRESS, "payment_method": "cod"},
+        )
         assert r.status_code == 200
         o = r.json()
         assert o["payment_status"] == "cod_pending"
@@ -273,16 +283,18 @@ class TestOrders:
         assert user_client.get(f"{base_url}/api/cart").json()["items"] == []
 
     def test_order_upi_paid(self, base_url, user_client, sample_items):
-        r = user_client.post(f"{base_url}/api/orders", json={
-            "items": sample_items, "address": ADDRESS, "payment_method": "upi"
-        })
+        r = user_client.post(
+            f"{base_url}/api/orders",
+            json={"items": sample_items, "address": ADDRESS, "payment_method": "upi"},
+        )
         assert r.status_code == 200
         assert r.json()["payment_status"] == "paid"
 
     def test_order_card_pending(self, base_url, user_client, sample_items):
-        r = user_client.post(f"{base_url}/api/orders", json={
-            "items": sample_items, "address": ADDRESS, "payment_method": "card"
-        })
+        r = user_client.post(
+            f"{base_url}/api/orders",
+            json={"items": sample_items, "address": ADDRESS, "payment_method": "card"},
+        )
         assert r.status_code == 200
         assert r.json()["payment_status"] == "pending"
 
@@ -296,9 +308,10 @@ class TestOrders:
         self, base_url, user_client, admin_client, sample_items, anon_client
     ):
         # Make a second user and order - use admin to verify admin can view
-        r = user_client.post(f"{base_url}/api/orders", json={
-            "items": sample_items, "address": ADDRESS, "payment_method": "cod"
-        })
+        r = user_client.post(
+            f"{base_url}/api/orders",
+            json={"items": sample_items, "address": ADDRESS, "payment_method": "cod"},
+        )
         oid = r.json()["order_id"]
         # owner can get
         assert user_client.get(f"{base_url}/api/orders/{oid}").status_code == 200
@@ -311,18 +324,20 @@ class TestOrders:
 # ---------- Payments ----------
 @pytest.mark.skip(
     reason="No payment provider is integrated yet. This describes what the "
-           "checkout endpoint must do once one is chosen, so it is kept "
-           "rather than deleted."
+    "checkout endpoint must do once one is chosen, so it is kept "
+    "rather than deleted."
 )
 class TestStripe:
     def test_create_checkout_session(self, base_url, user_client, sample_items, mongo_db):
-        r = user_client.post(f"{base_url}/api/orders", json={
-            "items": sample_items, "address": ADDRESS, "payment_method": "card"
-        })
+        r = user_client.post(
+            f"{base_url}/api/orders",
+            json={"items": sample_items, "address": ADDRESS, "payment_method": "card"},
+        )
         oid = r.json()["order_id"]
-        r = user_client.post(f"{base_url}/api/payments/checkout/session", json={
-            "order_id": oid, "origin_url": base_url
-        })
+        r = user_client.post(
+            f"{base_url}/api/payments/checkout/session",
+            json={"order_id": oid, "origin_url": base_url},
+        )
         assert r.status_code == 200, r.text
         data = r.json()
         assert data.get("url", "").startswith("https://")
@@ -356,9 +371,10 @@ class TestAdmin:
                     assert "_id" not in d
 
     def test_admin_update_order(self, base_url, admin_client, user_client, sample_items):
-        oid = user_client.post(f"{base_url}/api/orders", json={
-            "items": sample_items, "address": ADDRESS, "payment_method": "cod"
-        }).json()["order_id"]
+        oid = user_client.post(
+            f"{base_url}/api/orders",
+            json={"items": sample_items, "address": ADDRESS, "payment_method": "cod"},
+        ).json()["order_id"]
         r = admin_client.put(f"{base_url}/api/admin/orders/{oid}", json={"status": "shipped"})
         assert r.status_code == 200
         assert r.json()["status"] == "shipped"

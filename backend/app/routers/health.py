@@ -12,7 +12,6 @@ from fastapi.responses import JSONResponse
 from ..config import ENVIRONMENT
 from ..database import db
 
-
 router = APIRouter(prefix="/api", tags=["health"])
 logger = logging.getLogger(__name__)
 

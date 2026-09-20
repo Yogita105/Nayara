@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 from .utils import normalize_indian_mobile
 
-
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BACKEND_DIR / ".env")
 
@@ -161,7 +160,8 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
     )
 
     return Settings(
-        environment=runtime_environment,        mongo_url=mongo_url,
+        environment=runtime_environment,
+        mongo_url=mongo_url,
         db_name=db_name,
         secret_key=secret_key,
         admin_mobiles=frozenset(

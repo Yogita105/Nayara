@@ -30,7 +30,6 @@ from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
 from ..security import require_admin
 from ..utils import serialize_doc
 
-
 router = APIRouter(prefix="/api", tags=["admin"])
 logger = logging.getLogger(__name__)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
@@ -46,9 +45,7 @@ async def paged_admin_list(
     projection: dict,
 ) -> list:
     """Return one page and report the total so the UI can show page counts."""
-    response.headers[TOTAL_COUNT_HEADER] = str(
-        await db[collection].count_documents({})
-    )
+    response.headers[TOTAL_COUNT_HEADER] = str(await db[collection].count_documents({}))
     docs = await (
         db[collection]
         .find({}, projection)
@@ -147,9 +144,7 @@ async def admin_all_orders(
     offset: int = offset_query(),
     _: dict = Depends(require_admin),
 ):
-    return await paged_admin_list(
-        "orders", response, "created_at", limit, offset, {"_id": 0}
-    )
+    return await paged_admin_list("orders", response, "created_at", limit, offset, {"_id": 0})
 
 
 @router.put("/admin/orders/{order_id}")
@@ -164,17 +159,18 @@ async def admin_update_order(
         raise HTTPException(status_code=404, detail="Order not found")
 
     current_status = order.get("status", "")
-    if payload.status is not None and not can_change_status(
-        current_status, payload.status
-    ):
+    if payload.status is not None and not can_change_status(current_status, payload.status):
         allowed = sorted(allowed_next_statuses(current_status))
         raise HTTPException(
             status_code=409,
             detail=(
                 f"An order that is {current_status} cannot become "
                 f"{payload.status}. "
-                + (f"It can only become: {', '.join(allowed)}." if allowed
-                   else "It has reached its final state.")
+                + (
+                    f"It can only become: {', '.join(allowed)}."
+                    if allowed
+                    else "It has reached its final state."
+                )
             ),
         )
 
@@ -217,10 +213,12 @@ async def cancel_order(order: dict, payload: OrderUpdate) -> None:
     if result.modified_count == 0:
         return
 
-    await release_stock([
-        {"product_id": item["product_id"], "quantity": item["quantity"]}
-        for item in order.get("items", [])
-    ])
+    await release_stock(
+        [
+            {"product_id": item["product_id"], "quantity": item["quantity"]}
+            for item in order.get("items", [])
+        ]
+    )
 
 
 @router.get("/admin/users")
@@ -247,9 +245,7 @@ async def admin_contacts(
     offset: int = offset_query(),
     _: dict = Depends(require_admin),
 ):
-    return await paged_admin_list(
-        "contacts", response, "created_at", limit, offset, {"_id": 0}
-    )
+    return await paged_admin_list("contacts", response, "created_at", limit, offset, {"_id": 0})
 
 
 @router.post("/admin/upload")
@@ -259,11 +255,7 @@ async def admin_upload(
 ):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename")
-    extension = (
-        file.filename.rsplit(".", 1)[-1].lower()
-        if "." in file.filename
-        else "bin"
-    )
+    extension = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
     if extension not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Unsupported file type")
 
@@ -280,8 +272,7 @@ async def admin_upload(
             raise HTTPException(
                 status_code=413,
                 detail=(
-                    "File is too large. The limit is "
-                    f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+                    "File is too large. The limit is " f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
                 ),
             )
     if not data:
@@ -301,16 +292,18 @@ async def admin_upload(
         raise HTTPException(status_code=500, detail="Image upload failed") from error
 
     cloudinary_url = result["secure_url"]
-    await db.files.insert_one({
-        "file_id": file_id,
-        "cloudinary_url": cloudinary_url,
-        "cloudinary_public_id": result["public_id"],
-        "content_type": f"image/{extension}",
-        "size": len(data),
-        "uploaded_by": user["user_id"],
-        "is_deleted": False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
+    await db.files.insert_one(
+        {
+            "file_id": file_id,
+            "cloudinary_url": cloudinary_url,
+            "cloudinary_public_id": result["public_id"],
+            "content_type": f"image/{extension}",
+            "size": len(data),
+            "uploaded_by": user["user_id"],
+            "is_deleted": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     await audit.record(
         "admin.image_uploaded",
         actor_id=user["user_id"],

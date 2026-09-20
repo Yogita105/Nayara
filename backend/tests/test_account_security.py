@@ -1,9 +1,9 @@
 """Password change and signing out of every device."""
+
 import uuid
 
 import pytest
 import requests
-
 
 PASSWORD = "OriginalPassword123!"
 NEW_PASSWORD = "ReplacementPassword456!"
@@ -277,9 +277,7 @@ class TestSignOutEverywhere:
         assert account["client"].get(f"{base_url}/api/auth/me").status_code == 401
 
         user = mongo_db.users.find_one({"email": account["email"]}, {"user_id": 1})
-        assert mongo_db.user_sessions.count_documents(
-            {"user_id": user["user_id"]}
-        ) == 0
+        assert mongo_db.user_sessions.count_documents({"user_id": user["user_id"]}) == 0
 
     def test_the_account_can_sign_in_again(self, base_url, account):
         account["client"].post(f"{base_url}/api/auth/logout-all")
@@ -288,6 +286,4 @@ class TestSignOutEverywhere:
         assert response.status_code == 200
 
     def test_signed_out_callers_are_refused(self, base_url, anon_client):
-        assert anon_client.post(
-            f"{base_url}/api/auth/logout-all"
-        ).status_code == 401
+        assert anon_client.post(f"{base_url}/api/auth/logout-all").status_code == 401

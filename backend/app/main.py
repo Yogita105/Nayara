@@ -20,7 +20,6 @@ from .pagination import TOTAL_COUNT_HEADER
 from .routers import admin, auth, catalog, health, orders, shopping
 from .seed import seed_products
 
-
 configure_logging(LOG_LEVEL, LOG_JSON)
 logger = logging.getLogger(__name__)
 

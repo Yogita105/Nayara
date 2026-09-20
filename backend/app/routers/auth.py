@@ -40,7 +40,6 @@ from ..security import (
 )
 from ..utils import normalize_indian_mobile, public_user
 
-
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
 
@@ -53,9 +52,7 @@ TOO_MANY_ACCOUNT_LOGINS = (
     "Too many failed sign-in attempts for this account. Please try again later."
 )
 TOO_MANY_REGISTRATIONS = "Too many accounts created recently. Please try again later."
-TOO_MANY_PASSWORD_CHANGES = (
-    "Too many password attempts. Please try again later."
-)
+TOO_MANY_PASSWORD_CHANGES = "Too many password attempts. Please try again later."
 
 
 @router.post("/register", status_code=201)
@@ -76,13 +73,9 @@ async def register(body: RegisterRequest, request: Request, response: Response):
 
     email = str(body.email).lower() if body.email else None
     if await db.users.find_one({"mobile": mobile}, {"_id": 1}):
-        raise FieldError(
-            409, "mobile", "An account with this mobile number already exists"
-        )
+        raise FieldError(409, "mobile", "An account with this mobile number already exists")
     if email and await db.users.find_one({"email": email}, {"_id": 1}):
-        raise FieldError(
-            409, "email", "An account with this email already exists"
-        )
+        raise FieldError(409, "email", "An account with this email already exists")
 
     user = {
         "user_id": f"user_{uuid.uuid4().hex[:12]}",
@@ -251,9 +244,7 @@ async def update_profile(
             {"_id": 1},
         )
         if clash:
-            raise FieldError(
-                409, "email", "Another account already uses this email"
-            )
+            raise FieldError(409, "email", "Another account already uses this email")
 
     changes = {"$set": {"name": body.name}}
     if email:
@@ -304,9 +295,7 @@ async def change_password(
         {"_id": 0, "password_hash": 1},
     )
     current_hash = (record or {}).get("password_hash")
-    if not current_hash or not await verify_password(
-        body.current_password, current_hash
-    ):
+    if not current_hash or not await verify_password(body.current_password, current_hash):
         await audit.record(
             "auth.password_change_refused",
             actor_id=user["user_id"],
@@ -316,9 +305,7 @@ async def change_password(
         raise FieldError(403, "current_password", "Current password is incorrect")
 
     if await verify_password(body.new_password, current_hash):
-        raise FieldError(
-            422, "new_password", "The new password must differ from the current one"
-        )
+        raise FieldError(422, "new_password", "The new password must differ from the current one")
 
     await db.users.update_one(
         {"user_id": user["user_id"]},

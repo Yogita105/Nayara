@@ -9,7 +9,6 @@ import requests
 from dotenv import dotenv_values, load_dotenv
 from pymongo import MongoClient
 
-
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BACKEND_DIR / ".env")
 
@@ -22,11 +21,7 @@ MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
 # The suite creates and deletes accounts, orders and stock, so it must never
 # be pointed at the database the shop is serving from.
 LIVE_DB_NAME = (dotenv_values(BACKEND_DIR / ".env").get("DB_NAME") or "").strip()
-DB_NAME = (
-    os.environ.get("TEST_DB_NAME")
-    or os.environ.get("DB_NAME")
-    or "nayara_test"
-).strip()
+DB_NAME = (os.environ.get("TEST_DB_NAME") or os.environ.get("DB_NAME") or "nayara_test").strip()
 
 if LIVE_DB_NAME and DB_NAME == LIVE_DB_NAME:
     raise RuntimeError(
@@ -90,9 +85,7 @@ def _purge_test_artifacts(mongo_db):
 
     leftovers = [
         user["user_id"]
-        for user in mongo_db.users.find(
-            {"email": {"$regex": TEST_EMAIL_PATTERN}}, {"user_id": 1}
-        )
+        for user in mongo_db.users.find({"email": {"$regex": TEST_EMAIL_PATTERN}}, {"user_id": 1})
     ]
     if leftovers:
         _remove_user_data(mongo_db, leftovers)
@@ -122,21 +115,25 @@ def _mk_session(mongo_db, is_admin=False):
     user_id = f"test-user-{uuid.uuid4().hex[:10]}"
     token = f"test_session_{uuid.uuid4().hex}"
     email = f"test.{user_id}@example.com"
-    mongo_db.users.insert_one({
-        "user_id": user_id,
-        "mobile": f"+91{9}{uuid.uuid4().int % 10**9:09d}",
-        "email": email,
-        "name": "Test User",
-        "picture": "",
-        "is_admin": is_admin,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
-    mongo_db.user_sessions.insert_one({
-        "user_id": user_id,
-        "session_token_hash": hashlib.sha256(token.encode("utf-8")).hexdigest(),
-        "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
+    mongo_db.users.insert_one(
+        {
+            "user_id": user_id,
+            "mobile": f"+91{9}{uuid.uuid4().int % 10**9:09d}",
+            "email": email,
+            "name": "Test User",
+            "picture": "",
+            "is_admin": is_admin,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+    mongo_db.user_sessions.insert_one(
+        {
+            "user_id": user_id,
+            "session_token_hash": hashlib.sha256(token.encode("utf-8")).hexdigest(),
+            "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     return user_id, token, email
 
 
@@ -157,20 +154,24 @@ def admin_session(mongo_db):
 @pytest.fixture
 def user_client(user_session):
     client = requests.Session()
-    client.headers.update({
-        "Authorization": "Bearer " + user_session["token"],
-        "Content-Type": "application/json",
-    })
+    client.headers.update(
+        {
+            "Authorization": "Bearer " + user_session["token"],
+            "Content-Type": "application/json",
+        }
+    )
     return client
 
 
 @pytest.fixture
 def admin_client(admin_session):
     client = requests.Session()
-    client.headers.update({
-        "Authorization": "Bearer " + admin_session["token"],
-        "Content-Type": "application/json",
-    })
+    client.headers.update(
+        {
+            "Authorization": "Bearer " + admin_session["token"],
+            "Content-Type": "application/json",
+        }
+    )
     return client
 
 

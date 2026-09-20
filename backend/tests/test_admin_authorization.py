@@ -25,7 +25,6 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.main import app  # noqa: E402
 
-
 # Substituted for path parameters. Deliberately cannot match a real record, so
 # a route that wrongly allows the caller through fails on authorization rather
 # than quietly acting on somebody's data.
@@ -134,34 +133,35 @@ def test_route_groups_do_not_overlap():
 @pytest.mark.parametrize("method,path", sorted(ADMIN_ROUTES))
 def test_admin_route_rejects_anonymous(anon_client, base_url, method, path):
     response = anon_client.request(method, _url(base_url, path))
-    assert response.status_code == 401, (
-        f"{method} {path} should require signing in, got {response.status_code}"
-    )
+    assert (
+        response.status_code == 401
+    ), f"{method} {path} should require signing in, got {response.status_code}"
 
 
 @pytest.mark.parametrize("method,path", sorted(ADMIN_ROUTES))
 def test_admin_route_rejects_regular_user(user_client, base_url, method, path):
     response = user_client.request(method, _url(base_url, path))
-    assert response.status_code == 403, (
-        f"{method} {path} should be refused to a customer, got {response.status_code}"
-    )
+    assert (
+        response.status_code == 403
+    ), f"{method} {path} should be refused to a customer, got {response.status_code}"
 
 
 @pytest.mark.parametrize("method,path", sorted(AUTHENTICATED_ROUTES))
 def test_authenticated_route_rejects_anonymous(anon_client, base_url, method, path):
     response = anon_client.request(method, _url(base_url, path))
-    assert response.status_code == 401, (
-        f"{method} {path} should require signing in, got {response.status_code}"
-    )
+    assert (
+        response.status_code == 401
+    ), f"{method} {path} should require signing in, got {response.status_code}"
 
 
 @pytest.mark.parametrize("method,path", sorted(PUBLIC_ROUTES))
 def test_public_route_does_not_demand_credentials(anon_client, base_url, method, path):
     """Guards against a public route being locked down by accident."""
     response = anon_client.request(method, _url(base_url, path))
-    assert response.status_code not in (401, 403), (
-        f"{method} {path} is meant to be public, got {response.status_code}"
-    )
+    assert response.status_code not in (
+        401,
+        403,
+    ), f"{method} {path} is meant to be public, got {response.status_code}"
 
 
 def test_admin_rejection_does_not_reveal_whether_record_exists(user_client, base_url):

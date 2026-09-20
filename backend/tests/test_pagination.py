@@ -1,4 +1,5 @@
 """Paging parameters and index definitions."""
+
 import pytest
 
 from app.database import INDEXES
@@ -8,8 +9,7 @@ from app.pagination import MAX_PAGE_SIZE
 class TestIndexDefinitions:
     def test_every_query_field_is_indexed(self):
         indexed = {
-            (collection, tuple(field for field, _ in keys))
-            for collection, keys, _ in INDEXES
+            (collection, tuple(field for field, _ in keys)) for collection, keys, _ in INDEXES
         }
         expected = {
             ("users", ("email",)),
@@ -35,11 +35,7 @@ class TestIndexDefinitions:
         assert expected <= indexed
 
     def test_expiring_collections_use_a_ttl_index(self):
-        ttl = {
-            collection
-            for collection, _, options in INDEXES
-            if "expireAfterSeconds" in options
-        }
+        ttl = {collection for collection, _, options in INDEXES if "expireAfterSeconds" in options}
         assert ttl == {
             "user_sessions",
             "rate_limits",
@@ -80,13 +76,9 @@ class TestProductPaging:
 
         collected = []
         for offset in range(0, len(everything), 2):
-            collected += anon_client.get(
-                f"{base_url}/api/products?limit=2&offset={offset}"
-            ).json()
+            collected += anon_client.get(f"{base_url}/api/products?limit=2&offset={offset}").json()
 
-        assert [p["product_id"] for p in collected] == [
-            p["product_id"] for p in everything
-        ]
+        assert [p["product_id"] for p in collected] == [p["product_id"] for p in everything]
 
     def test_offset_past_the_end_returns_nothing(self, base_url, anon_client):
         assert anon_client.get(f"{base_url}/api/products?offset=100000").json() == []
@@ -100,9 +92,7 @@ class TestProductPaging:
         assert anon_client.get(f"{base_url}/api/products?offset=-1").status_code == 422
 
     def test_filters_still_apply_with_paging(self, base_url, anon_client):
-        page = anon_client.get(
-            f"{base_url}/api/products?category=laundry&limit=1"
-        ).json()
+        page = anon_client.get(f"{base_url}/api/products?category=laundry&limit=1").json()
         assert len(page) <= 1
         assert all(item["category"] == "laundry" for item in page)
 
@@ -130,12 +120,8 @@ class TestProductSorting:
         response = anon_client.get(f"{base_url}/api/products?sort=cheapest")
         assert response.status_code == 422
 
-    @pytest.mark.parametrize(
-        "sort", ["popular", "newest", "price_asc", "price_desc", "rating"]
-    )
-    def test_sorted_paging_covers_every_product_exactly_once(
-        self, base_url, anon_client, sort
-    ):
+    @pytest.mark.parametrize("sort", ["popular", "newest", "price_asc", "price_desc", "rating"])
+    def test_sorted_paging_covers_every_product_exactly_once(self, base_url, anon_client, sort):
         """Every ordering, because each carries its own tiebreaker direction."""
         everything = anon_client.get(f"{base_url}/api/products?sort={sort}").json()
 
@@ -155,9 +141,7 @@ class TestProductSorting:
             pytest.skip("needs a catalogue")
         cheapest = min(item["price"] for item in everything)
 
-        items = anon_client.get(
-            f"{base_url}/api/products?max_price={cheapest}"
-        ).json()
+        items = anon_client.get(f"{base_url}/api/products?max_price={cheapest}").json()
 
         assert items, "the cheapest product should still be included"
         assert all(item["price"] <= cheapest for item in items)

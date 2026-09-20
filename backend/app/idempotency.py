@@ -13,7 +13,6 @@ from pymongo.errors import DuplicateKeyError
 
 from .database import db
 
-
 CLAIM_TTL_HOURS = 24
 MAX_KEY_LENGTH = 200
 
@@ -39,16 +38,16 @@ async def claim_request(user_id: str, key: Optional[str]) -> Optional[str]:
 
     now = datetime.now(timezone.utc)
     try:
-        await db.order_claims.insert_one({
-            "_id": build_claim_id(user_id, key),
-            "order_id": None,
-            "expires_at": now + timedelta(hours=CLAIM_TTL_HOURS),
-        })
+        await db.order_claims.insert_one(
+            {
+                "_id": build_claim_id(user_id, key),
+                "order_id": None,
+                "expires_at": now + timedelta(hours=CLAIM_TTL_HOURS),
+            }
+        )
         return None
     except DuplicateKeyError:
-        existing = await db.order_claims.find_one(
-            {"_id": build_claim_id(user_id, key)}
-        )
+        existing = await db.order_claims.find_one({"_id": build_claim_id(user_id, key)})
         if existing and existing.get("order_id"):
             return existing["order_id"]
         raise HTTPException(

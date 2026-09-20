@@ -1,8 +1,8 @@
 """Stock reservation, idempotent submission, and cancellation."""
+
 import uuid
 
 import pytest
-
 
 ADDRESS = {
     "full_name": "Stock Tester",
@@ -18,6 +18,7 @@ ADDRESS = {
 @pytest.fixture
 def stocked_product(mongo_db):
     """A product with a known stock level, removed afterwards."""
+
     def _create(stock):
         suffix = uuid.uuid4().hex[:8]
         product = {
@@ -61,9 +62,7 @@ def place_order(client, base_url, items, key=None):
 
 
 class TestStockReservation:
-    def test_placing_an_order_reduces_stock(
-        self, base_url, user_client, stocked_product, mongo_db
-    ):
+    def test_placing_an_order_reduces_stock(self, base_url, user_client, stocked_product, mongo_db):
         product = stocked_product(10)
 
         response = place_order(
@@ -91,14 +90,20 @@ class TestStockReservation:
     ):
         product = stocked_product(4)
 
-        assert place_order(
-            user_client, base_url, [{"product_id": product["product_id"], "quantity": 4}]
-        ).status_code == 200
+        assert (
+            place_order(
+                user_client, base_url, [{"product_id": product["product_id"], "quantity": 4}]
+            ).status_code
+            == 200
+        )
         assert stock_of(mongo_db, product["product_id"]) == 0
 
-        assert place_order(
-            user_client, base_url, [{"product_id": product["product_id"], "quantity": 1}]
-        ).status_code == 409
+        assert (
+            place_order(
+                user_client, base_url, [{"product_id": product["product_id"], "quantity": 1}]
+            ).status_code
+            == 409
+        )
 
     def test_a_rejected_line_rolls_back_the_earlier_ones(
         self, base_url, user_client, stocked_product, mongo_db
@@ -106,10 +111,14 @@ class TestStockReservation:
         plenty = stocked_product(10)
         scarce = stocked_product(1)
 
-        response = place_order(user_client, base_url, [
-            {"product_id": plenty["product_id"], "quantity": 2},
-            {"product_id": scarce["product_id"], "quantity": 5},
-        ])
+        response = place_order(
+            user_client,
+            base_url,
+            [
+                {"product_id": plenty["product_id"], "quantity": 2},
+                {"product_id": scarce["product_id"], "quantity": 5},
+            ],
+        )
 
         assert response.status_code == 409
         assert stock_of(mongo_db, plenty["product_id"]) == 10
@@ -120,10 +129,14 @@ class TestStockReservation:
     ):
         product = stocked_product(3)
 
-        response = place_order(user_client, base_url, [
-            {"product_id": product["product_id"], "quantity": 2},
-            {"product_id": product["product_id"], "quantity": 2},
-        ])
+        response = place_order(
+            user_client,
+            base_url,
+            [
+                {"product_id": product["product_id"], "quantity": 2},
+                {"product_id": product["product_id"], "quantity": 2},
+            ],
+        )
 
         assert response.status_code == 409
         assert stock_of(mongo_db, product["product_id"]) == 3
@@ -145,9 +158,7 @@ class TestIdempotentSubmission:
         assert first.json()["order_id"] == second.json()["order_id"]
         assert stock_of(mongo_db, product["product_id"]) == 9
 
-    def test_a_new_key_creates_a_new_order(
-        self, base_url, user_client, stocked_product, mongo_db
-    ):
+    def test_a_new_key_creates_a_new_order(self, base_url, user_client, stocked_product, mongo_db):
         product = stocked_product(10)
         items = [{"product_id": product["product_id"], "quantity": 1}]
 
@@ -164,14 +175,18 @@ class TestIdempotentSubmission:
         key = uuid.uuid4().hex
 
         refused = place_order(
-            user_client, base_url,
-            [{"product_id": product["product_id"], "quantity": 5}], key=key,
+            user_client,
+            base_url,
+            [{"product_id": product["product_id"], "quantity": 5}],
+            key=key,
         )
         assert refused.status_code == 409
 
         retried = place_order(
-            user_client, base_url,
-            [{"product_id": product["product_id"], "quantity": 1}], key=key,
+            user_client,
+            base_url,
+            [{"product_id": product["product_id"], "quantity": 1}],
+            key=key,
         )
         assert retried.status_code == 200
         assert stock_of(mongo_db, product["product_id"]) == 1
@@ -183,15 +198,14 @@ class TestStatusTransitions:
     def ordered(self, base_url, user_client, stocked_product, quantity=1):
         product = stocked_product(10)
         order_id = place_order(
-            user_client, base_url,
+            user_client,
+            base_url,
             [{"product_id": product["product_id"], "quantity": quantity}],
         ).json()["order_id"]
         return product, order_id
 
     def advance(self, base_url, admin_client, order_id, status):
-        return admin_client.put(
-            f"{base_url}/api/admin/orders/{order_id}", json={"status": status}
-        )
+        return admin_client.put(f"{base_url}/api/admin/orders/{order_id}", json={"status": status})
 
     def test_an_order_moves_forward_through_its_states(
         self, base_url, user_client, admin_client, stocked_product
@@ -214,9 +228,7 @@ class TestStatusTransitions:
         assert response.status_code == 409
         assert "cannot become" in response.json()["detail"]
 
-    def test_a_delivered_order_is_final(
-        self, base_url, user_client, admin_client, stocked_product
-    ):
+    def test_a_delivered_order_is_final(self, base_url, user_client, admin_client, stocked_product):
         _, order_id = self.ordered(base_url, user_client, stocked_product)
         self.advance(base_url, admin_client, order_id, "shipped")
         self.advance(base_url, admin_client, order_id, "delivered")
@@ -229,9 +241,7 @@ class TestStatusTransitions:
     def test_a_cancelled_order_cannot_be_reopened(
         self, base_url, user_client, admin_client, stocked_product, mongo_db
     ):
-        product, order_id = self.ordered(
-            base_url, user_client, stocked_product, quantity=4
-        )
+        product, order_id = self.ordered(base_url, user_client, stocked_product, quantity=4)
         assert stock_of(mongo_db, product["product_id"]) == 6
 
         self.advance(base_url, admin_client, order_id, "cancelled")
@@ -247,9 +257,7 @@ class TestStatusTransitions:
     def test_repeating_the_current_status_is_accepted(
         self, base_url, user_client, admin_client, stocked_product, mongo_db
     ):
-        product, order_id = self.ordered(
-            base_url, user_client, stocked_product, quantity=2
-        )
+        product, order_id = self.ordered(base_url, user_client, stocked_product, quantity=2)
         self.advance(base_url, admin_client, order_id, "cancelled")
         assert stock_of(mongo_db, product["product_id"]) == 10
 
@@ -264,9 +272,7 @@ class TestStatusTransitions:
     ):
         _, order_id = self.ordered(base_url, user_client, stocked_product)
 
-        assert self.advance(
-            base_url, admin_client, order_id, "cancelled"
-        ).status_code == 200
+        assert self.advance(base_url, admin_client, order_id, "cancelled").status_code == 200
 
     def test_payment_status_can_still_be_corrected(
         self, base_url, user_client, admin_client, stocked_product
@@ -288,7 +294,8 @@ class TestCancellationRestoresStock:
     ):
         product = stocked_product(10)
         order_id = place_order(
-            user_client, base_url,
+            user_client,
+            base_url,
             [{"product_id": product["product_id"], "quantity": 4}],
         ).json()["order_id"]
         assert stock_of(mongo_db, product["product_id"]) == 6
@@ -301,9 +308,7 @@ class TestCancellationRestoresStock:
         assert stock_of(mongo_db, product["product_id"]) == 10
 
         # Cancelling again must not inflate the catalogue.
-        admin_client.put(
-            f"{base_url}/api/admin/orders/{order_id}", json={"status": "cancelled"}
-        )
+        admin_client.put(f"{base_url}/api/admin/orders/{order_id}", json={"status": "cancelled"})
         assert stock_of(mongo_db, product["product_id"]) == 10
 
     def test_other_status_changes_leave_stock_alone(
@@ -311,13 +316,12 @@ class TestCancellationRestoresStock:
     ):
         product = stocked_product(10)
         order_id = place_order(
-            user_client, base_url,
+            user_client,
+            base_url,
             [{"product_id": product["product_id"], "quantity": 2}],
         ).json()["order_id"]
 
-        admin_client.put(
-            f"{base_url}/api/admin/orders/{order_id}", json={"status": "shipped"}
-        )
+        admin_client.put(f"{base_url}/api/admin/orders/{order_id}", json={"status": "shipped"})
         assert stock_of(mongo_db, product["product_id"]) == 8
 
     def test_updating_a_missing_order_returns_404(self, base_url, admin_client):

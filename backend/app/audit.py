@@ -23,7 +23,6 @@ from .database import db
 from .observability import get_request_id
 from .rate_limit import get_client_ip
 
-
 logger = logging.getLogger("nayara.audit")
 
 REDACTED = "[redacted]"

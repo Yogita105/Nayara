@@ -7,7 +7,6 @@ could return the same document twice or miss one entirely.
 
 from fastapi import Query
 
-
 MAX_PAGE_SIZE = 500
 TOTAL_COUNT_HEADER = "X-Total-Count"
 

@@ -3,7 +3,6 @@ import pytest
 from app.middleware import SAFE_METHODS
 from app.security import csrf_token_matches, derive_csrf_token
 
-
 SESSION_TOKEN = "session-token-example"
 
 

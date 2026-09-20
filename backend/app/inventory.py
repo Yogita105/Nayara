@@ -13,7 +13,6 @@ from fastapi import HTTPException
 
 from .database import db
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -50,9 +49,6 @@ async def reserve_stock(items: Sequence[dict]) -> None:
             available = product.get("stock", 0) if product else 0
             raise HTTPException(
                 status_code=409,
-                detail=(
-                    f"Only {available} left of {item['name']}. "
-                    "Please reduce the quantity."
-                ),
+                detail=(f"Only {available} left of {item['name']}. " "Please reduce the quantity."),
             )
         reserved.append(item)

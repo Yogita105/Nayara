@@ -10,15 +10,11 @@ from ..pagination import limit_query, offset_query
 from ..security import get_current_user
 from ..utils import serialize_doc
 
-
 router = APIRouter(prefix="/api", tags=["orders"])
 
 
 def calculate_totals(items_with_products: List[dict]) -> dict:
-    subtotal = sum(
-        product["price"] * product["quantity"]
-        for product in items_with_products
-    )
+    subtotal = sum(product["price"] * product["quantity"] for product in items_with_products)
     shipping = 0 if subtotal >= 499 else 49
     total = subtotal + shipping
     return {
@@ -38,13 +34,15 @@ def build_snapshots(payload: OrderCreate, products_by_id: dict) -> List[dict]:
                 status_code=400,
                 detail=f"Product {item.product_id} not found",
             )
-        snapshots.append({
-            "product_id": product["product_id"],
-            "name": product["name"],
-            "image": product["image"],
-            "price": product["price"],
-            "quantity": item.quantity,
-        })
+        snapshots.append(
+            {
+                "product_id": product["product_id"],
+                "name": product["name"],
+                "image": product["image"],
+                "price": product["price"],
+                "quantity": item.quantity,
+            }
+        )
     return snapshots
 
 
@@ -96,9 +94,9 @@ async def create_order(
         address=payload.address,
         payment_method=payload.payment_method,
         payment_status=(
-            "paid" if paid_immediately
-            else "pending" if payload.payment_method == "card"
-            else "cod_pending"
+            "paid"
+            if paid_immediately
+            else "pending" if payload.payment_method == "card" else "cod_pending"
         ),
         status="processing" if paid_immediately else "placed",
     )

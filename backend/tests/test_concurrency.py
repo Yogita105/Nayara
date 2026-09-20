@@ -12,7 +12,6 @@ from concurrent.futures import ThreadPoolExecutor
 import pytest
 import requests
 
-
 ADDRESS = {
     "full_name": "Race Tester",
     "phone": "9999900002",
@@ -192,18 +191,14 @@ class TestConcurrentOrders:
     ):
         product_id = scarce_product(1)
 
-        responses = order_in_parallel(
-            base_url, user_session["token"], product_id, ATTEMPTS
-        )
+        responses = order_in_parallel(base_url, user_session["token"], product_id, ATTEMPTS)
 
         codes = sorted(response.status_code for response in responses)
         assert codes.count(200) == 1, f"expected one sale, got {codes}"
         assert all(code == 409 for code in codes if code != 200), codes
         assert mongo_db.products.find_one({"product_id": product_id})["stock"] == 0
 
-    def test_stock_is_never_oversold(
-        self, base_url, user_session, mongo_db, scarce_product
-    ):
+    def test_stock_is_never_oversold(self, base_url, user_session, mongo_db, scarce_product):
         """More shoppers than units: the shop sells what it has and no more."""
         available = 3
         product_id = scarce_product(available)
@@ -225,9 +220,7 @@ class TestConcurrentOrders:
         responses = order_in_parallel(base_url, user_session["token"], product_id, 6)
 
         succeeded = [r.json()["order_id"] for r in responses if r.status_code == 200]
-        stored = mongo_db.orders.count_documents(
-            {"items.product_id": product_id}
-        )
+        stored = mongo_db.orders.count_documents({"items.product_id": product_id})
 
         assert len(set(succeeded)) == len(succeeded), "an order id was reused"
         assert stored == len(succeeded)

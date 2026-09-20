@@ -7,7 +7,6 @@ from app.config import (
     parse_boolean,
 )
 
-
 BASE_ENVIRONMENT = {
     "MONGO_URL": "mongodb://localhost:27017",
     "DB_NAME": "nayara_test",
@@ -65,18 +64,22 @@ def test_production_rejects_a_short_secret_key():
 
 def test_production_rejects_the_development_secret_key():
     with pytest.raises(RuntimeError, match="development default"):
-        load_settings({
-            **PRODUCTION_ENVIRONMENT,
-            "SECRET_KEY": DEVELOPMENT_SECRET_KEY,
-        })
+        load_settings(
+            {
+                **PRODUCTION_ENVIRONMENT,
+                "SECRET_KEY": DEVELOPMENT_SECRET_KEY,
+            }
+        )
 
 
 def test_cors_wildcard_is_rejected():
     with pytest.raises(RuntimeError, match="explicit origins"):
-        load_settings({
-            **BASE_ENVIRONMENT,
-            "CORS_ORIGINS": "*",
-        })
+        load_settings(
+            {
+                **BASE_ENVIRONMENT,
+                "CORS_ORIGINS": "*",
+            }
+        )
 
 
 def test_invalid_boolean_is_rejected():
@@ -97,19 +100,23 @@ class TestAutomaticSeeding:
         assert load_settings(PRODUCTION_ENVIRONMENT).auto_seed_products is False
 
     def test_seeding_is_off_in_staging(self):
-        settings = load_settings({
-            **BASE_ENVIRONMENT,
-            "ENVIRONMENT": "staging",
-            "CORS_ORIGINS": "https://staging.example.com",
-        })
+        settings = load_settings(
+            {
+                **BASE_ENVIRONMENT,
+                "ENVIRONMENT": "staging",
+                "CORS_ORIGINS": "https://staging.example.com",
+            }
+        )
 
         assert settings.auto_seed_products is False
 
     def test_the_default_can_be_overridden(self):
-        settings = load_settings({
-            **BASE_ENVIRONMENT,
-            "AUTO_SEED_PRODUCTS": "false",
-        })
+        settings = load_settings(
+            {
+                **BASE_ENVIRONMENT,
+                "AUTO_SEED_PRODUCTS": "false",
+            }
+        )
 
         assert settings.auto_seed_products is False
 
@@ -131,19 +138,23 @@ class TestApiDocumentationExposure:
         assert load_settings(PRODUCTION_ENVIRONMENT).api_docs_enabled is False
 
     def test_documentation_is_withheld_in_staging(self):
-        settings = load_settings({
-            **BASE_ENVIRONMENT,
-            "ENVIRONMENT": "staging",
-            "CORS_ORIGINS": "https://staging.example.com",
-        })
+        settings = load_settings(
+            {
+                **BASE_ENVIRONMENT,
+                "ENVIRONMENT": "staging",
+                "CORS_ORIGINS": "https://staging.example.com",
+            }
+        )
 
         assert settings.api_docs_enabled is False
 
     def test_the_default_can_be_overridden(self):
-        settings = load_settings({
-            **PRODUCTION_ENVIRONMENT,
-            "API_DOCS_ENABLED": "true",
-        })
+        settings = load_settings(
+            {
+                **PRODUCTION_ENVIRONMENT,
+                "API_DOCS_ENABLED": "true",
+            }
+        )
 
         assert settings.api_docs_enabled is True
 

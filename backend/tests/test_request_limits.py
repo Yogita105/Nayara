@@ -21,7 +21,6 @@ from app.middleware import (
     limit_request_size,
 )
 
-
 UPLOAD_BOUNDARY = "----nayara-test-boundary"
 
 
@@ -109,9 +108,7 @@ class TestMalformedLength:
                 "raw_path": path.encode(),
                 "query_string": b"",
                 "root_path": "",
-                "headers": [
-                    (key.encode(), value.encode()) for key, value in headers.items()
-                ],
+                "headers": [(key.encode(), value.encode()) for key, value in headers.items()],
                 "client": ("testclient", 1234),
             }
 
@@ -145,9 +142,7 @@ class TestMalformedLength:
         assert response.status_code == 200
 
     def test_a_length_over_the_limit_is_refused(self):
-        response = self.call_middleware(
-            {"content-length": str(MAX_REQUEST_BODY_BYTES + 1)}
-        )
+        response = self.call_middleware({"content-length": str(MAX_REQUEST_BODY_BYTES + 1)})
 
         assert response.status_code == 413
 
@@ -176,9 +171,7 @@ def multipart_stream(total_bytes, boundary=UPLOAD_BOUNDARY):
 
 
 class TestUploadLimits:
-    def test_an_oversized_upload_is_refused_on_its_declared_length(
-        self, base_url, admin_session
-    ):
+    def test_an_oversized_upload_is_refused_on_its_declared_length(self, base_url, admin_session):
         """Refused before the file reaches disk or memory."""
         payload = b"x" * (MAX_UPLOAD_BYTES + MULTIPART_OVERHEAD_BYTES + 1024)
 
@@ -190,9 +183,7 @@ class TestUploadLimits:
 
         assert response.status_code == 413
 
-    def test_an_oversized_upload_without_a_length_is_still_refused(
-        self, base_url, admin_session
-    ):
+    def test_an_oversized_upload_without_a_length_is_still_refused(self, base_url, admin_session):
         """A chunked sender declares no length, so the route has to count.
 
         This is the case the previous check missed: it read the whole file

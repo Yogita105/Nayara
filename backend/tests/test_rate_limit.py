@@ -1,4 +1,5 @@
 """Rate limiting: pure helpers plus live account-lockout behaviour."""
+
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -81,9 +82,7 @@ class TestLoginLockout:
         assert blocked.status_code == 429
         assert int(blocked.headers["Retry-After"]) > 0
 
-    def test_lockout_also_blocks_the_correct_password(
-        self, base_url, locked_account
-    ):
+    def test_lockout_also_blocks_the_correct_password(self, base_url, locked_account):
         email = locked_account["email"]
 
         for _ in range(LOGIN_IDENTIFIER_RULE.limit):
@@ -98,9 +97,7 @@ class TestLoginLockout:
         )
         assert blocked.status_code == 429
 
-    def test_successful_login_clears_failed_attempts(
-        self, base_url, locked_account, mongo_db
-    ):
+    def test_successful_login_clears_failed_attempts(self, base_url, locked_account, mongo_db):
         email = locked_account["email"]
 
         for _ in range(LOGIN_IDENTIFIER_RULE.limit - 1):
@@ -114,6 +111,4 @@ class TestLoginLockout:
             json={"identifier": email, "password": locked_account["password"]},
         )
         assert success.status_code == 200
-        assert mongo_db.rate_limits.find_one(
-            {"_id": f"login-identifier:{email}"}
-        ) is None
+        assert mongo_db.rate_limits.find_one({"_id": f"login-identifier:{email}"}) is None

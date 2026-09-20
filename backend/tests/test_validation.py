@@ -1,4 +1,5 @@
 """Request-model validation rules."""
+
 import pytest
 from pydantic import ValidationError
 
@@ -14,7 +15,6 @@ from app.models import (
     ReviewCreate,
     UpdateCartRequest,
 )
-
 
 VALID_PRODUCT = {
     "name": "Nayara Test Soap",

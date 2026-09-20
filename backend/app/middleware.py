@@ -18,7 +18,6 @@ from .security import (
     csrf_token_matches,
 )
 
-
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
 SLOW_REQUEST_MS = 1000
 

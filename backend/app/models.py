@@ -14,7 +14,6 @@ from pydantic import (
 
 from .utils import normalize_indian_mobile
 
-
 MAX_CART_QUANTITY = 50
 MAX_ORDER_ITEMS = 50
 SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"

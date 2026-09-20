@@ -13,7 +13,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-
 logger = logging.getLogger(__name__)
 
 # Files the browser may request directly from the site root.

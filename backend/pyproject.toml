@@ -1,0 +1,16 @@
+# Tool settings only. There is no [build-system] or [project] table, so this
+# does not turn the backend into an installable package.
+
+[tool.black]
+# Matches the limit flake8 enforces, so the two tools cannot disagree.
+line-length = 100
+
+[tool.mypy]
+python_version = "3.11"
+# Third-party packages ship varying levels of type information, and chasing
+# their stubs would say nothing about this code.
+ignore_missing_imports = true
+# The value of this check here is catching a document that may be missing
+# being used as though it were present, rather than demanding annotations
+# everywhere.
+warn_unused_ignores = true

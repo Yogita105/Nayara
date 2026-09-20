@@ -13,7 +13,6 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Optional
 
-
 REQUEST_ID_HEADER = "X-Request-ID"
 MAX_REQUEST_ID_LENGTH = 64
 
@@ -55,9 +54,7 @@ class RequestIdFilter(logging.Filter):
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         payload = {
-            "time": datetime.fromtimestamp(
-                record.created, tz=timezone.utc
-            ).isoformat(),
+            "time": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

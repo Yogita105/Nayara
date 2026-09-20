@@ -1,4 +1,5 @@
 """Every error should reach a client in the same shape."""
+
 import uuid
 
 import requests

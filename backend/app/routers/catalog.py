@@ -12,7 +12,6 @@ from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
 from ..security import get_current_user, require_admin
 from ..utils import serialize_doc
 
-
 router = APIRouter(prefix="/api", tags=["catalog"])
 
 DUPLICATE_SLUG_DETAIL = "Another product already uses this slug"
@@ -61,9 +60,7 @@ async def list_products(
     if max_price is not None:
         query["price"] = {"$lte": max_price}
 
-    response.headers[TOTAL_COUNT_HEADER] = str(
-        await db.products.count_documents(query)
-    )
+    response.headers[TOTAL_COUNT_HEADER] = str(await db.products.count_documents(query))
     docs = await (
         db.products.find(query, {"_id": 0})
         .sort(PRODUCT_SORTS[sort])
@@ -178,16 +175,18 @@ async def refresh_product_rating(product_id: str) -> None:
     Averaging happens inside MongoDB so the cost does not grow with the number
     of reviews on a popular product.
     """
-    summary = await db.reviews.aggregate([
-        {"$match": {"product_id": product_id}},
-        {
-            "$group": {
-                "_id": None,
-                "average": {"$avg": "$rating"},
-                "count": {"$sum": 1},
-            }
-        },
-    ]).to_list(1)
+    summary = await db.reviews.aggregate(
+        [
+            {"$match": {"product_id": product_id}},
+            {
+                "$group": {
+                    "_id": None,
+                    "average": {"$avg": "$rating"},
+                    "count": {"$sum": 1},
+                }
+            },
+        ]
+    ).to_list(1)
 
     average = summary[0]["average"] if summary else 0
     count = summary[0]["count"] if summary else 0

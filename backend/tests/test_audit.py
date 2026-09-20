@@ -13,7 +13,6 @@ import requests
 from app import audit
 from app.audit import MAX_TEXT_LENGTH, REDACTED, scrub
 
-
 PASSWORD = "AuditTestPassword1!"
 
 
@@ -141,9 +140,7 @@ class TestSignIn:
         assert len(events) == 1
         assert events[0]["details"]["reason"] == "wrong_password"
 
-    def test_the_attempted_password_is_not_stored(
-        self, base_url, mongo_db, audited_account
-    ):
+    def test_the_attempted_password_is_not_stored(self, base_url, mongo_db, audited_account):
         secret = "ThisWasTypedByMistake1!"
         requests.post(
             f"{base_url}/api/auth/login",
@@ -177,9 +174,7 @@ class TestAccountChanges:
         )
         assert response.status_code == 200
 
-        events = events_for(
-            mongo_db, audited_account["user_id"], "auth.password_changed"
-        )
+        events = events_for(mongo_db, audited_account["user_id"], "auth.password_changed")
         assert len(events) == 1
 
     def test_neither_password_is_stored(self, base_url, mongo_db, audited_account):
@@ -198,17 +193,13 @@ class TestAccountChanges:
             json={"current_password": "NotTheRightOne1!", "new_password": "Another2!"},
         )
 
-        events = events_for(
-            mongo_db, audited_account["user_id"], "auth.password_change_refused"
-        )
+        events = events_for(mongo_db, audited_account["user_id"], "auth.password_change_refused")
         assert len(events) == 1
 
     def test_signing_out_everywhere_is_recorded(self, base_url, mongo_db, audited_account):
         audited_account["client"].post(f"{base_url}/api/auth/logout-all")
 
-        events = events_for(
-            mongo_db, audited_account["user_id"], "auth.signed_out_everywhere"
-        )
+        events = events_for(mongo_db, audited_account["user_id"], "auth.signed_out_everywhere")
         assert len(events) == 1
 
     def test_updating_details_records_what_changed_not_the_values(
@@ -220,9 +211,7 @@ class TestAccountChanges:
             json={"name": "Renamed Person", "email": new_email},
         )
 
-        events = events_for(
-            mongo_db, audited_account["user_id"], "auth.profile_updated"
-        )
+        events = events_for(mongo_db, audited_account["user_id"], "auth.profile_updated")
         assert len(events) == 1
         assert events[0]["details"]["email_changed"] is True
         assert new_email not in str(events)
@@ -287,18 +276,12 @@ class TestRecordShape:
         assert "tok_abcdef" not in str(stored)
 
     def test_an_event_carries_when_and_for_how_long(self, mongo_db, audited_account):
-        event = events_for(
-            mongo_db, audited_account["user_id"], "auth.account_created"
-        )[0]
+        event = events_for(mongo_db, audited_account["user_id"], "auth.account_created")[0]
 
         assert event["at"] is not None
         assert event["expires_at"] > event["at"], "records must expire eventually"
 
-    def test_an_event_can_be_traced_back_to_its_request(
-        self, mongo_db, audited_account
-    ):
-        event = events_for(
-            mongo_db, audited_account["user_id"], "auth.account_created"
-        )[0]
+    def test_an_event_can_be_traced_back_to_its_request(self, mongo_db, audited_account):
+        event = events_for(mongo_db, audited_account["user_id"], "auth.account_created")[0]
 
         assert event["request_id"]
