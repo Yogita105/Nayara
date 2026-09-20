@@ -216,6 +216,48 @@ A caller that streams a body in chunks declares no length, so it cannot be judge
 way. The upload route counts those bytes as they arrive and stops at the limit. Capping
 request size at the proxy in front of the API is still worth doing as a second layer.
 
+## Product variants
+
+A product is sold in forms that differ by one thing: a weight for powders, a volume for
+liquids, a colour for soaps. Which is stored on the product as `option_name`, and the
+forms themselves as `variants`:
+
+```javascript
+{
+  option_name: "Weight",
+  price_from: 100,
+  variants: [
+    { variant_id, label: "500g", price: 100, mrp: 130, stock: 40, image: "" },
+    { variant_id, label: "1kg",  price: 180, mrp: 240, stock: 25, image: "" }
+  ]
+}
+```
+
+Price and stock belong to the variant, because a kilo and a half-kilo are priced
+differently and run out independently. An image is optional and falls back to the
+product's: colours need their own photograph, weights generally look alike.
+`price_from` holds the cheapest variant's price so the catalogue can still be sorted by
+a plain indexed field. Reviews and wishlists stay on the **product**.
+
+One axis per product. A matrix of size against colour needs option sets and generated
+combinations, which is a great deal of machinery for a catalogue this size.
+
+**This is being introduced in steps, and only the first is done.** Every product now
+carries exactly one variant describing what it already sells as, and nothing reads it
+yet: the cart, orders and stock reservation still work from the product's own `price`
+and `stock`. While a product has only that one variant, editing the product keeps it in
+step, so the two cannot drift apart before the switch.
+
+Databases that predate this are brought up to date with:
+
+```powershell
+cd backend
+python scripts\add_product_variants.py            # report what would change
+python scripts\add_product_variants.py --apply    # make the change
+```
+
+It is safe to run twice; a product that already has variants is left alone.
+
 ## Orders and stock
 
 Placing an order reserves stock. Each product is adjusted with a single conditional

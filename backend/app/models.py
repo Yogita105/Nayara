@@ -16,6 +16,7 @@ from .utils import normalize_indian_mobile
 
 MAX_CART_QUANTITY = 50
 MAX_ORDER_ITEMS = 50
+MAX_VARIANTS = 20
 SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
 PINCODE_PATTERN = r"^[1-9][0-9]{5}$"
 BUSINESS_PHONE_PATTERN = r"^\+?[0-9][0-9\s-]{7,19}$"
@@ -135,6 +136,31 @@ class ProfileUpdateRequest(ContentModel):
     email: Optional[EmailStr] = None
 
 
+class ProductVariant(ContentModel):
+    """One buyable form of a product: a weight, a volume, or a colour.
+
+    Price and stock belong here rather than on the product, because a kilo
+    and a half-kilo are sold at different prices and run out independently.
+
+    An image is optional and falls back to the product's. Colours need their
+    own photograph, since that is the whole point of choosing one; weights
+    generally look alike and can share.
+    """
+
+    variant_id: str = Field(default_factory=lambda: f"var_{uuid.uuid4().hex[:10]}")
+    label: str = Field(min_length=1, max_length=60)
+    price: float = Field(gt=0, le=10_000_000)
+    mrp: float = Field(gt=0, le=10_000_000)
+    stock: int = Field(default=0, ge=0, le=1_000_000)
+    image: str = Field(default="", max_length=2000)
+
+    @model_validator(mode="after")
+    def check_mrp_covers_price(self) -> "ProductVariant":
+        if self.mrp < self.price:
+            raise ValueError("MRP must be greater than or equal to the price")
+        return self
+
+
 class ProductCreate(ContentModel):
     name: str = Field(min_length=2, max_length=200)
     slug: str = Field(min_length=2, max_length=200, pattern=SLUG_PATTERN)
@@ -161,6 +187,40 @@ class Product(ProductCreate):
     rating: float = Field(default=4.5, ge=0, le=5)
     reviews_count: int = Field(default=0, ge=0)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    # What the variants of this product differ by: "Weight", "Volume",
+    # "Colour". One axis per product, so a kilo bag of powder is not also
+    # asked to be a colour.
+    option_name: str = Field(default="Size", min_length=1, max_length=40)
+    variants: List[ProductVariant] = Field(default_factory=list, max_length=MAX_VARIANTS)
+    # The cheapest variant, held here so the catalogue can be sorted and
+    # filtered by price with a plain indexed field. Recalculated whenever the
+    # variants change; never edited directly.
+    price_from: float = Field(default=0, ge=0, le=10_000_000)
+
+
+def cheapest_price(variants: List[dict], fallback: float = 0) -> float:
+    """The price a product is advertised from."""
+    prices = [
+        variant["price"]
+        for variant in variants
+        if isinstance(variant, dict) and isinstance(variant.get("price"), (int, float))
+    ]
+    return min(prices) if prices else fallback
+
+
+def default_variant(product: dict) -> dict:
+    """The single variant a product without any should stand in with.
+
+    Every product carries at least one variant, so that nothing downstream
+    has to handle both a product that has them and one that does not.
+    """
+    return ProductVariant(
+        label=product.get("variant_label") or "Standard",
+        price=product.get("price", 0),
+        mrp=product.get("mrp") or product.get("price", 0),
+        stock=product.get("stock", 0),
+    ).model_dump()
 
 
 class CartItem(ContentModel):

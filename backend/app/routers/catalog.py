@@ -7,7 +7,14 @@ from pymongo.errors import DuplicateKeyError
 
 from .. import audit
 from ..database import db
-from ..models import Product, ProductCreate, Review, ReviewCreate
+from ..models import (
+    Product,
+    ProductCreate,
+    Review,
+    ReviewCreate,
+    cheapest_price,
+    default_variant,
+)
 from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
 from ..security import get_current_user, require_admin
 from ..utils import serialize_doc
@@ -88,6 +95,11 @@ async def create_product(
     product = Product(**payload.model_dump())
     doc = product.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
+    # Every product carries at least one variant, so nothing downstream has
+    # to handle a product that has none.
+    if not doc["variants"]:
+        doc["variants"] = [default_variant(doc)]
+    doc["price_from"] = cheapest_price(doc["variants"], doc["price"])
     try:
         await db.products.insert_one(doc)
     except DuplicateKeyError as error:
@@ -110,12 +122,30 @@ async def update_product(
     user: dict = Depends(require_admin),
 ):
     previous = await db.products.find_one(
-        {"product_id": product_id}, {"_id": 0, "price": 1, "stock": 1}
+        {"product_id": product_id}, {"_id": 0, "price": 1, "stock": 1, "variants": 1}
     )
+    changes = payload.model_dump()
+    # Until variants can be edited in their own right, a product that has
+    # only the one created for it keeps in step with the price and stock on
+    # the product itself. Without this the two drift apart silently, and the
+    # variant becomes authoritative later holding a stale figure.
+    existing_variants = (previous or {}).get("variants") or []
+    if len(existing_variants) == 1:
+        only = dict(existing_variants[0])
+        only.update(
+            {
+                "price": changes["price"],
+                "mrp": changes["mrp"],
+                "stock": changes["stock"],
+            }
+        )
+        changes["variants"] = [only]
+        changes["price_from"] = only["price"]
+
     try:
         result = await db.products.update_one(
             {"product_id": product_id},
-            {"$set": payload.model_dump()},
+            {"$set": changes},
         )
     except DuplicateKeyError as error:
         raise HTTPException(status_code=409, detail=DUPLICATE_SLUG_DETAIL) from error
