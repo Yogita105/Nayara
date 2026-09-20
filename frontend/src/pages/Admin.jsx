@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import { api, errorMessage, formatINR } from "../lib/api";
 import useAsyncData from "../hooks/useAsyncData";
+import usePagedData from "../hooks/usePagedData";
+import Pagination from "../components/Pagination";
 import { EmptyPanel, ErrorPanel, LoadingPanel, TableStateRow } from "../components/DataState";
 import ProductImage from "../components/ProductImage";
 import RequiredMark from "../components/RequiredMark";
@@ -63,12 +65,13 @@ const NEXT_ORDER_STATUSES = {
 };
 
 function OrdersAdmin() {
-  const { data, loading, error, reload } = useAsyncData(
-    async () => (await api.get("/admin/orders")).data,
-    [],
-    "Orders could not be loaded."
-  );
-  const orders = data || [];
+  const {
+    items: orders, total, loading, error, reload,
+    page, pageSize, pageCount, setPage,
+  } = usePagedData("/admin/orders", {
+    pageSize: 25,
+    fallbackMessage: "Orders could not be loaded.",
+  });
   const load = reload;
   const update = async (id, status) => {
     try {
@@ -127,6 +130,14 @@ function OrdersAdmin() {
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        pageCount={pageCount}
+        total={total}
+        onPageChange={setPage}
+        noun="orders"
+      />
     </div>
   );
 }
@@ -314,12 +325,13 @@ function ProductEditor({ initial, onClose }) {
 }
 
 function UsersAdmin() {
-  const { data, loading, error, reload } = useAsyncData(
-    async () => (await api.get("/admin/users")).data,
-    [],
-    "Users could not be loaded."
-  );
-  const users = data || [];
+  const {
+    items: users, total, loading, error, reload,
+    page, pageSize, pageCount, setPage,
+  } = usePagedData("/admin/users", {
+    pageSize: 25,
+    fallbackMessage: "Users could not be loaded.",
+  });
   return (
     <div data-testid="admin-users">
       <h1 className="font-heading text-3xl font-medium mb-8 tracking-tight">Users</h1>
@@ -348,18 +360,27 @@ function UsersAdmin() {
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        pageCount={pageCount}
+        total={total}
+        onPageChange={setPage}
+        noun="users"
+      />
     </div>
   );
 }
 
 function MessagesAdmin() {
   const [selected, setSelected] = useState(null);
-  const { data, loading, error, reload } = useAsyncData(
-    async () => (await api.get("/admin/contacts")).data,
-    [],
-    "Messages could not be loaded."
-  );
-  const messages = data || [];
+  const {
+    items: messages, total, loading, error, reload,
+    page, pageSize, pageCount, setPage,
+  } = usePagedData("/admin/contacts", {
+    pageSize: 25,
+    fallbackMessage: "Messages could not be loaded.",
+  });
 
   return (
     <div data-testid="admin-messages">
@@ -391,6 +412,16 @@ function MessagesAdmin() {
                 <div className="text-xs text-[#64748B] truncate mt-1">{m.message}</div>
               </button>
             ))}
+            <div className="px-4 pb-3">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                pageCount={pageCount}
+                total={total}
+                onPageChange={(next) => { setSelected(null); setPage(next); }}
+                noun="messages"
+              />
+            </div>
           </div>
           <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             {selected ? (
@@ -428,12 +459,13 @@ function MessagesAdmin() {
 
 function BulkInquiriesAdmin() {
   const [selected, setSelected] = useState(null);
-  const { data, loading, error, reload } = useAsyncData(
-    async () => (await api.get("/admin/bulk-inquiries")).data,
-    [],
-    "Bulk inquiries could not be loaded."
-  );
-  const items = data || [];
+  const {
+    items, total, loading, error, reload,
+    page, pageSize, pageCount, setPage,
+  } = usePagedData("/admin/bulk-inquiries", {
+    pageSize: 25,
+    fallbackMessage: "Bulk inquiries could not be loaded.",
+  });
   const load = reload;
 
   const setStatus = async (id, status) => {
@@ -484,6 +516,16 @@ function BulkInquiriesAdmin() {
                 <div className="text-xs text-[#64748B] truncate mt-1">{m.quantity}</div>
               </button>
             ))}
+            <div className="px-4 pb-3">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                pageCount={pageCount}
+                total={total}
+                onPageChange={(next) => { setSelected(null); setPage(next); }}
+                noun="inquiries"
+              />
+            </div>
           </div>
           <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             {selected ? (
