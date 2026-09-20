@@ -225,15 +225,20 @@ def default_variant(product: dict) -> dict:
 
 class CartItem(ContentModel):
     product_id: str = Field(min_length=1, max_length=100)
+    # Older clients do not send one. A product with a single variant resolves
+    # to it; one with a real choice insists on being told which.
+    variant_id: Optional[str] = Field(default=None, max_length=100)
     quantity: int = Field(ge=1, le=MAX_CART_QUANTITY)
 
 
 class AddToCartRequest(ContentModel):
     product_id: str = Field(min_length=1, max_length=100)
+    variant_id: Optional[str] = Field(default=None, max_length=100)
     quantity: int = Field(default=1, ge=1, le=MAX_CART_QUANTITY)
 
 
 class UpdateCartRequest(ContentModel):
+    variant_id: Optional[str] = Field(default=None, max_length=100)
     # Zero is allowed because it removes the line from the cart.
     quantity: int = Field(ge=0, le=MAX_CART_QUANTITY)
 
@@ -314,6 +319,11 @@ class OrderCreate(ContentModel):
 
 class OrderItemSnapshot(ContentModel):
     product_id: str
+    # Recorded so an invoice reads "Detergent (1kg)" rather than leaving the
+    # customer to remember which one they bought. Optional because orders
+    # placed before variants existed have none.
+    variant_id: Optional[str] = None
+    variant_label: Optional[str] = None
     name: str
     image: str
     price: float = Field(ge=0)

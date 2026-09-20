@@ -15,6 +15,7 @@ from ..models import (
 from ..pagination import limit_query, offset_query
 from ..security import get_current_user
 from ..utils import serialize_doc
+from ..variants import line_key, resolve_variant
 
 router = APIRouter(prefix="/api", tags=["orders"])
 
@@ -40,12 +41,16 @@ def build_snapshots(payload: OrderCreate, products_by_id: dict) -> List[dict]:
                 status_code=400,
                 detail=f"Product {item.product_id} not found",
             )
+        variant = resolve_variant(product, item.variant_id)
         snapshots.append(
             {
                 "product_id": product["product_id"],
+                "variant_id": variant["variant_id"],
+                "variant_label": variant["label"],
                 "name": product["name"],
-                "image": product["image"],
-                "price": product["price"],
+                "image": variant.get("image") or product["image"],
+                # The variant's price, since that is what is being bought.
+                "price": variant["price"],
                 "quantity": item.quantity,
             }
         )
@@ -53,14 +58,19 @@ def build_snapshots(payload: OrderCreate, products_by_id: dict) -> List[dict]:
 
 
 def merge_duplicate_lines(snapshots: List[dict]) -> List[dict]:
-    """Combine repeated products so stock is checked against the real total."""
+    """Combine repeated lines so stock is checked against the real total.
+
+    Two forms of one product are two separate lines, so only lines naming the
+    same variant are combined.
+    """
     merged: dict = {}
     for snapshot in snapshots:
-        existing = merged.get(snapshot["product_id"])
+        key = line_key(snapshot["product_id"], snapshot["variant_id"])
+        existing = merged.get(key)
         if existing:
             existing["quantity"] += snapshot["quantity"]
         else:
-            merged[snapshot["product_id"]] = dict(snapshot)
+            merged[key] = dict(snapshot)
     return list(merged.values())
 
 

@@ -33,6 +33,20 @@ def stocked_product(mongo_db):
             "image": "",
             "images": [],
             "stock": stock,
+            # Every product carries at least one variant, and stock lives on
+            # it. The product's own count mirrors it.
+            "option_name": "Size",
+            "price_from": 100.0,
+            "variants": [
+                {
+                    "variant_id": f"var_test_{suffix}",
+                    "label": "Standard",
+                    "price": 100.0,
+                    "mrp": 120.0,
+                    "stock": stock,
+                    "image": "",
+                }
+            ],
             "rating": 4.5,
             "reviews_count": 0,
             "badges": [],
@@ -429,3 +443,329 @@ class TestCartRespectsStock:
         )
 
         assert response.json()["errors"][0]["field"] == "quantity"
+
+
+@pytest.fixture
+def two_variant_product(mongo_db):
+    """A product genuinely sold in two forms, removed afterwards."""
+    created = []
+
+    def _create(first_stock, second_stock):
+        suffix = uuid.uuid4().hex[:8]
+        product = {
+            "product_id": f"prod_test_{suffix}",
+            "name": f"Two Form Test {suffix}",
+            "slug": f"two-form-test-{suffix}",
+            "category": "home-care",
+            "description": "Temporary product used by the variant tests.",
+            "short_description": "Temporary product.",
+            "price": 100.0,
+            "mrp": 120.0,
+            "price_from": 100.0,
+            "option_name": "Weight",
+            "image": "",
+            "images": [],
+            "stock": first_stock + second_stock,
+            "variants": [
+                {
+                    "variant_id": f"var_{suffix}_small",
+                    "label": "500g",
+                    "price": 100.0,
+                    "mrp": 120.0,
+                    "stock": first_stock,
+                    "image": "",
+                },
+                {
+                    "variant_id": f"var_{suffix}_large",
+                    "label": "1kg",
+                    "price": 180.0,
+                    "mrp": 240.0,
+                    "stock": second_stock,
+                    "image": "",
+                },
+            ],
+            "rating": 4.5,
+            "reviews_count": 0,
+            "badges": [],
+            "featured": False,
+            "created_at": "2026-01-01T00:00:00+00:00",
+        }
+        mongo_db.products.insert_one(dict(product))
+        created.append(product["product_id"])
+        return product
+
+    yield _create
+
+    mongo_db.orders.delete_many({"items.product_id": {"$in": created}})
+    mongo_db.products.delete_many({"product_id": {"$in": created}})
+
+
+def variant_stock(mongo_db, product_id, variant_id):
+    product = mongo_db.products.find_one({"product_id": product_id})
+    return next(v["stock"] for v in product["variants"] if v["variant_id"] == variant_id)
+
+
+class TestStockBelongsToTheVariant:
+    """A kilo bag and a half-kilo bag run out independently."""
+
+    def test_buying_one_form_leaves_the_other_alone(
+        self, base_url, user_client, two_variant_product, mongo_db
+    ):
+        product = two_variant_product(5, 5)
+        small, large = product["variants"]
+
+        response = place_order(
+            user_client,
+            base_url,
+            [
+                {
+                    "product_id": product["product_id"],
+                    "variant_id": small["variant_id"],
+                    "quantity": 2,
+                }
+            ],
+        )
+
+        assert response.status_code == 200
+        assert variant_stock(mongo_db, product["product_id"], small["variant_id"]) == 3
+        assert variant_stock(mongo_db, product["product_id"], large["variant_id"]) == 5
+
+    def test_one_form_selling_out_does_not_stop_the_other(
+        self, base_url, user_client, two_variant_product, mongo_db
+    ):
+        product = two_variant_product(0, 4)
+        small, large = product["variants"]
+
+        sold_out = place_order(
+            user_client,
+            base_url,
+            [
+                {
+                    "product_id": product["product_id"],
+                    "variant_id": small["variant_id"],
+                    "quantity": 1,
+                }
+            ],
+        )
+        available = place_order(
+            user_client,
+            base_url,
+            [
+                {
+                    "product_id": product["product_id"],
+                    "variant_id": large["variant_id"],
+                    "quantity": 1,
+                }
+            ],
+        )
+
+        assert sold_out.status_code == 409
+        assert available.status_code == 200
+        assert variant_stock(mongo_db, product["product_id"], large["variant_id"]) == 3
+
+    def test_the_refusal_names_the_form(self, base_url, user_client, two_variant_product):
+        product = two_variant_product(1, 5)
+        small = product["variants"][0]
+
+        response = place_order(
+            user_client,
+            base_url,
+            [
+                {
+                    "product_id": product["product_id"],
+                    "variant_id": small["variant_id"],
+                    "quantity": 3,
+                }
+            ],
+        )
+
+        assert response.status_code == 409
+        assert "500g" in response.json()["detail"]
+
+    def test_an_order_records_which_form_was_bought(
+        self, base_url, user_client, two_variant_product
+    ):
+        product = two_variant_product(5, 5)
+        large = product["variants"][1]
+
+        response = place_order(
+            user_client,
+            base_url,
+            [
+                {
+                    "product_id": product["product_id"],
+                    "variant_id": large["variant_id"],
+                    "quantity": 1,
+                }
+            ],
+        )
+
+        line = response.json()["items"][0]
+        assert line["variant_label"] == "1kg"
+        assert line["price"] == 180.0, "the variant's price, not the product's"
+
+    def test_two_forms_of_one_product_are_separate_lines(
+        self, base_url, user_client, two_variant_product, mongo_db
+    ):
+        product = two_variant_product(5, 5)
+        small, large = product["variants"]
+
+        response = place_order(
+            user_client,
+            base_url,
+            [
+                {
+                    "product_id": product["product_id"],
+                    "variant_id": small["variant_id"],
+                    "quantity": 1,
+                },
+                {
+                    "product_id": product["product_id"],
+                    "variant_id": large["variant_id"],
+                    "quantity": 1,
+                },
+            ],
+        )
+
+        assert response.status_code == 200
+        assert len(response.json()["items"]) == 2
+        assert variant_stock(mongo_db, product["product_id"], small["variant_id"]) == 4
+        assert variant_stock(mongo_db, product["product_id"], large["variant_id"]) == 4
+
+    def test_choosing_nothing_is_refused_when_there_is_a_choice(
+        self, base_url, user_client, two_variant_product
+    ):
+        """A product sold in two forms cannot be bought without saying which."""
+        product = two_variant_product(5, 5)
+
+        response = place_order(
+            user_client, base_url, [{"product_id": product["product_id"], "quantity": 1}]
+        )
+
+        assert response.status_code == 422
+
+    def test_an_unknown_form_is_refused(self, base_url, user_client, two_variant_product):
+        product = two_variant_product(5, 5)
+
+        response = place_order(
+            user_client,
+            base_url,
+            [
+                {
+                    "product_id": product["product_id"],
+                    "variant_id": "var_does_not_exist",
+                    "quantity": 1,
+                }
+            ],
+        )
+
+        assert response.status_code == 404
+
+    def test_cancelling_returns_stock_to_the_right_form(
+        self, base_url, user_client, admin_client, two_variant_product, mongo_db
+    ):
+        product = two_variant_product(5, 5)
+        small, large = product["variants"]
+        placed = place_order(
+            user_client,
+            base_url,
+            [
+                {
+                    "product_id": product["product_id"],
+                    "variant_id": small["variant_id"],
+                    "quantity": 2,
+                }
+            ],
+        )
+        order_id = placed.json()["order_id"]
+
+        admin_client.put(f"{base_url}/api/admin/orders/{order_id}", json={"status": "cancelled"})
+
+        assert variant_stock(mongo_db, product["product_id"], small["variant_id"]) == 5
+        assert variant_stock(mongo_db, product["product_id"], large["variant_id"]) == 5
+
+
+class TestCartHoldsAForm:
+    """Two forms of one product are two lines, not one."""
+
+    def test_each_form_is_its_own_line(self, base_url, user_client, two_variant_product):
+        product = two_variant_product(5, 5)
+        small, large = product["variants"]
+        user_client.delete(f"{base_url}/api/cart")
+
+        for variant in (small, large):
+            added = user_client.post(
+                f"{base_url}/api/cart",
+                json={
+                    "product_id": product["product_id"],
+                    "variant_id": variant["variant_id"],
+                    "quantity": 1,
+                },
+            )
+            assert added.status_code == 200
+
+        cart = user_client.get(f"{base_url}/api/cart").json()
+        lines = [i for i in cart["items"] if i["product_id"] == product["product_id"]]
+
+        assert len(lines) == 2
+        assert {line["variant_label"] for line in lines} == {"500g", "1kg"}
+        user_client.delete(f"{base_url}/api/cart")
+
+    def test_a_line_is_priced_by_its_form(self, base_url, user_client, two_variant_product):
+        product = two_variant_product(5, 5)
+        large = product["variants"][1]
+        user_client.delete(f"{base_url}/api/cart")
+
+        user_client.post(
+            f"{base_url}/api/cart",
+            json={
+                "product_id": product["product_id"],
+                "variant_id": large["variant_id"],
+                "quantity": 1,
+            },
+        )
+
+        cart = user_client.get(f"{base_url}/api/cart").json()
+        line = next(i for i in cart["items"] if i["product_id"] == product["product_id"])
+
+        assert line["price"] == 180.0
+        assert line["stock"] == 5
+        user_client.delete(f"{base_url}/api/cart")
+
+    def test_the_limit_is_that_form_alone(self, base_url, user_client, two_variant_product):
+        """Five of the large one does not make the small one available."""
+        product = two_variant_product(1, 50)
+        small = product["variants"][0]
+        user_client.delete(f"{base_url}/api/cart")
+
+        response = user_client.post(
+            f"{base_url}/api/cart",
+            json={
+                "product_id": product["product_id"],
+                "variant_id": small["variant_id"],
+                "quantity": 2,
+            },
+        )
+
+        assert response.status_code == 409
+        assert "500g" in response.json()["detail"]
+        user_client.delete(f"{base_url}/api/cart")
+
+    def test_a_line_stored_before_forms_existed_still_reads(
+        self, base_url, user_client, user_session, mongo_db, stocked_product
+    ):
+        """Carts written before this change name no form, and must not break."""
+        product = stocked_product(4)
+        mongo_db.carts.update_one(
+            {"user_id": user_session["user_id"]},
+            {"$set": {"items": [{"product_id": product["product_id"], "quantity": 1}]}},
+            upsert=True,
+        )
+
+        cart = user_client.get(f"{base_url}/api/cart").json()
+        line = next(i for i in cart["items"] if i["product_id"] == product["product_id"])
+
+        assert line["quantity"] == 1
+        assert line["variant_label"] == "Standard"
+        assert line["stock"] == 4
+        user_client.delete(f"{base_url}/api/cart")

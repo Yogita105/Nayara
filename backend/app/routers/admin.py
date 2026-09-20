@@ -221,7 +221,11 @@ async def cancel_order(order: dict, payload: OrderUpdate) -> None:
 
     await release_stock(
         [
-            {"product_id": item["product_id"], "quantity": item["quantity"]}
+            {
+                "product_id": item["product_id"],
+                "variant_id": item.get("variant_id"),
+                "quantity": item["quantity"],
+            }
             for item in order.get("items", [])
         ]
     )

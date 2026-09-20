@@ -242,11 +242,15 @@ a plain indexed field. Reviews and wishlists stay on the **product**.
 One axis per product. A matrix of size against colour needs option sets and generated
 combinations, which is a great deal of machinery for a catalogue this size.
 
-**This is being introduced in steps, and only the first is done.** Every product now
-carries exactly one variant describing what it already sells as, and nothing reads it
-yet: the cart, orders and stock reservation still work from the product's own `price`
-and `stock`. While a product has only that one variant, editing the product keeps it in
-step, so the two cannot drift apart before the switch.
+**This is being introduced in steps.** The cart, orders and stock reservation now work
+from the variant: a cart line names one, an order records which was bought, and stock is
+held against it. What is not done yet is the admin screen for managing variants and the
+selector on the product page, so every product still has exactly one.
+
+The product's own `price` and `stock` remain as a mirror of that single variant while
+the storefront still reads them, and are removed once it does not. A request that names
+no variant resolves to the product's only one, which is what keeps the existing site
+working; a product with a real choice refuses and asks which.
 
 Databases that predate this are brought up to date with:
 
@@ -260,12 +264,16 @@ It is safe to run twice; a product that already has variants is left alone.
 
 ## Orders and stock
 
-Placing an order reserves stock. Each product is adjusted with a single conditional
-update, so two shoppers competing for the last unit cannot both succeed:
+Placing an order reserves stock. Stock belongs to the variant, so a kilo bag and a
+half-kilo bag run out independently. Each is adjusted with a single conditional update,
+so two shoppers competing for the last unit cannot both succeed:
 
 ```javascript
-// Matches only while enough stock remains, then decrements in the same step.
-{ product_id, stock: { $gte: quantity } } -> { $inc: { stock: -quantity } }
+// Matches only while that variant still has enough, then decrements it in the
+// same step. The condition names the variant, so the positional update can
+// only reach the one that satisfied it.
+{ product_id, variants: { $elemMatch: { variant_id, stock: { $gte: quantity } } } }
+  -> { $inc: { "variants.$.stock": -quantity } }
 ```
 
 If a later line in the same order cannot be filled, the units already reserved are

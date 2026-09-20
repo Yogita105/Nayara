@@ -48,16 +48,27 @@ TEST_EMAIL_PATTERN = r"^(auth-test-|lockout-|test\.test-user-|account-test-)"
 def _return_reserved_stock(mongo_db, owner):
     """Give back the stock held by orders that are about to be deleted.
 
-    Placing an order decrements product stock, so deleting test orders without
-    this would slowly drain the real catalogue on every run.
+    Placing an order decrements stock, so deleting test orders without this
+    would slowly drain the real catalogue on every run. Stock lives on the
+    variant, with the product's own count mirroring it.
     """
     for order in mongo_db.orders.find(owner, {"items": 1, "stock_released": 1}):
         if order.get("stock_released"):
             continue
         for item in order.get("items", []):
+            variant_id = item.get("variant_id")
+            if variant_id:
+                criteria = {
+                    "product_id": item["product_id"],
+                    "variants.variant_id": variant_id,
+                }
+                field = "variants.$.stock"
+            else:
+                criteria = {"product_id": item["product_id"]}
+                field = "variants.0.stock"
             mongo_db.products.update_one(
-                {"product_id": item["product_id"]},
-                {"$inc": {"stock": item["quantity"]}},
+                criteria,
+                {"$inc": {field: item["quantity"], "stock": item["quantity"]}},
             )
 
 

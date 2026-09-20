@@ -149,6 +149,20 @@ def scarce_product(mongo_db):
             "image": "",
             "images": [],
             "stock": stock,
+            # Every product carries at least one variant, and stock lives on
+            # it. The product's own count mirrors it.
+            "option_name": "Size",
+            "price_from": 100.0,
+            "variants": [
+                {
+                    "variant_id": f"var_test_{suffix}",
+                    "label": "Standard",
+                    "price": 100.0,
+                    "mrp": 120.0,
+                    "stock": stock,
+                    "image": "",
+                }
+            ],
             "rating": 4.5,
             "reviews_count": 0,
             "badges": [],

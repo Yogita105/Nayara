@@ -5,6 +5,7 @@ from ..errors import FieldError
 from ..models import AddToCartRequest, UpdateCartRequest, WishlistRequest
 from ..security import get_current_user
 from ..utils import serialize_doc
+from ..variants import find_variant, resolve_variant, variants_of
 
 router = APIRouter(prefix="/api", tags=["shopping"])
 
@@ -17,7 +18,9 @@ async def get_or_create_cart(user_id: str) -> dict:
     return cart
 
 
-async def require_available(product_id: str, wanted: int, already_held: int = 0) -> dict:
+async def require_available(
+    product_id: str, variant_id, wanted: int, already_held: int = 0
+) -> dict:
     """Refuse a cart quantity the shop cannot fill.
 
     An order is all or nothing, so a cart holding more than exists is an order
@@ -26,14 +29,17 @@ async def require_available(product_id: str, wanted: int, already_held: int = 0)
     address. The reservation at checkout remains the real guard: stock can
     fall between the two moments.
     """
-    product = await db.products.find_one(
-        {"product_id": product_id}, {"_id": 0, "name": 1, "stock": 1}
-    )
+    product = await db.products.find_one({"product_id": product_id}, {"_id": 0})
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    stock = product.get("stock", 0)
+    variant = resolve_variant(product, variant_id)
+    stock = variant.get("stock", 0)
     name = product.get("name", "This product")
+    # Only worth naming the form when there is more than one to choose from.
+    if len(variants_of(product)) > 1:
+        name = f"{name} ({variant['label']})"
+
     if stock <= 0:
         raise FieldError(409, "quantity", f"{name} is out of stock.")
     if wanted > stock:
@@ -42,7 +48,7 @@ async def require_available(product_id: str, wanted: int, already_held: int = 0)
         else:
             detail = f"Only {stock} left of {name}."
         raise FieldError(409, "quantity", detail)
-    return product
+    return variant
 
 
 @router.get("/cart")
@@ -57,14 +63,37 @@ async def get_cart(user: dict = Depends(get_current_user)):
         {"_id": 0},
     ).to_list(500)
     products_by_id = {product["product_id"]: product for product in products}
-    enriched = [
-        {
-            **serialize_doc(products_by_id[item["product_id"]]),
-            "quantity": item["quantity"],
-        }
-        for item in items
-        if item["product_id"] in products_by_id
-    ]
+
+    enriched = []
+    for item in items:
+        product = products_by_id.get(item["product_id"])
+        if not product:
+            continue
+        variant_id = item.get("variant_id")
+        if variant_id:
+            variant = find_variant(product, variant_id)
+        else:
+            # A line stored before variants existed belongs to the product's
+            # only one.
+            available = variants_of(product)
+            variant = available[0] if available else None
+        if not variant:
+            # The chosen form has since been removed from the catalogue.
+            continue
+        enriched.append(
+            {
+                **serialize_doc(dict(product)),
+                "quantity": item["quantity"],
+                "variant_id": variant["variant_id"],
+                "variant_label": variant["label"],
+                # What the line is actually sold at and how many remain of it,
+                # under the names the rest of the app already reads.
+                "price": variant["price"],
+                "mrp": variant.get("mrp", variant["price"]),
+                "stock": variant.get("stock", 0),
+                "image": variant.get("image") or product.get("image", ""),
+            }
+        )
     return {"items": enriched}
 
 
@@ -75,23 +104,37 @@ async def add_to_cart(
 ):
     cart = await get_or_create_cart(user["user_id"])
     items = cart.get("items", [])
+
+    # The variant has to be settled before the line can be found, since two
+    # forms of one product are two separate lines.
+    variant = await require_available(request.product_id, request.variant_id, request.quantity)
+    variant_id = variant["variant_id"]
+
     already_held = next(
-        (item["quantity"] for item in items if item["product_id"] == request.product_id),
+        (
+            item["quantity"]
+            for item in items
+            if item["product_id"] == request.product_id and item.get("variant_id") == variant_id
+        ),
         0,
     )
-    await require_available(
-        request.product_id,
-        already_held + request.quantity,
-        already_held,
-    )
+    if already_held:
+        await require_available(
+            request.product_id,
+            variant_id,
+            already_held + request.quantity,
+            already_held,
+        )
+
     for item in items:
-        if item["product_id"] == request.product_id:
+        if item["product_id"] == request.product_id and item.get("variant_id") == variant_id:
             item["quantity"] += request.quantity
             break
     else:
         items.append(
             {
                 "product_id": request.product_id,
+                "variant_id": variant_id,
                 "quantity": request.quantity,
             }
         )
@@ -109,12 +152,33 @@ async def update_cart(
     user: dict = Depends(get_current_user),
 ):
     cart = await get_or_create_cart(user["user_id"])
-    items = [item for item in cart.get("items", []) if item["product_id"] != product_id]
+    existing = cart.get("items", [])
+
+    # A request that names no variant means the line for this product, which
+    # is unambiguous while the cart holds only one of them.
+    variant_id = request.variant_id
+    if not variant_id:
+        for_product = [item for item in existing if item["product_id"] == product_id]
+        if len(for_product) == 1:
+            variant_id = for_product[0].get("variant_id")
+
+    def is_target(item: dict) -> bool:
+        if item["product_id"] != product_id:
+            return False
+        return variant_id is None or item.get("variant_id") == variant_id
+
+    items = [item for item in existing if not is_target(item)]
     if request.quantity > 0:
         # Setting a quantity replaces whatever was there, so the whole amount
         # is what has to be available.
-        await require_available(product_id, request.quantity)
-        items.append({"product_id": product_id, "quantity": request.quantity})
+        variant = await require_available(product_id, variant_id, request.quantity)
+        items.append(
+            {
+                "product_id": product_id,
+                "variant_id": variant["variant_id"],
+                "quantity": request.quantity,
+            }
+        )
     await db.carts.update_one(
         {"user_id": user["user_id"]},
         {"$set": {"items": items}},
