@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from ..database import db
 from ..idempotency import claim_request, complete_claim, release_claim
 from ..inventory import release_stock, reserve_stock
-from ..models import Order, OrderCreate, OrderItemSnapshot
+from ..models import (
+    Order,
+    OrderCreate,
+    OrderItemSnapshot,
+    OrderStatus,
+    PaymentStatus,
+)
 from ..pagination import limit_query, offset_query
 from ..security import get_current_user
 from ..utils import serialize_doc
@@ -94,11 +100,15 @@ async def create_order(
         address=payload.address,
         payment_method=payload.payment_method,
         payment_status=(
-            "paid"
+            PaymentStatus.PAID
             if paid_immediately
-            else "pending" if payload.payment_method == "card" else "cod_pending"
+            else (
+                PaymentStatus.PENDING
+                if payload.payment_method == "card"
+                else PaymentStatus.COD_PENDING
+            )
         ),
-        status="processing" if paid_immediately else "placed",
+        status=OrderStatus.PROCESSING if paid_immediately else OrderStatus.PLACED,
     )
     doc = order.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()

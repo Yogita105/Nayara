@@ -105,6 +105,8 @@ async def admin_update_bulk_inquiry(
         {"inquiry_id": inquiry_id},
         {"_id": 0},
     )
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Inquiry not found")
     await audit.record(
         "admin.bulk_inquiry_updated",
         actor_id=user["user_id"],
@@ -183,13 +185,17 @@ async def admin_update_order(
         )
 
     doc = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
+    if doc is None:
+        # The order was found at the start of this request, so its absence
+        # now means it was removed while the change was being applied.
+        raise HTTPException(status_code=404, detail="Order not found")
     await audit.record(
         "admin.order_updated",
         actor_id=user["user_id"],
         request=request,
         order_id=order_id,
         status_from=current_status,
-        status_to=doc.get("status") if doc else None,
+        status_to=doc.get("status"),
         payment_status=payload.payment_status,
     )
     return serialize_doc(doc)
@@ -262,22 +268,22 @@ async def admin_upload(
     # Read in pieces and stop at the limit. Reading the whole file and then
     # measuring it would mean the memory was already spent before the file
     # could be refused.
-    data = bytearray()
+    buffer = bytearray()
     while True:
         chunk = await file.read(UPLOAD_CHUNK_BYTES)
         if not chunk:
             break
-        data.extend(chunk)
-        if len(data) > MAX_UPLOAD_BYTES:
+        buffer.extend(chunk)
+        if len(buffer) > MAX_UPLOAD_BYTES:
             raise HTTPException(
                 status_code=413,
                 detail=(
                     "File is too large. The limit is " f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
                 ),
             )
-    if not data:
+    if not buffer:
         raise HTTPException(status_code=400, detail="The file is empty")
-    data = bytes(data)
+    data = bytes(buffer)
 
     file_id = uuid.uuid4().hex
     try:

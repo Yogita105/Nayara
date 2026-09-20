@@ -1,11 +1,12 @@
 import logging
+from typing import Any, Dict, List
 
 from .database import db
 from .models import Product
 
 logger = logging.getLogger(__name__)
 
-SEED_PRODUCTS = [
+SEED_PRODUCTS: List[Dict[str, Any]] = [
     {
         "name": "Nayara Washing Soap Bar",
         "slug": "washing-soap-bar",

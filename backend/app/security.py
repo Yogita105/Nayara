@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from fastapi import Depends, Header, HTTPException, Request, Response
 
@@ -129,7 +129,7 @@ async def end_all_sessions(user_id: str, keep_token: Optional[str] = None) -> in
     Used when a password changes and when someone reports a lost device, so a
     stolen session token stops working immediately rather than lasting a week.
     """
-    query = {"user_id": user_id}
+    query: Dict[str, Any] = {"user_id": user_id}
     if keep_token:
         query["session_token_hash"] = {"$ne": hash_session_token(keep_token)}
     result = await db.user_sessions.delete_many(query)

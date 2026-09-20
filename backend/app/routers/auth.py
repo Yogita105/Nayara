@@ -1,7 +1,7 @@
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pymongo.errors import DuplicateKeyError
@@ -77,8 +77,9 @@ async def register(body: RegisterRequest, request: Request, response: Response):
     if email and await db.users.find_one({"email": email}, {"_id": 1}):
         raise FieldError(409, "email", "An account with this email already exists")
 
-    user = {
-        "user_id": f"user_{uuid.uuid4().hex[:12]}",
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    user: Dict[str, Any] = {
+        "user_id": user_id,
         "mobile": mobile,
         "name": name,
         "picture": "",
@@ -98,10 +99,10 @@ async def register(body: RegisterRequest, request: Request, response: Response):
             status_code=409,
             detail="An account with this mobile number or email already exists",
         ) from error
-    csrf_token = await create_user_session(user["user_id"], response)
+    csrf_token = await create_user_session(user_id, response)
     await audit.record(
         "auth.account_created",
-        actor_id=user["user_id"],
+        actor_id=user_id,
         request=request,
         is_admin=user["is_admin"],
         has_email=bool(email),
@@ -265,6 +266,9 @@ async def update_profile(
         {"user_id": user["user_id"]},
         {"_id": 0, "password_hash": 0},
     )
+    if updated is None:
+        # The account was closed while this request was in flight.
+        raise HTTPException(status_code=401, detail="Account no longer exists")
     await audit.record(
         "auth.profile_updated",
         actor_id=user["user_id"],

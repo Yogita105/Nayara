@@ -51,6 +51,14 @@ jobs:
         working-directory: backend
         run: flake8 app scripts tests
 
+      - name: Check formatting
+        working-directory: backend
+        run: black --check app scripts tests
+
+      - name: Check types
+        working-directory: backend
+        run: mypy app
+
       - name: Test
         working-directory: backend
         run: python scripts/run_tests.py

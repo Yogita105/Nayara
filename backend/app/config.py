@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Optional, Tuple
+from typing import Literal, Mapping, Optional, Tuple
 
 import cloudinary
 from dotenv import load_dotenv
@@ -29,7 +29,7 @@ class Settings:
     secret_key: str
     admin_mobiles: frozenset[str]
     cookie_secure: bool
-    cookie_samesite: str
+    cookie_samesite: Literal["lax", "none"]
     cors_origins: Tuple[str, ...]
     rate_limit_enabled: bool
     trust_proxy_headers: bool

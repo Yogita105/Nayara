@@ -14,7 +14,7 @@ Every error now returns:
 submitted value.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -55,7 +55,7 @@ def describe(error: dict) -> str:
 
 
 def build_response(status_code: int, detail: str, errors: List[dict]) -> JSONResponse:
-    body = {"detail": detail}
+    body: Dict[str, Any] = {"detail": detail}
     if errors:
         body["errors"] = errors
     request_id = get_request_id()

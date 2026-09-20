@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Dict, List, Tuple
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ASCENDING, DESCENDING
@@ -14,7 +15,7 @@ from .config import (
 
 logger = logging.getLogger(__name__)
 
-client = AsyncIOMotorClient(
+client: AsyncIOMotorClient = AsyncIOMotorClient(
     MONGO_URL,
     # Each worker keeps its own pool, and the cluster caps total connections,
     # so an unbounded default would let a few workers exhaust it.
@@ -30,7 +31,7 @@ db = client[DB_NAME]
 
 # (collection, keys, options). Every filter and sort used by the API should be
 # covered here so queries keep using an index as the collections grow.
-INDEXES = (
+INDEXES: Tuple[Tuple[str, List[Tuple[str, int]], Dict[str, Any]], ...] = (
     ("users", [("user_id", ASCENDING)], {"unique": True}),
     # Email is optional, so only accounts that actually have one are indexed.
     # The filter matches on presence rather than type: MongoDB only uses a

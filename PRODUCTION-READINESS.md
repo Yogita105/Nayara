@@ -220,7 +220,7 @@ production-ready ecommerce application.
 - [x] Add dependency vulnerability scanning.
 - [x] Add secret scanning.
 - [x] Enforce linting and tests in CI.
-- [ ] Enforce formatting and type checks in CI.
+- [x] Enforce formatting and type checks in CI.
 
 ## 14. Deployment
 

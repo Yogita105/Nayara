@@ -122,6 +122,10 @@ async def update_product(
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     doc = await db.products.find_one({"product_id": product_id}, {"_id": 0})
+    if doc is None:
+        # The update matched, so the product existed a moment ago. Finding it
+        # gone means another administrator deleted it in between.
+        raise HTTPException(status_code=404, detail="Not found")
     await audit.record(
         "admin.product_updated",
         actor_id=user["user_id"],

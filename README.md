@@ -407,7 +407,7 @@ the database this project is configured for, so the mistake cannot be made by ac
 
 | Job | Checks |
 | --- | --- |
-| Backend | `flake8` over `app`, `scripts` and `tests`, then the full suite against a MongoDB service container |
+| Backend | `flake8`, `black --check` and `mypy` over the backend, then the full suite against a MongoDB service container |
 | Frontend | `yarn lint`, then `yarn build` with `CI=true` so build warnings fail the run |
 | Secret scanning | `gitleaks` over the whole commit history, with findings redacted from the log |
 | Dependencies | `pip-audit` against `backend/requirements.txt`, and `yarn audit` for JavaScript |
@@ -417,6 +417,8 @@ Run the same checks locally before pushing:
 ```powershell
 cd backend
 python -m flake8 app scripts tests
+python -m black --check app scripts tests
+python -m mypy app
 python scripts\run_tests.py
 python -m pip_audit --requirement requirements.txt --strict
 
@@ -424,6 +426,11 @@ cd ..\frontend
 yarn lint
 yarn build
 ```
+
+Formatting and type settings live in `backend/pyproject.toml`. The formatter's line
+length matches the one flake8 enforces, so the two cannot disagree, and both tools are
+pinned in `requirements.txt` because a different version would reach a different
+verdict on the same code.
 
 The JavaScript audit is advisory for now. The Create React App toolchain carries
 transitive advisories that cannot be resolved without replacing it, so the step reports
