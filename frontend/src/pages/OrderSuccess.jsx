@@ -5,6 +5,7 @@ import { api, formatINR } from "../lib/api";
 import useAsyncData from "../hooks/useAsyncData";
 import { ErrorPanel, LoadingPanel } from "../components/DataState";
 import ProductImage from "../components/ProductImage";
+import { lineKey, lineName } from "../lib/variants";
 import { useCart } from "../context/CartContext";
 
 export default function OrderSuccess() {
@@ -52,11 +53,13 @@ export default function OrderSuccess() {
         <h3 className="font-heading font-semibold mb-4 flex items-center gap-2"><Package className="w-4 h-4" /> Items ordered</h3>
         <div className="space-y-3">
           {order.items.map((it) => (
-            <div key={it.product_id} className="flex items-center gap-4 text-sm">
-              <ProductImage src={it.image} alt={it.name} className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
+            <div key={lineKey(it)} className="flex items-center gap-4 text-sm">
+              <ProductImage src={it.image} alt={lineName(it)} className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
               <div className="flex-1">
                 <div className="font-medium">{it.name}</div>
-                <div className="text-sm text-[#64748B]">Qty: {it.quantity} · {formatINR(it.price)}</div>
+                <div className="text-sm text-[#64748B]">
+                  {it.variant_label ? `${it.variant_label} · ` : ""}Qty: {it.quantity} · {formatINR(it.price)}
+                </div>
               </div>
               <div className="font-semibold">{formatINR(it.price * it.quantity)}</div>
             </div>

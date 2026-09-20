@@ -3,6 +3,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { formatINR, api, errorMessage, fieldErrors } from "../lib/api";
+import { lineKey } from "../lib/variants";
 import { Input } from "../components/ui/input";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Label } from "../components/ui/label";
@@ -77,7 +78,11 @@ export default function Checkout() {
     setFields({});
     try {
       const { data: order } = await api.post("/orders", {
-        items: cart.map((c) => ({ product_id: c.product_id, quantity: c.quantity })),
+        items: cart.map((c) => ({
+          product_id: c.product_id,
+          variant_id: c.variant_id,
+          quantity: c.quantity,
+        })),
         address,
         payment_method: payment,
       }, { headers: { "Idempotency-Key": idempotencyKey } });
@@ -215,11 +220,13 @@ export default function Checkout() {
           <h3 className="font-heading text-lg font-semibold mb-4">Order Summary ({cartCount})</h3>
           <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
             {cart.map((c) => (
-              <div key={c.product_id} className="flex items-center gap-3 text-sm">
+              <div key={lineKey(c)} className="flex items-center gap-3 text-sm">
                 <ProductImage src={c.image} alt={c.name} className="w-12 h-12 rounded-lg object-cover bg-[#F1F5F9]" />
                 <div className="flex-1 min-w-0">
                   <div className="truncate">{c.name}</div>
-                  <div className="text-xs text-[#64748B]">× {c.quantity}</div>
+                  <div className="text-xs text-[#64748B]">
+                    {c.variant_label ? `${c.variant_label} · ` : ""}× {c.quantity}
+                  </div>
                 </div>
                 <div className="font-medium">{formatINR(c.price * c.quantity)}</div>
               </div>

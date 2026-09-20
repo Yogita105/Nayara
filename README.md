@@ -253,11 +253,20 @@ cannot share a label, a product cannot be left with none, and a form cannot be r
 while an open order still holds it — cancelling that order would return its units to a
 variant that no longer exists, and the stock would vanish without a word.
 
-A request that names no variant resolves to the product's only one, which is what keeps
-the existing site working. A product with a real choice refuses and asks which.
+On the storefront, a product sold in one form behaves exactly as it always did. A
+product with a choice shows its forms as radio buttons on the product page, priced
+individually, and the grid advertises the cheapest as "from ₹100" and sends the customer
+to the page rather than guessing on their behalf. The chosen form goes into the address
+bar as `?variant=`, so a page can be shared, reloaded or gone back to and still show
+what was being looked at.
 
-> **Not finished.** The storefront has no selector yet, so a product given a second form
-> cannot be bought until that is built. Give a product two forms only once it can.
+Two forms of one product are **two cart lines**, kept apart everywhere that a line has
+an identity: changing or removing one leaves the other alone, and the order records
+which was bought so an invoice reads `Detergent (1kg)`.
+
+A request that names no variant resolves to the product's only one, which is what keeps
+older clients and anything saved before this change working. A product with a real
+choice refuses and asks which.
 
 Databases that predate this are brought up to date with:
 

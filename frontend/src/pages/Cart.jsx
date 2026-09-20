@@ -6,6 +6,7 @@ import { formatINR } from "../lib/api";
 import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import ProductImage from "../components/ProductImage";
 import { cartLineProblem } from "../lib/stock";
+import { lineKey, lineName } from "../lib/variants";
 import { LoadingPanel } from "../components/DataState";
 
 export default function Cart() {
@@ -44,32 +45,39 @@ export default function Cart() {
           {cart.map((item) => {
             const problem = cartLineProblem(item);
             const atLimit = typeof item.stock === "number" && item.quantity >= item.stock;
+            const key = lineKey(item);
+            const label = lineName(item);
             return (
-            <div key={item.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4 items-center" data-testid={`cart-item-${item.product_id}`}>
-              <ProductImage src={item.image} alt={item.name} className="w-24 h-24 rounded-xl object-cover bg-[#F1F5F9]" />
+            <div key={key} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4 items-center" data-testid={`cart-item-${key}`}>
+              <ProductImage src={item.image} alt={label} className="w-24 h-24 rounded-xl object-cover bg-[#F1F5F9]" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-heading font-medium">{item.name}</h3>
+                {item.variant_label && (
+                  <p className="text-xs uppercase tracking-[0.12em] text-[#64748B] mt-0.5" data-testid={`cart-variant-${key}`}>
+                    {item.variant_label}
+                  </p>
+                )}
                 <p className="text-sm text-[#64748B] mt-1">{formatINR(item.price)}</p>
                 {problem && (
-                  <p className="text-sm text-red-600 mt-1" data-testid={`cart-problem-${item.product_id}`}>
+                  <p className="text-sm text-red-600 mt-1" data-testid={`cart-problem-${key}`}>
                     {problem}
                   </p>
                 )}
                 <div className="mt-3 flex items-center gap-3">
                   <div className="flex items-center border border-[var(--nayara-border)] rounded-full">
-                    <button onClick={() => updateQuantity(item.product_id, Math.max(1, item.quantity - 1))} className="px-3 h-9" data-testid={`cart-dec-${item.product_id}`} aria-label={`Reduce quantity of ${item.name}`}><Minus className="w-3 h-3" /></button>
-                    <span className="w-7 text-center text-sm font-semibold" data-testid={`cart-qty-${item.product_id}`}>{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item, Math.max(1, item.quantity - 1))} className="px-3 h-9" data-testid={`cart-dec-${key}`} aria-label={`Reduce quantity of ${label}`}><Minus className="w-3 h-3" /></button>
+                    <span className="w-7 text-center text-sm font-semibold" data-testid={`cart-qty-${key}`}>{item.quantity}</span>
                     <button
-                      onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                      onClick={() => updateQuantity(item, item.quantity + 1)}
                       disabled={atLimit}
                       className="px-3 h-9 disabled:opacity-40 disabled:cursor-not-allowed"
-                      data-testid={`cart-inc-${item.product_id}`}
-                      aria-label={`Increase quantity of ${item.name}`}
+                      data-testid={`cart-inc-${key}`}
+                      aria-label={`Increase quantity of ${label}`}
                     >
                       <Plus className="w-3 h-3" />
                     </button>
                   </div>
-                  <button onClick={() => removeFromCart(item.product_id)} className="text-sm text-red-500 flex items-center gap-1" data-testid={`cart-remove-${item.product_id}`}>
+                  <button onClick={() => removeFromCart(item)} className="text-sm text-red-500 flex items-center gap-1" data-testid={`cart-remove-${key}`}>
                     <Trash2 className="w-4 h-4" /> Remove
                   </button>
                 </div>

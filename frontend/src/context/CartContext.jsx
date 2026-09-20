@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api, errorMessage } from "../lib/api";
+import { lineKey, lineName } from "../lib/variants";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
 
@@ -57,17 +58,25 @@ export const CartProvider = ({ children }) => {
   const addToCart = async (product, qty = 1) => {
     try {
       if (user) {
-        await api.post("/cart", { product_id: product.product_id, quantity: qty });
+        await api.post("/cart", {
+          product_id: product.product_id,
+          // Which form is being bought. A product sold as only one resolves
+          // it on the server, so this may be absent.
+          variant_id: product.variant_id,
+          quantity: qty,
+        });
         await refreshCart();
       } else {
         const existing = readLocal(LOCAL_KEY);
-        const i = existing.findIndex((x) => x.product_id === product.product_id);
+        // Two forms of one product are two lines, so the line is found by
+        // both parts.
+        const i = existing.findIndex((x) => lineKey(x) === lineKey(product));
         const wanted = (i >= 0 ? existing[i].quantity : 0) + qty;
         if (typeof product.stock === "number" && wanted > product.stock) {
           toast.error(
             product.stock > 0
-              ? `Only ${product.stock} left of ${product.name}.`
-              : `${product.name} is out of stock.`
+              ? `Only ${product.stock} left of ${lineName(product)}.`
+              : `${lineName(product)} is out of stock.`
           );
           return;
         }
@@ -76,7 +85,7 @@ export const CartProvider = ({ children }) => {
         writeLocal(LOCAL_KEY, existing);
         setCart(existing);
       }
-      toast.success(`${product.name} added to cart`);
+      toast.success(`${lineName(product)} added to cart`);
     } catch (failure) {
       // The API refuses a cart it could not fill, and that refusal names the
       // product and what is left of it.
@@ -84,15 +93,15 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const updateQuantity = async (product_id, quantity) => {
+  const updateQuantity = async (item, quantity) => {
     try {
       if (user) {
-        await api.put(`/cart/${product_id}`, { quantity });
+        await api.put(`/cart/${item.product_id}`, { quantity, variant_id: item.variant_id });
         await refreshCart();
       } else {
         let items = readLocal(LOCAL_KEY);
-        if (quantity <= 0) items = items.filter((x) => x.product_id !== product_id);
-        else items = items.map((x) => (x.product_id === product_id ? { ...x, quantity } : x));
+        if (quantity <= 0) items = items.filter((x) => lineKey(x) !== lineKey(item));
+        else items = items.map((x) => (lineKey(x) === lineKey(item) ? { ...x, quantity } : x));
         writeLocal(LOCAL_KEY, items);
         setCart(items);
       }
@@ -102,12 +111,13 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const removeFromCart = async (product_id) => {
+  const removeFromCart = async (item) => {
     if (user) {
-      await api.delete(`/cart/${product_id}`);
+      const query = item.variant_id ? `?variant_id=${encodeURIComponent(item.variant_id)}` : "";
+      await api.delete(`/cart/${item.product_id}${query}`);
       await refreshCart();
     } else {
-      const items = readLocal(LOCAL_KEY).filter((x) => x.product_id !== product_id);
+      const items = readLocal(LOCAL_KEY).filter((x) => lineKey(x) !== lineKey(item));
       writeLocal(LOCAL_KEY, items);
       setCart(items);
     }

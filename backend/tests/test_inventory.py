@@ -751,6 +751,87 @@ class TestCartHoldsAForm:
         assert "500g" in response.json()["detail"]
         user_client.delete(f"{base_url}/api/cart")
 
+    def test_changing_one_forms_quantity_leaves_the_other(
+        self, base_url, user_client, two_variant_product
+    ):
+        """Setting the 1kg to three must not disturb the 500g beside it."""
+        product = two_variant_product(5, 5)
+        small, large = product["variants"]
+        user_client.delete(f"{base_url}/api/cart")
+        for variant in (small, large):
+            user_client.post(
+                f"{base_url}/api/cart",
+                json={
+                    "product_id": product["product_id"],
+                    "variant_id": variant["variant_id"],
+                    "quantity": 1,
+                },
+            )
+
+        changed = user_client.put(
+            f"{base_url}/api/cart/{product['product_id']}",
+            json={"variant_id": large["variant_id"], "quantity": 3},
+        )
+
+        assert changed.status_code == 200, changed.text
+        cart = user_client.get(f"{base_url}/api/cart").json()
+        held = {
+            line["variant_label"]: line["quantity"]
+            for line in cart["items"]
+            if line["product_id"] == product["product_id"]
+        }
+        assert held == {"500g": 1, "1kg": 3}
+        user_client.delete(f"{base_url}/api/cart")
+
+    def test_removing_one_form_leaves_the_other(self, base_url, user_client, two_variant_product):
+        """Taking the 1kg out of a cart must not take the 500g with it."""
+        product = two_variant_product(5, 5)
+        small, large = product["variants"]
+        user_client.delete(f"{base_url}/api/cart")
+        for variant in (small, large):
+            user_client.post(
+                f"{base_url}/api/cart",
+                json={
+                    "product_id": product["product_id"],
+                    "variant_id": variant["variant_id"],
+                    "quantity": 1,
+                },
+            )
+
+        removed = user_client.delete(
+            f"{base_url}/api/cart/{product['product_id']}",
+            params={"variant_id": large["variant_id"]},
+        )
+
+        assert removed.status_code == 200
+        cart = user_client.get(f"{base_url}/api/cart").json()
+        lines = [i for i in cart["items"] if i["product_id"] == product["product_id"]]
+        assert [line["variant_label"] for line in lines] == ["500g"]
+        user_client.delete(f"{base_url}/api/cart")
+
+    def test_naming_no_form_removes_the_product_entirely(
+        self, base_url, user_client, two_variant_product
+    ):
+        """What a client that predates forms means by removing an item."""
+        product = two_variant_product(5, 5)
+        user_client.delete(f"{base_url}/api/cart")
+        for variant in product["variants"]:
+            user_client.post(
+                f"{base_url}/api/cart",
+                json={
+                    "product_id": product["product_id"],
+                    "variant_id": variant["variant_id"],
+                    "quantity": 1,
+                },
+            )
+
+        user_client.delete(f"{base_url}/api/cart/{product['product_id']}")
+
+        cart = user_client.get(f"{base_url}/api/cart").json()
+        lines = [i for i in cart["items"] if i["product_id"] == product["product_id"]]
+        assert lines == []
+        user_client.delete(f"{base_url}/api/cart")
+
     def test_a_line_stored_before_forms_existed_still_reads(
         self, base_url, user_client, user_session, mongo_db, stocked_product
     ):

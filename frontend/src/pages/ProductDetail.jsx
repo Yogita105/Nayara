@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
 import { isOutOfStock, stockNotice } from "../lib/stock";
+import { asSold, defaultVariant, findVariant, hasChoice } from "../lib/variants";
 import useAsyncData from "../hooks/useAsyncData";
 import { ErrorPanel, LoadingPanel } from "../components/DataState";
 import { useCart } from "../context/CartContext";
@@ -11,12 +12,15 @@ import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Input } from "../components/ui/input";
 import ProductImage from "../components/ProductImage";
+import VariantPicker from "../components/VariantPicker";
 import { toast } from "sonner";
 
 export default function ProductDetail() {
   const { productId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [reviews, setReviews] = useState([]);
   const [qty, setQty] = useState(1);
+  const [chosenId, setChosenId] = useState(null);
   const [form, setForm] = useState({ rating: 5, title: "", comment: "" });
   const { addToCart, toggleWishlist, isInWishlist } = useCart();
   const { user } = useAuth();
@@ -49,13 +53,31 @@ export default function ProductDetail() {
   }
   if (!product) return null;
 
-  const notice = stockNotice(product.stock);
-  const soldOut = isOutOfStock(product);
+  // The form being shown: whatever was picked, then whatever the link asked
+  // for, then the cheapest one still in stock.
+  const chosen =
+    findVariant(product, chosenId) ||
+    findVariant(product, searchParams.get("variant")) ||
+    defaultVariant(product);
+  // Price, stock and photograph come from the form, under the names the rest
+  // of this page already reads.
+  const sold = asSold(product, chosen);
+
+  const chooseVariant = (variantId) => {
+    setChosenId(variantId);
+    setQty(1);
+    // A chosen form belongs in the address bar, so the page can be shared,
+    // reloaded or gone back to and still show what was being looked at.
+    setSearchParams({ variant: variantId }, { replace: true });
+  };
+
+  const notice = stockNotice(sold.stock);
+  const soldOut = isOutOfStock(sold);
   // Fall back to a generous cap when the field is missing, so a product
   // without stock recorded is not made unbuyable.
-  const available = typeof product.stock === "number" ? product.stock : Infinity;
+  const available = typeof sold.stock === "number" ? sold.stock : Infinity;
 
-  const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100) || 0;
+  const discount = Math.round(((sold.mrp - sold.price) / sold.mrp) * 100) || 0;
   const saved = isInWishlist(product.product_id);
 
   const submitReview = async (e) => {
@@ -77,7 +99,7 @@ export default function ProductDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="rounded-3xl overflow-hidden bg-[#F1F5F9] aspect-square">
-          <ProductImage src={product.image} alt={product.name} className="w-full h-full object-cover" />
+          <ProductImage src={sold.image} alt={product.name} className="w-full h-full object-cover" />
         </div>
         <div>
           <div className="flex flex-wrap gap-2 mb-3">
@@ -98,14 +120,16 @@ export default function ProductDetail() {
           <p className="mt-5 text-[#64748B] leading-relaxed">{product.description}</p>
 
           <div className="mt-6 flex items-end gap-3">
-            <div className="font-heading text-3xl font-semibold" data-testid="product-price">{formatINR(product.price)}</div>
-            {product.mrp > product.price && (
+            <div className="font-heading text-3xl font-semibold" data-testid="product-price">{formatINR(sold.price)}</div>
+            {sold.mrp > sold.price && (
               <>
-                <div className="text-lg text-[#64748B] line-through mb-1">{formatINR(product.mrp)}</div>
+                <div className="text-lg text-[#64748B] line-through mb-1">{formatINR(sold.mrp)}</div>
                 <div className="text-sm text-[var(--nayara-primary)] font-semibold mb-1">{discount}% off</div>
               </>
             )}
           </div>
+
+          <VariantPicker product={product} value={chosen?.variant_id} onChange={chooseVariant} />
 
           {notice && (
             <p
@@ -139,7 +163,7 @@ export default function ProductDetail() {
               </button>
             </div>
             <button
-              onClick={() => addToCart(product, qty)}
+              onClick={() => addToCart(sold, qty)}
               disabled={soldOut}
               className="nayara-btn flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="pdp-add-to-cart"
@@ -153,7 +177,9 @@ export default function ProductDetail() {
 
           {!soldOut && qty >= available && (
             <p className="mt-2 text-xs text-[#64748B]" data-testid="qty-capped">
-              That is all we have of this one.
+              {hasChoice(product)
+                ? `That is all we have of the ${chosen.label}.`
+                : "That is all we have of this one."}
             </p>
           )}
 

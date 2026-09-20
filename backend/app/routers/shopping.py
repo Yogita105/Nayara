@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..database import db
@@ -189,10 +191,19 @@ async def update_cart(
 @router.delete("/cart/{product_id}")
 async def delete_cart_item(
     product_id: str,
+    variant_id: Optional[str] = None,
     user: dict = Depends(get_current_user),
 ):
     cart = await get_or_create_cart(user["user_id"])
-    items = [item for item in cart.get("items", []) if item["product_id"] != product_id]
+
+    def is_target(item: dict) -> bool:
+        if item["product_id"] != product_id:
+            return False
+        # Naming no variant removes every form of the product, which is what
+        # a client that predates them means by removing it.
+        return variant_id is None or item.get("variant_id") == variant_id
+
+    items = [item for item in cart.get("items", []) if not is_target(item)]
     await db.carts.update_one(
         {"user_id": user["user_id"]},
         {"$set": {"items": items}},

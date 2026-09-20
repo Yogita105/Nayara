@@ -11,6 +11,8 @@
  * means nothing to a customer buying one.
  */
 
+import { lineName } from "./variants";
+
 export const LOW_STOCK_THRESHOLD = 5;
 
 /**
@@ -45,11 +47,12 @@ export function isOutOfStock(product) {
 export function cartLineProblem(item) {
   const stock = item?.stock;
   if (typeof stock !== "number") return null;
+  const name = lineName(item);
   if (stock <= 0) {
-    return `${item.name} is out of stock. Remove it to place your order.`;
+    return `${name} is out of stock. Remove it to place your order.`;
   }
   if (item.quantity > stock) {
-    return `Only ${stock} left of ${item.name}. Reduce the quantity to place your order.`;
+    return `Only ${stock} left of ${name}. Reduce the quantity to place your order.`;
   }
   return null;
 }
