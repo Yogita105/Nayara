@@ -1,0 +1,20 @@
+# Store text with LF in the repository, whatever the working platform writes
+# locally. Without this a file created on Windows arrives with carriage
+# returns, and every later change to it shows as a whole-file rewrite.
+* text=auto eol=lf
+
+# Except where a carriage return is part of the format.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# And leave binaries untouched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.pdf binary
