@@ -14,7 +14,7 @@ from .config import (
 from .database import close_database, create_indexes
 from .errors import register_error_handlers
 from .frontend import mount_frontend
-from .middleware import csrf_protection, request_context
+from .middleware import csrf_protection, limit_request_size, request_context
 from .observability import REQUEST_ID_HEADER, configure_logging
 from .pagination import TOTAL_COUNT_HEADER
 from .routers import admin, auth, catalog, health, orders, shopping
@@ -58,8 +58,11 @@ app.include_router(root_router)
 mount_frontend(app)
 
 # Middleware runs outermost-last, so CORS is added after the others and can
-# attach its headers even to responses they generate.
+# attach its headers even to responses they generate. The size limit sits
+# inside the request context, so a refusal is still logged and carries a
+# request id.
 app.middleware("http")(csrf_protection)
+app.middleware("http")(limit_request_size)
 app.middleware("http")(request_context)
 app.add_middleware(
     CORSMiddleware,

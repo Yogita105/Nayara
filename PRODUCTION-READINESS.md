@@ -226,7 +226,8 @@ production-ready ecommerce application.
 - [x] Serve the application exclusively over HTTPS.
 - [x] Run multiple Uvicorn workers or API containers.
 - [x] Add a managed reverse proxy or load balancer.
-- [ ] Configure request-body and upload-size limits at the edge.
+- [x] Limit request-body and upload sizes in the API.
+- [ ] Cap request size at the proxy as a second layer.
 - [ ] Add automated staging and production deployments.
 - [x] Add health-based deployment checks.
 - [ ] Add rollback support.

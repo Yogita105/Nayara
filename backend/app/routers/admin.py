@@ -6,6 +6,7 @@ import cloudinary.uploader
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from fastapi.responses import RedirectResponse
 
+from ..config import MAX_UPLOAD_BYTES
 from ..database import db
 from ..inventory import release_stock
 from ..models import (
@@ -24,6 +25,7 @@ from ..utils import serialize_doc
 router = APIRouter(prefix="/api", tags=["admin"])
 logger = logging.getLogger(__name__)
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
+UPLOAD_CHUNK_BYTES = 64 * 1024
 
 
 async def paged_admin_list(
@@ -237,9 +239,27 @@ async def admin_upload(
     )
     if extension not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Unsupported file type")
-    data = await file.read()
-    if len(data) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File too large (max 5MB)")
+
+    # Read in pieces and stop at the limit. Reading the whole file and then
+    # measuring it would mean the memory was already spent before the file
+    # could be refused.
+    data = bytearray()
+    while True:
+        chunk = await file.read(UPLOAD_CHUNK_BYTES)
+        if not chunk:
+            break
+        data.extend(chunk)
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=(
+                    "File is too large. The limit is "
+                    f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+                ),
+            )
+    if not data:
+        raise HTTPException(status_code=400, detail="The file is empty")
+    data = bytes(data)
 
     file_id = uuid.uuid4().hex
     try:

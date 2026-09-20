@@ -4,6 +4,8 @@ import time
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from .config import MAX_REQUEST_BODY_BYTES, MAX_UPLOAD_BYTES
+from .errors import build_response
 from .observability import (
     REQUEST_ID_HEADER,
     clean_request_id,
@@ -19,6 +21,12 @@ from .security import (
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
 SLOW_REQUEST_MS = 1000
+
+# Image uploads are necessarily larger than any other request, so that one
+# route is allowed its own ceiling. The slack covers the multipart boundaries
+# and part headers wrapped around the file itself.
+UPLOAD_PATH = "/api/admin/upload"
+MULTIPART_OVERHEAD_BYTES = 16 * 1024
 
 logger = logging.getLogger("nayara.request")
 
@@ -91,9 +99,55 @@ async def csrf_protection(request: Request, call_next):
 
     submitted_token = request.headers.get(CSRF_HEADER_NAME, "")
     if not csrf_token_matches(session_token, submitted_token):
-        return JSONResponse(
-            status_code=403,
-            content={"detail": "Invalid or missing CSRF token"},
-        )
+        return build_response(403, "Invalid or missing CSRF token", [])
+
+    return await call_next(request)
+
+
+def limit_for(path: str) -> int:
+    if path == UPLOAD_PATH:
+        return MAX_UPLOAD_BYTES + MULTIPART_OVERHEAD_BYTES
+    return MAX_REQUEST_BODY_BYTES
+
+
+async def limit_request_size(request: Request, call_next):
+    """Turn away an oversized request before its body is read.
+
+    Reading first and measuring afterwards offers no protection: the memory
+    has already been spent by the time the size is known. This refuses on the
+    declared length instead, so nothing large is ever held.
+
+    A sender that omits the length and streams the body in chunks cannot be
+    judged here. The upload route counts those bytes as they arrive, and the
+    proxy in front of the API is the other place to cap them.
+    """
+    if request.method in SAFE_METHODS:
+        return await call_next(request)
+
+    declared = request.headers.get("content-length")
+    if declared is not None:
+        try:
+            length = int(declared)
+        except ValueError:
+            return build_response(400, "Content-Length is not a number", [])
+        if length < 0:
+            return build_response(400, "Content-Length is not a number", [])
+
+        limit = limit_for(request.url.path)
+        if length > limit:
+            logger.warning(
+                "Request body refused as too large",
+                extra={
+                    "method": request.method,
+                    "path": request.url.path,
+                    "declared_bytes": length,
+                    "limit_bytes": limit,
+                },
+            )
+            return build_response(
+                413,
+                f"Request body is too large. The limit is {limit // 1024} KB.",
+                [],
+            )
 
     return await call_next(request)

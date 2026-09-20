@@ -41,6 +41,8 @@ class Settings:
     mongo_max_pool_size: int
     mongo_timeout_ms: int
     mongo_socket_timeout_ms: int
+    max_request_body_bytes: int
+    max_upload_bytes: int
     session_days: int
     cloudinary_cloud_name: str
     cloudinary_api_key: str
@@ -194,6 +196,17 @@ def load_settings(environment: Optional[Mapping[str, str]] = None) -> Settings:
             values.get("MONGO_SOCKET_TIMEOUT_MS", "20000"),
             "MONGO_SOCKET_TIMEOUT_MS",
         ),
+        # A request is held in memory while it is handled, and the machine
+        # serving the shop has far less memory than a determined caller can
+        # send. These are generous for real orders and admin edits.
+        max_request_body_bytes=parse_positive_int(
+            values.get("MAX_REQUEST_BODY_BYTES", str(1024 * 1024)),
+            "MAX_REQUEST_BODY_BYTES",
+        ),
+        max_upload_bytes=parse_positive_int(
+            values.get("MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)),
+            "MAX_UPLOAD_BYTES",
+        ),
         session_days=7,
         cloudinary_cloud_name=values.get("CLOUDINARY_CLOUD_NAME", ""),
         cloudinary_api_key=values.get("CLOUDINARY_API_KEY", ""),
@@ -220,6 +233,8 @@ API_DOCS_ENABLED = settings.api_docs_enabled
 MONGO_MAX_POOL_SIZE = settings.mongo_max_pool_size
 MONGO_TIMEOUT_MS = settings.mongo_timeout_ms
 MONGO_SOCKET_TIMEOUT_MS = settings.mongo_socket_timeout_ms
+MAX_REQUEST_BODY_BYTES = settings.max_request_body_bytes
+MAX_UPLOAD_BYTES = settings.max_upload_bytes
 SESSION_DAYS = settings.session_days
 
 cloudinary.config(

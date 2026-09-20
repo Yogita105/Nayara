@@ -49,6 +49,8 @@ the built-in default. An exported variable therefore always wins.
 | `MONGO_MAX_POOL_SIZE` | `20` | Connections held per worker. Workers multiply this, so keep the total well under the cluster's limit. |
 | `MONGO_TIMEOUT_MS` | `10000` | Server selection timeout. |
 | `MONGO_SOCKET_TIMEOUT_MS` | `20000` | Socket timeout. |
+| `MAX_REQUEST_BODY_BYTES` | `1048576` | Largest accepted request body, in bytes. |
+| `MAX_UPLOAD_BYTES` | `5242880` | Largest accepted image upload, in bytes. |
 
 ### Image uploads
 
@@ -185,6 +187,24 @@ Indexes are declared in one table in `backend/app/database.py` and created at st
 A failure is logged rather than blocking startup, because a unique index cannot be
 built over pre-existing duplicates and the API should still serve traffic while that
 is corrected.
+
+## Request size
+
+A request is held in memory while it is handled, and the machine serving the shop has
+far less memory than a determined caller can send. Writes are refused on their declared
+`Content-Length` before the body is read, returning `413`:
+
+| Route | Limit |
+| --- | --- |
+| `POST /api/admin/upload` | `MAX_UPLOAD_BYTES`, plus a small allowance for the multipart wrapper |
+| Everything else | `MAX_REQUEST_BODY_BYTES` |
+
+Reading a body and then measuring it is no protection, because the memory has already
+been spent by the time the size is known. Reads are never limited.
+
+A caller that streams a body in chunks declares no length, so it cannot be judged that
+way. The upload route counts those bytes as they arrive and stops at the limit. Capping
+request size at the proxy in front of the API is still worth doing as a second layer.
 
 ## Orders and stock
 
