@@ -11,7 +11,6 @@ from app.observability import (
     RequestIdFilter,
     TextFormatter,
     clean_request_id,
-    get_request_id,
     new_request_id,
     set_request_id,
 )

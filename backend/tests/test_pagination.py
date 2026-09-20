@@ -1,6 +1,5 @@
 """Paging parameters and index definitions."""
 import pytest
-import requests
 
 from app.database import INDEXES
 from app.pagination import MAX_PAGE_SIZE

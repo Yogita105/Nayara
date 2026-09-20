@@ -3,6 +3,7 @@ import uuid
 import pytest
 import requests
 
+
 # ---------- Products ----------
 class TestProducts:
     def test_list_products_no_id_leak(self, base_url, anon_client):
@@ -247,15 +248,20 @@ class TestContact:
 ADDRESS = {"full_name": "Test", "phone": "9999999999", "line1": "Addr1",
            "line2": "", "city": "Mumbai", "state": "MH", "pincode": "400001"}
 
+
 @pytest.fixture
 def sample_items(base_url, user_client):
     prods = user_client.get(f"{base_url}/api/products").json()
     return [{"product_id": prods[0]["product_id"], "quantity": 2}]
 
+
 class TestOrders:
     def test_order_cod(self, base_url, user_client, sample_items):
         # add to cart first to verify clearing
-        user_client.post(f"{base_url}/api/cart", json={"product_id": sample_items[0]["product_id"], "quantity": 1})
+        user_client.post(
+            f"{base_url}/api/cart",
+            json={"product_id": sample_items[0]["product_id"], "quantity": 1},
+        )
         r = user_client.post(f"{base_url}/api/orders", json={
             "items": sample_items, "address": ADDRESS, "payment_method": "cod"
         })
@@ -286,7 +292,9 @@ class TestOrders:
         orders = r.json()
         assert all(o["user_id"] == user_session["user_id"] for o in orders)
 
-    def test_get_order_forbidden_for_other(self, base_url, user_client, admin_client, sample_items, anon_client):
+    def test_get_order_forbidden_for_other(
+        self, base_url, user_client, admin_client, sample_items, anon_client
+    ):
         # Make a second user and order - use admin to verify admin can view
         r = user_client.post(f"{base_url}/api/orders", json={
             "items": sample_items, "address": ADDRESS, "payment_method": "cod"
@@ -326,13 +334,20 @@ class TestStripe:
 
 # ---------- Admin gating ----------
 class TestAdmin:
+    ADMIN_ENDPOINTS = [
+        "/api/admin/stats",
+        "/api/admin/orders",
+        "/api/admin/users",
+        "/api/admin/contacts",
+    ]
+
     def test_non_admin_403(self, base_url, user_client):
-        for p in ["/api/admin/stats", "/api/admin/orders", "/api/admin/users", "/api/admin/contacts"]:
+        for p in self.ADMIN_ENDPOINTS:
             r = user_client.get(f"{base_url}{p}")
             assert r.status_code == 403, f"{p} -> {r.status_code}"
 
     def test_admin_200(self, base_url, admin_client):
-        for p in ["/api/admin/stats", "/api/admin/orders", "/api/admin/users", "/api/admin/contacts"]:
+        for p in self.ADMIN_ENDPOINTS:
             r = admin_client.get(f"{base_url}{p}")
             assert r.status_code == 200, f"{p} -> {r.status_code}"
             body = r.json()

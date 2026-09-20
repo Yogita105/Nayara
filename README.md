@@ -298,6 +298,34 @@ The database name defaults to the local name with any `_dev` suffix replaced by
 Running `pytest` directly fails with an explanatory error when it would otherwise use
 the database this project is configured for, so the mistake cannot be made by accident.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and on every pull request:
+
+| Job | Checks |
+| --- | --- |
+| Backend | `flake8` over `app`, `scripts` and `tests`, then the full suite against a MongoDB service container |
+| Frontend | `yarn lint`, then `yarn build` with `CI=true` so build warnings fail the run |
+| Dependencies | `pip-audit` against `backend/requirements.txt`, and `yarn audit` for JavaScript |
+
+Run the same checks locally before pushing:
+
+```powershell
+cd backend
+python -m flake8 app scripts tests
+python scripts\run_tests.py
+python -m pip_audit --requirement requirements.txt --strict
+
+cd ..\frontend
+yarn lint
+yarn build
+```
+
+The JavaScript audit is advisory for now. The Create React App toolchain carries
+transitive advisories that cannot be resolved without replacing it, so the step reports
+findings without failing the run. The Python audit does fail the run, and the pinned
+dependencies in `backend/requirements.txt` are currently clean.
+
 ## Errors
 
 Every error uses one shape, so a client can rely on `detail` being a readable

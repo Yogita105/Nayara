@@ -5,6 +5,12 @@ the application actually registers and checks each one against its expected
 audience. A new endpoint that nobody classified fails the suite, which forces
 a deliberate decision about who may call it instead of letting an unprotected
 route reach production unnoticed.
+
+Discovery reads the generated OpenAPI schema, which is a supported interface
+and survives FastAPI reorganising its internals. A route registered with
+``include_in_schema=False`` would be absent from that schema, so hiding an
+endpoint from the documentation also hides it from this check: such a route
+has to be given an audience by hand.
 """
 
 import re
@@ -83,17 +89,14 @@ CLASSIFIED = ADMIN_ROUTES | AUTHENTICATED_ROUTES | PUBLIC_ROUTES
 
 
 def _discover_api_routes():
-    found = set()
-    for route in app.routes:
-        path = getattr(route, "path", "")
-        methods = getattr(route, "methods", None)
-        if not methods or not path.startswith("/api"):
-            continue
-        for method in methods:
-            if method in {"HEAD", "OPTIONS"}:
-                continue
-            found.add((method, path))
-    return found
+    schema = app.openapi()
+    return {
+        (method.upper(), path)
+        for path, operations in schema.get("paths", {}).items()
+        if path.startswith("/api")
+        for method in operations
+        if method.upper() not in {"HEAD", "OPTIONS"}
+    }
 
 
 DISCOVERED = _discover_api_routes()

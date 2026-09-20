@@ -58,7 +58,9 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
-    "test": "craco test"
+    "test": "craco test",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "browserslist": {
     "production": [

@@ -1,0 +1,14 @@
+[flake8]
+max-line-length = 100
+extend-exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    build,
+    dist
+
+# Product copy is stored as prose. Wrapping it would make the catalogue data
+# harder to read than the long lines it replaces.
+per-file-ignores =
+    app/seed.py:E501

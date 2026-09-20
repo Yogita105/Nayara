@@ -2,7 +2,6 @@
 import uuid
 
 import pytest
-import requests
 
 
 ADDRESS = {
