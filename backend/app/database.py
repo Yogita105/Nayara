@@ -57,6 +57,11 @@ INDEXES = (
     ("products", [("category", ASCENDING), ("created_at", ASCENDING)], {}),
     ("products", [("featured", ASCENDING), ("created_at", ASCENDING)], {}),
     ("products", [("created_at", ASCENDING)], {}),
+    # Storefront sorting. The trailing product_id matches the tiebreaker the
+    # catalogue query appends, so paging stays stable when prices or ratings
+    # are equal.
+    ("products", [("price", ASCENDING), ("product_id", ASCENDING)], {}),
+    ("products", [("rating", DESCENDING), ("product_id", ASCENDING)], {}),
     ("orders", [("order_id", ASCENDING)], {"unique": True}),
     ("orders", [("user_id", ASCENDING), ("created_at", DESCENDING)], {}),
     ("orders", [("created_at", DESCENDING)], {}),

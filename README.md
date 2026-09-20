@@ -165,15 +165,21 @@ arrays, so existing clients are unaffected, and the defaults match the previous 
 caps. `limit` must be between 1 and 500; invalid values return `422`.
 
 ```http
-GET /api/products?category=laundry&limit=24&offset=24
+GET /api/products?category=laundry&sort=price_asc&limit=24&offset=24
 ```
 
-Each paged query sorts on an indexed field. Without a deterministic sort, skipping
-records could return the same document twice or miss one entirely.
+Each paged query sorts on an indexed field and ends with `product_id` as a tiebreaker.
+Without a total order, two products sharing a price could swap places between requests,
+showing one of them on two pages and hiding the other entirely.
 
-Administrator lists also return an `X-Total-Count` header so a page-numbered UI knows
-how many records exist. Storefront listings omit it to avoid a second query on every
-page view.
+The catalogue is sorted and filtered by the API, not the browser. Ordering only the
+records already fetched would rank one page against itself, so the cheapest product
+could sit on the last page. `sort` accepts `popular`, `newest`, `price_asc`,
+`price_desc` and `rating`; anything else returns `422`. `max_price` narrows by price.
+
+List endpoints return an `X-Total-Count` header giving the number of records matching
+the query, so the shop and the admin screens can show how many exist rather than
+silently stopping at whatever the page limit was.
 
 Indexes are declared in one table in `backend/app/database.py` and created at startup.
 A failure is logged rather than blocking startup, because a unique index cannot be

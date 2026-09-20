@@ -1,12 +1,13 @@
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import DuplicateKeyError
 
 from ..database import db
 from ..models import Product, ProductCreate, Review, ReviewCreate
-from ..pagination import limit_query, offset_query
+from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
 from ..security import get_current_user, require_admin
 from ..utils import serialize_doc
 
@@ -15,12 +16,27 @@ router = APIRouter(prefix="/api", tags=["catalog"])
 
 DUPLICATE_SLUG_DETAIL = "Another product already uses this slug"
 
+# Paging a sort that leaves ties in an arbitrary order can show the same
+# product on two pages and hide another entirely, so every option ends with a
+# unique field to make the order total.
+PRODUCT_SORTS: Dict[str, list] = {
+    "popular": [("created_at", ASCENDING)],
+    "newest": [("created_at", DESCENDING)],
+    "price_asc": [("price", ASCENDING)],
+    "price_desc": [("price", DESCENDING)],
+    "rating": [("rating", DESCENDING)],
+}
+ProductSort = Literal["popular", "newest", "price_asc", "price_desc", "rating"]
+
 
 @router.get("/products")
 async def list_products(
+    response: Response,
     category: Optional[str] = None,
     q: Optional[str] = None,
     featured: Optional[bool] = None,
+    max_price: Optional[float] = Query(None, ge=0),
+    sort: ProductSort = "popular",
     limit: int = limit_query(200),
     offset: int = offset_query(),
 ):
@@ -36,9 +52,15 @@ async def list_products(
         ]
     if featured is not None:
         query["featured"] = featured
+    if max_price is not None:
+        query["price"] = {"$lte": max_price}
+
+    response.headers[TOTAL_COUNT_HEADER] = str(
+        await db.products.count_documents(query)
+    )
     docs = await (
         db.products.find(query, {"_id": 0})
-        .sort("created_at", 1)
+        .sort([*PRODUCT_SORTS[sort], ("product_id", ASCENDING)])
         .skip(offset)
         .limit(limit)
         .to_list(limit)

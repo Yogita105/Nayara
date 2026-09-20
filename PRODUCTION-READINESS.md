@@ -129,7 +129,7 @@ production-ready ecommerce application.
 - [x] Sort every paged query on an indexed field so pages do not overlap.
 - [x] Avoid loading every review when recalculating a product rating.
 - [x] Escape user input used in product search patterns.
-- [ ] Use the paging parameters in the storefront and admin screens.
+- [x] Use the paging parameters in the storefront and admin screens.
 - [ ] Add query-level performance tests for growing collections.
 - [ ] Add caching only after measuring production access patterns.
 
