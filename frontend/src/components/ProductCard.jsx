@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { formatINR } from "../lib/api";
+import { isOutOfStock, stockNotice } from "../lib/stock";
 import ProductImage from "./ProductImage";
 
 export default function ProductCard({ product, index = 0 }) {
   const { addToCart, toggleWishlist, isInWishlist } = useCart();
   const saved = isInWishlist(product.product_id);
   const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100) || 0;
+  const notice = stockNotice(product.stock);
+  const soldOut = isOutOfStock(product);
 
   return (
     <div
@@ -37,6 +40,16 @@ export default function ProductCard({ product, index = 0 }) {
         >
           <Heart className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : "text-[#64748B]"}`} />
         </button>
+        {soldOut && (
+          <div
+            className="absolute inset-0 bg-white/70 flex items-center justify-center"
+            data-testid={`sold-out-${product.product_id}`}
+          >
+            <span className="text-sm font-semibold text-[#0F172A] bg-white px-3 py-1.5 rounded-full shadow-sm">
+              Out of stock
+            </span>
+          </div>
+        )}
       </div>
       <div className="p-5">
         <div className="flex items-center gap-1 text-xs text-[#64748B] mb-1">
@@ -49,6 +62,11 @@ export default function ProductCard({ product, index = 0 }) {
           <h3 className="font-heading font-medium text-base leading-snug line-clamp-2 min-h-[2.6rem] hover:text-[var(--nayara-primary)]">{product.name}</h3>
         </Link>
         <p className="text-sm text-[#64748B] line-clamp-2 mt-1 min-h-[2rem]">{product.short_description}</p>
+        {notice && !soldOut && (
+          <p className="text-xs font-medium text-red-600 mt-2" data-testid={`stock-notice-${product.product_id}`}>
+            {notice.text}
+          </p>
+        )}
         <div className="flex items-end justify-between mt-4">
           <div>
             <div className="font-heading text-xl font-semibold">{formatINR(product.price)}</div>
@@ -58,9 +76,10 @@ export default function ProductCard({ product, index = 0 }) {
           </div>
           <button
             onClick={() => addToCart(product, 1)}
-            className="w-10 h-10 rounded-full bg-[var(--nayara-primary)] text-white flex items-center justify-center hover:bg-[var(--nayara-primary-hover)] transition"
+            disabled={soldOut}
+            className="w-10 h-10 rounded-full bg-[var(--nayara-primary)] text-white flex items-center justify-center hover:bg-[var(--nayara-primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed"
             data-testid={`add-to-cart-${product.product_id}`}
-            aria-label="Add to cart"
+            aria-label={soldOut ? `${product.name} is out of stock` : `Add ${product.name} to cart`}
           >
             <ShoppingCart className="w-4 h-4" />
           </button>

@@ -142,7 +142,9 @@ production-ready ecommerce application.
 - [x] Prevent duplicate order submissions with idempotency keys.
 - [x] Validate allowed order-status transitions.
 - [x] Restore inventory when qualifying orders are cancelled.
-- [ ] Define behavior for partially available orders.
+- [x] Define behavior for partially available orders. An order is all or
+      nothing, and the shop shows what is left before checkout so the refusal
+      is met while it can still be acted on.
 - [ ] Release stock held by card orders that are never paid.
 - [x] Add server-side price and discount validation.
 - [x] Add tests for concurrent orders against limited stock.

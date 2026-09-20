@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
+import { isOutOfStock, stockNotice } from "../lib/stock";
 import useAsyncData from "../hooks/useAsyncData";
 import { ErrorPanel, LoadingPanel } from "../components/DataState";
 import { useCart } from "../context/CartContext";
@@ -47,6 +48,12 @@ export default function ProductDetail() {
     );
   }
   if (!product) return null;
+
+  const notice = stockNotice(product.stock);
+  const soldOut = isOutOfStock(product);
+  // Fall back to a generous cap when the field is missing, so a product
+  // without stock recorded is not made unbuyable.
+  const available = typeof product.stock === "number" ? product.stock : Infinity;
 
   const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100) || 0;
   const saved = isInWishlist(product.product_id);
@@ -100,19 +107,55 @@ export default function ProductDetail() {
             )}
           </div>
 
+          {notice && (
+            <p
+              className={`mt-3 text-sm font-medium ${notice.tone === "out" ? "text-[#64748B]" : "text-red-600"}`}
+              data-testid="product-stock-notice"
+            >
+              {notice.text}
+            </p>
+          )}
+
           <div className="mt-6 flex items-center gap-4">
             <div className="flex items-center border border-[var(--nayara-border)] rounded-full h-12">
-              <button onClick={() => setQty(Math.max(1, qty - 1))} className="px-4 h-full" data-testid="qty-decrease"><Minus className="w-4 h-4" /></button>
+              <button
+                onClick={() => setQty(Math.max(1, qty - 1))}
+                disabled={soldOut}
+                className="px-4 h-full disabled:opacity-40"
+                data-testid="qty-decrease"
+                aria-label="Reduce quantity"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
               <span className="w-8 text-center font-semibold" data-testid="qty-value">{qty}</span>
-              <button onClick={() => setQty(qty + 1)} className="px-4 h-full" data-testid="qty-increase"><Plus className="w-4 h-4" /></button>
+              <button
+                onClick={() => setQty(Math.min(available, qty + 1))}
+                disabled={soldOut || qty >= available}
+                className="px-4 h-full disabled:opacity-40"
+                data-testid="qty-increase"
+                aria-label="Increase quantity"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
-            <button onClick={() => addToCart(product, qty)} className="nayara-btn flex-1 sm:flex-none" data-testid="pdp-add-to-cart">
-              <ShoppingCart className="w-4 h-4 mr-2" /> Add to Cart
+            <button
+              onClick={() => addToCart(product, qty)}
+              disabled={soldOut}
+              className="nayara-btn flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="pdp-add-to-cart"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" /> {soldOut ? "Out of Stock" : "Add to Cart"}
             </button>
             <button onClick={() => toggleWishlist(product)} className="w-12 h-12 rounded-full border border-[var(--nayara-border)] flex items-center justify-center" data-testid="pdp-wishlist">
               <Heart className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
             </button>
           </div>
+
+          {!soldOut && qty >= available && (
+            <p className="mt-2 text-xs text-[#64748B]" data-testid="qty-capped">
+              That is all we have of this one.
+            </p>
+          )}
 
           <div className="mt-8 grid grid-cols-3 gap-3 text-sm">
             <div className="rounded-xl border border-[var(--nayara-border)] p-3 bg-white">

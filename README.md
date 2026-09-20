@@ -231,6 +231,16 @@ returned and the whole order is refused with `409`. Repeated lines for one produ
 combined first, so the check uses the real total. MongoDB transactions are not used
 because they require a replica set, which a local development database may not have.
 
+Because an order is all or nothing, the shop says how many are left while there is
+still time to change it. A product with five or fewer remaining shows the count, one
+with none is marked out of stock and cannot be added, and a cart holding more than
+remains names the line and will not proceed to checkout. The exact figure is only
+shown when it is low: publishing the full count on every product tells competitors
+what the shop holds, and means nothing to somebody buying one.
+
+The browser is never the authority here. It reports what it last read, while the
+reservation above decides what actually happens.
+
 Cancelling an order returns its stock. The update matches only orders that are not yet
 cancelled, so repeating the request cannot inflate the catalogue.
 
