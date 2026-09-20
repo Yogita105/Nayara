@@ -80,7 +80,7 @@ production-ready ecommerce application.
 - [ ] Use separate development, staging, and production environments.
 - [ ] Store production secrets in a managed secret store.
 - [x] Require a strong, non-default signing secret in production.
-- [x] Document every setting in a committed template.
+- [x] Document every setting in the README.
 - [ ] Use separate credentials for development and production.
 - [ ] Restrict third-party credentials to minimum required permissions.
 - [ ] Document credential rotation and incident-response procedures.

@@ -5,38 +5,62 @@ Nayara is a React storefront backed by a FastAPI and MongoDB API.
 Track launch preparation in the
 [production readiness checklist](./PRODUCTION-READINESS.md).
 
-## Authentication configuration
+## Settings
 
-The **mobile number identifies an account**. It is required, unique, and how people
-sign in. An email address is optional: many customers in India have an address they
-never read, so demanding one costs sign-ups without providing a usable way to reach
-them. When an email is given it must be unique, and it can also be used to sign in.
+All backend settings are environment variables. Locally they are read from
+`backend/.env`; in production they are set as secrets on the host. That file is never
+committed, and nothing named `.env*` can be added to the repository.
 
-Sessions are server-managed and last seven days. Configure these backend environment
-variables:
+A value is resolved in this order: an environment variable, then `backend/.env`, then
+the built-in default. An exported variable therefore always wins.
 
-- `ADMIN_MOBILES`: comma-separated mobile numbers that should receive administrator
-  access. They may be written in any usual form, such as `9876543210` or
-  `+91 98765 43210`.
-- `COOKIE_SECURE`: set to `true` in HTTPS production environments; leave `false` for local HTTP development.
-- `ENVIRONMENT`: one of `development`, `test`, `staging`, or `production`.
-- `CORS_ORIGINS`: comma-separated frontend origins. It is required in production,
-  and wildcard origins are rejected.
-- `SECRET_KEY`: signing key used to derive CSRF tokens. It is required in production,
-  must be at least 32 characters, and must not reuse the development default.
-- `RATE_LIMIT_ENABLED`: defaults to `true`. Disable it only for local debugging.
-- `TRUST_PROXY_HEADERS`: defaults to `false`. Enable it only when the API sits behind a
-  proxy you control that overwrites `X-Forwarded-For`, otherwise callers can spoof
-  their address and bypass rate limits.
-- `LOG_LEVEL`: one of `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL`. Defaults to
-  `INFO`.
-- `LOG_JSON`: defaults to `true` in production and staging, `false` elsewhere.
-- `AUTO_SEED_PRODUCTS`: defaults to `true` in development and test, `false` elsewhere.
-- `API_DOCS_ENABLED`: serves `/docs`, `/redoc` and `/openapi.json`. Defaults to
-  `true` in development and test, `false` elsewhere, because the schema
-  describes every admin endpoint.
+### Required everywhere
 
-For example:
+| Name | Meaning |
+| --- | --- |
+| `MONGO_URL` | MongoDB connection string, for example `mongodb+srv://USERNAME:PASSWORD@cluster.example.mongodb.net/?retryWrites=true&w=majority` |
+| `DB_NAME` | Database to use. Keep development on its own name so local work never touches live orders. |
+
+### Required in production
+
+| Name | Meaning |
+| --- | --- |
+| `ENVIRONMENT` | One of `development`, `test`, `staging`, `production`. Defaults to `development`. |
+| `SECRET_KEY` | Signing key used to derive CSRF tokens. At least 32 characters and not the development default. Generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. |
+| `CORS_ORIGINS` | Comma-separated frontend origins. Wildcards are rejected. Unused when the frontend is served from the same origin, which is the default. |
+| `COOKIE_SECURE` | Send session cookies only over HTTPS. Forced on in production. |
+
+### Access
+
+| Name | Meaning |
+| --- | --- |
+| `ADMIN_MOBILES` | Comma-separated mobile numbers that receive administrator access. Any usual form works, with or without the country code, spaces or a leading `+`. |
+
+### Optional
+
+| Name | Default | Meaning |
+| --- | --- | --- |
+| `RATE_LIMIT_ENABLED` | `true` | Disable only for local debugging. |
+| `TRUST_PROXY_HEADERS` | `false` | Trust `X-Forwarded-For`. Enable only behind a proxy you control, or callers can spoof their address and evade rate limits. |
+| `LOG_LEVEL` | `INFO` | One of `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. |
+| `LOG_JSON` | on in production and staging | JSON logs suit an aggregator; plain text suits a terminal. |
+| `AUTO_SEED_PRODUCTS` | on in development and test | Writes the starter catalogue into an empty products collection. |
+| `API_DOCS_ENABLED` | on in development and test | Serves `/docs`, `/redoc` and `/openapi.json`. Off elsewhere because the schema describes every admin endpoint. |
+| `MONGO_MAX_POOL_SIZE` | `20` | Connections held per worker. Workers multiply this, so keep the total well under the cluster's limit. |
+| `MONGO_TIMEOUT_MS` | `10000` | Server selection timeout. |
+| `MONGO_SOCKET_TIMEOUT_MS` | `20000` | Socket timeout. |
+
+### Image uploads
+
+| Name | Meaning |
+| --- | --- |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary account name. |
+| `CLOUDINARY_API_KEY` | Cloudinary API key. |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret. |
+
+Without these, admin image upload is unavailable; the rest of the site works.
+
+An example production set:
 
 ```env
 ENVIRONMENT=production
@@ -44,6 +68,15 @@ COOKIE_SECURE=true
 CORS_ORIGINS=https://www.nayara.in,https://nayara.in
 SECRET_KEY=<a long random value from a secret manager>
 ```
+
+## Authentication
+
+The **mobile number identifies an account**. It is required, unique, and how people
+sign in. An email address is optional: many customers in India have an address they
+never read, so demanding one costs sign-ups without providing a usable way to reach
+them. When an email is given it must be unique, and it can also be used to sign in.
+
+Sessions are server-managed and last seven days.
 
 New accounts whose mobile number appears in `ADMIN_MOBILES` are administrators.
 Existing MongoDB admin flags are preserved, so an administrator created before the
