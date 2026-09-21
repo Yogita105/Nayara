@@ -240,6 +240,53 @@ production-ready ecommerce application.
 - [ ] Add database backup verification before risky releases.
 - [x] Document the release and rollback process.
 
+## 15. Product variants
+
+A product is sold in one or more forms that differ by one thing: a weight, a
+volume, or a colour. Price and stock belong to the form. See the README for how
+the model works.
+
+- [x] Give every product at least one variant, and a migration that backfills
+      databases written before variants existed.
+- [x] Make the cart, orders and stock reservation work on the variant. A cart
+      line names one, an order records which was bought, and stock is held
+      against it.
+- [x] Manage variants from the admin product editor: add, edit, remove, with a
+      price, MRP, stock count and optional photograph each.
+- [x] Derive the product's own `price`, `mrp` and `stock` from its variants on
+      every save, so the two cannot be stored disagreeing.
+- [x] Refuse to remove a variant while an open order still holds it, because
+      cancelling that order would return its units to a variant that no longer
+      exists and the stock would vanish silently.
+- [x] Add the storefront selector, "from ₹X" in the grid, per-variant stock
+      notice, and `?variant=` in the URL.
+- [x] Drop the size from product names once the size became a choice.
+- [ ] **Next: remove `Product.price` and `Product.stock`.** They are now only a
+      summary of the variants, kept because the storefront still reads them.
+      Concretely:
+      - `price` is exactly `price_from`, which is already maintained. Move the
+        `price_asc`/`price_desc` sorts, the `max_price` filter and the
+        `products` price index in `database.py` onto `price_from`, creating the
+        new index before dropping the old one.
+      - `stock` has no equivalent yet. Either add a maintained `stock_total` or
+        compute it, then move `ProductCard`, the admin product list and
+        `isOutOfStock` onto it.
+      - `ProductCreate` still requires `price`, `mrp` and `stock`. They become
+        optional once nothing derives a first variant from them; `seed.py` and
+        `default_variant` are the remaining callers.
+      - `inventory.py` increments the product-level `stock` alongside the
+        variant's in the same operation. That mirror goes with it.
+- [ ] Give the soap colours their own photographs. The picker already shows a
+      per-variant image when one exists; without one a colour falls back to the
+      product photo, which rather defeats choosing a colour.
+- [ ] Replace the placeholder prices and stock counts added to the dev
+      catalogue for the second and third form of each product. The first form
+      of every product carries its real figures.
+- [ ] Tidy the slugs. `washing-powder-1kg` and `toilet-cleaner-500ml` still
+      name a size that is now one option among several. Slugs are not used in
+      routing — products are addressed by `product_id` — so nothing is broken,
+      only misleading to read.
+
 ## Recommended execution order
 
 1. Production configuration validation, secure cookies, and restricted CORS
