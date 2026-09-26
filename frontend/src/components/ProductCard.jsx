@@ -108,9 +108,13 @@ export default function ProductCard({ product, index = 0 }) {
               </div>
             )}
           </div>
-          {choose ? (
+          {choose && !cannotAdd ? (
             // Which form is the customer's to pick, and the grid is the wrong
             // place to ask. The product page is where the choice lives.
+            //
+            // Only while there is something to choose between, though: on a
+            // product with nothing left, "Choose weight" invites a decision
+            // that cannot be acted on.
             <Link
               to={`/product/${product.product_id}`}
               className="text-xs font-semibold px-3 h-10 rounded-full border border-[var(--nayara-primary)] text-[var(--nayara-primary)] flex items-center hover:bg-[#FBEEE4] transition"
