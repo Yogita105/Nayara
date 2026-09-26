@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useCart } from "../context/CartContext";
 import { formatINR } from "../lib/api";
 import { isSoldOut, stockNotice } from "../lib/stock";
-import { cheapestVariant, asSold, hasChoice, totalStock, variantsOf } from "../lib/variants";
+import { defaultVariant, asSold, hasChoice, totalStock, variantsOf } from "../lib/variants";
 import ProductImage from "./ProductImage";
 
 export default function ProductCard({ product, index = 0 }) {
@@ -19,9 +19,11 @@ export default function ProductCard({ product, index = 0 }) {
     const timer = setTimeout(() => setAdded(false), 2000);
     return () => clearTimeout(timer);
   }, [added]);
-  // The product is advertised at its cheapest form, with that same form's
-  // MRP: pairing one form's price with another's would invent a discount.
-  const shown = cheapestVariant(product);
+  // The form the product page will open with, so the price on the card is
+  // the price the customer meets when they arrive. Taking the cheapest
+  // regardless of stock would advertise a figure they cannot pay once it
+  // sells out.
+  const shown = defaultVariant(product);
   const price = shown?.price;
   const mrp = shown?.mrp ?? price;
   const discount = Math.round(((mrp - price) / mrp) * 100) || 0;
@@ -96,10 +98,7 @@ export default function ProductCard({ product, index = 0 }) {
         )}
         <div className="flex items-end justify-between mt-4">
           <div>
-            <div className="font-heading text-xl font-semibold">
-              {choose && <span className="text-xs font-medium text-[#64748B] mr-1">from</span>}
-              {formatINR(price)}
-            </div>
+            <div className="font-heading text-xl font-semibold">{formatINR(price)}</div>
             {mrp > price && (
               <div className="text-xs text-[#64748B] line-through">{formatINR(mrp)}</div>
             )}

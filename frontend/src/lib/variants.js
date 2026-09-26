@@ -33,11 +33,6 @@ export function defaultVariant(product) {
   return byPrice.find((variant) => (variant.stock || 0) > 0) || byPrice[0] || null;
 }
 
-export function cheapestPrice(product) {
-  const prices = variantsOf(product).map((variant) => variant.price);
-  return prices.length ? Math.min(...prices) : undefined;
-}
-
 /**
  * The form a product is advertised at: the cheapest on offer.
  *
