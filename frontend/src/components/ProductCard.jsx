@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Heart, ShoppingCart, Star, Check } from "lucide-react";
+import { toast } from "sonner";
 import { useCart } from "../context/CartContext";
 import { formatINR } from "../lib/api";
 import { isSoldOut, stockNotice } from "../lib/stock";
@@ -10,6 +11,14 @@ import ProductImage from "./ProductImage";
 export default function ProductCard({ product, index = 0 }) {
   const { addToCart, toggleWishlist, isInWishlist, cart } = useCart();
   const saved = isInWishlist(product.product_id);
+  // Confirmation belongs on the control that was pressed. A card has no room
+  // for a sentence, so the button itself becomes the answer.
+  const [added, setAdded] = useState(false);
+  useEffect(() => {
+    if (!added) return undefined;
+    const timer = setTimeout(() => setAdded(false), 2000);
+    return () => clearTimeout(timer);
+  }, [added]);
   // The product is advertised at its cheapest form, with that same form's
   // MRP: pairing one form's price with another's would invent a discount.
   const shown = cheapestVariant(product);
@@ -112,19 +121,27 @@ export default function ProductCard({ product, index = 0 }) {
             </Link>
           ) : (
             <button
-              onClick={() => addToCart(asSold(product, shown), 1)}
+              onClick={async () => {
+                const result = await addToCart(asSold(product, shown), 1);
+                if (result.ok) setAdded(true);
+                // A card has nowhere to put a sentence, and a refusal here is
+                // rare because the button is disabled when nothing is left.
+                else toast.error(result.message);
+              }}
               disabled={cannotAdd}
-              className="w-10 h-10 rounded-full bg-[var(--nayara-primary)] text-white flex items-center justify-center hover:bg-[var(--nayara-primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className={`w-10 h-10 rounded-full text-white flex items-center justify-center transition disabled:opacity-40 disabled:cursor-not-allowed ${added ? "bg-[#15803D]" : "bg-[var(--nayara-primary)] hover:bg-[var(--nayara-primary-hover)]"}`}
               data-testid={`add-to-cart-${product.product_id}`}
               aria-label={
-                soldOut
-                  ? `${product.name} is out of stock`
-                  : atLimit
-                    ? `Your cart already holds every ${product.name} we have`
-                    : `Add ${product.name} to cart`
+                added
+                  ? `${product.name} added to cart`
+                  : soldOut
+                    ? `${product.name} is out of stock`
+                    : atLimit
+                      ? `Your cart already holds every ${product.name} we have`
+                      : `Add ${product.name} to cart`
               }
             >
-              <ShoppingCart className="w-4 h-4" />
+              {added ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
             </button>
           )}
         </div>

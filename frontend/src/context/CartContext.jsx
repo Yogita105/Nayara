@@ -55,6 +55,13 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => { refreshCart(); refreshWishlist(); }, [refreshCart, refreshWishlist]);
 
+  /**
+   * Put something in the cart and say how it went.
+   *
+   * The answer is returned rather than announced, so the screen that asked
+   * can show it where the customer is already looking — on the button they
+   * just pressed — instead of in a corner they have no reason to watch.
+   */
   const addToCart = async (product, qty = 1) => {
     try {
       if (user) {
@@ -73,23 +80,27 @@ export const CartProvider = ({ children }) => {
         const i = existing.findIndex((x) => lineKey(x) === lineKey(product));
         const wanted = (i >= 0 ? existing[i].quantity : 0) + qty;
         if (typeof product.stock === "number" && wanted > product.stock) {
-          toast.error(
-            product.stock > 0
-              ? `Only ${product.stock} left of ${lineName(product)}.`
-              : `${lineName(product)} is out of stock.`
-          );
-          return;
+          return {
+            ok: false,
+            message:
+              product.stock > 0
+                ? `Only ${product.stock} left of ${lineName(product)}.`
+                : `${lineName(product)} is out of stock.`,
+          };
         }
         if (i >= 0) existing[i].quantity = wanted;
         else existing.push({ ...product, quantity: qty });
         writeLocal(LOCAL_KEY, existing);
         setCart(existing);
       }
-      toast.success(`${lineName(product)} added to cart`);
+      return { ok: true, message: `${lineName(product)} added to cart` };
     } catch (failure) {
       // The API refuses a cart it could not fill, and that refusal names the
       // product and what is left of it.
-      toast.error(errorMessage(failure, "Could not add that to your cart."));
+      return {
+        ok: false,
+        message: errorMessage(failure, "Could not add that to your cart."),
+      };
     }
   };
 

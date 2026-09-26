@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
 import { isOutOfStock, stockNotice } from "../lib/stock";
@@ -7,7 +7,7 @@ import useAsyncData from "../hooks/useAsyncData";
 import { ErrorPanel, LoadingPanel } from "../components/DataState";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { Heart, ShoppingCart, Star, ShieldCheck, Truck, Leaf, Minus, Plus } from "lucide-react";
+import { Heart, ShoppingCart, Star, ShieldCheck, Truck, Leaf, Minus, Plus, Check } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Input } from "../components/ui/input";
@@ -21,6 +21,10 @@ export default function ProductDetail() {
   const [reviews, setReviews] = useState([]);
   const [qty, setQty] = useState(1);
   const [chosenId, setChosenId] = useState(null);
+  // What happened the last time Add to Cart was pressed, shown on the button
+  // itself rather than in a corner of the screen.
+  const [added, setAdded] = useState(false);
+  const [addProblem, setAddProblem] = useState("");
   const [form, setForm] = useState({ rating: 5, title: "", comment: "" });
   const { addToCart, toggleWishlist, isInWishlist } = useCart();
   const { user } = useAuth();
@@ -42,6 +46,14 @@ export default function ProductDetail() {
   );
 
   const load = reload;
+
+  // The confirmation on the button is temporary, so the button goes back to
+  // inviting the next action rather than claiming success forever.
+  useEffect(() => {
+    if (!added) return undefined;
+    const timer = setTimeout(() => setAdded(false), 2500);
+    return () => clearTimeout(timer);
+  }, [added]);
 
   if (loading) return <LoadingPanel label="Loading product..." />;
   if (error) {
@@ -66,6 +78,10 @@ export default function ProductDetail() {
   const chooseVariant = (variantId) => {
     setChosenId(variantId);
     setQty(1);
+    // A different form is a different decision, so last time's answer no
+    // longer applies to it.
+    setAdded(false);
+    setAddProblem("");
     // A chosen form belongs in the address bar, so the page can be shared,
     // reloaded or gone back to and still show what was being looked at.
     setSearchParams({ variant: variantId }, { replace: true });
@@ -79,6 +95,13 @@ export default function ProductDetail() {
 
   const discount = Math.round(((sold.mrp - sold.price) / sold.mrp) * 100) || 0;
   const saved = isInWishlist(product.product_id);
+
+  const onAddToCart = async () => {
+    setAddProblem("");
+    const result = await addToCart(sold, qty);
+    if (result.ok) setAdded(true);
+    else setAddProblem(result.message);
+  };
 
   const submitReview = async (e) => {
     e.preventDefault();
@@ -163,17 +186,50 @@ export default function ProductDetail() {
               </button>
             </div>
             <button
-              onClick={() => addToCart(sold, qty)}
+              onClick={onAddToCart}
               disabled={soldOut}
-              className="nayara-btn flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`nayara-btn flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed ${added ? "!bg-[#15803D] hover:!bg-[#15803D]" : ""}`}
               data-testid="pdp-add-to-cart"
             >
-              <ShoppingCart className="w-4 h-4 mr-2" /> {soldOut ? "Out of Stock" : "Add to Cart"}
+              {added ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" /> Added to cart
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-4 h-4 mr-2" /> {soldOut ? "Out of Stock" : "Add to Cart"}
+                </>
+              )}
             </button>
             <button onClick={() => toggleWishlist(product)} className="w-12 h-12 rounded-full border border-[var(--nayara-border)] flex items-center justify-center" data-testid="pdp-wishlist">
               <Heart className={`w-4 h-4 ${saved ? "fill-red-500 text-red-500" : ""}`} />
             </button>
           </div>
+
+          {addProblem && (
+            <p
+              role="alert"
+              className="mt-3 text-sm font-medium text-red-600"
+              data-testid="pdp-add-problem"
+            >
+              {addProblem}
+            </p>
+          )}
+
+          {added && (
+            <p className="mt-3 text-sm" data-testid="pdp-add-confirmation">
+              <Link to="/cart" className="font-semibold text-[var(--nayara-primary)] underline">
+                Go to cart
+              </Link>
+              <span className="text-[#64748B]"> to check out, or keep shopping.</span>
+            </p>
+          )}
+
+          {/* The button's own label changes, which a screen reader may not
+              announce on its own, so the result is also stated politely. */}
+          <span className="sr-only" role="status">
+            {added ? `${sold.name} added to cart` : ""}
+          </span>
 
           {!soldOut && qty >= available && (
             <p className="mt-2 text-xs text-[#64748B]" data-testid="qty-capped">
