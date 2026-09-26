@@ -47,11 +47,20 @@ def readable_label(name: str) -> str:
     return name.replace("_", " ").replace(".", " ").capitalize()
 
 
+def readable_message(message: str) -> str:
+    """Pydantic's wording, with its own scaffolding removed.
+
+    A rule written as a validator comes back as "Value error, Enter a 6-digit
+    PIN code". The sentence after the comma is the one meant for a person.
+    """
+    return message.removeprefix("Value error, ").removeprefix("Assertion failed, ")
+
+
 def describe(error: dict) -> str:
     name = field_name(error.get("loc", ()))
     if error.get("type") == "missing":
         return f"{readable_label(name)} is required"
-    return f"{readable_label(name)}: {error.get('msg', 'is not valid')}"
+    return f"{readable_label(name)}: {readable_message(error.get('msg', 'is not valid'))}"
 
 
 def build_response(status_code: int, detail: str, errors: List[dict]) -> JSONResponse:
@@ -74,7 +83,10 @@ def register_error_handlers(app: FastAPI) -> None:
         # `input` is deliberately dropped: it repeats what was submitted, which
         # for a sign-up form is the password.
         errors = [
-            {"field": field_name(item.get("loc", ())), "message": item.get("msg", "")}
+            {
+                "field": field_name(item.get("loc", ())),
+                "message": readable_message(item.get("msg", "")),
+            }
             for item in raw
         ]
         detail = describe(raw[0]) if raw else "The request could not be understood"

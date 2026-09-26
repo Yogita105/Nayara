@@ -22,8 +22,13 @@ export function ErrorSummary({ message, fields = {}, testId = "form-error-summar
   if (!hasProblem) return null;
 
   // When the general message only repeats a field's own complaint, saying it
-  // twice makes a screen reader read the same sentence twice over.
-  const alreadyListed = entries.some(([, text]) => text === message);
+  // twice makes a screen reader read the same sentence twice over. The API
+  // prefixes its sentence with the field's name -- "Phone: Enter a number we
+  // can ring" -- so the two are rarely identical, only ever one inside the
+  // other.
+  const alreadyListed = entries.some(
+    ([, text]) => text && (text === message || message?.endsWith(text))
+  );
   const heading = message && !alreadyListed
     ? message
     : "Please correct the following before continuing.";

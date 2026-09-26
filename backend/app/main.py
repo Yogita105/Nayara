@@ -17,7 +17,7 @@ from .frontend import mount_frontend
 from .middleware import csrf_protection, limit_request_size, request_context
 from .observability import REQUEST_ID_HEADER, configure_logging
 from .pagination import TOTAL_COUNT_HEADER
-from .routers import admin, auth, catalog, health, orders, shopping
+from .routers import admin, auth, catalog, health, orders, settings, shopping
 from .seed import seed_products
 
 configure_logging(LOG_LEVEL, LOG_JSON)
@@ -40,6 +40,7 @@ for router in (
     shopping.router,
     orders.router,
     admin.router,
+    settings.router,
 ):
     app.include_router(router)
 

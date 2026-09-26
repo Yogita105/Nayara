@@ -71,6 +71,33 @@ class TestValidationErrors:
         assert response.status_code == 422
         assert "pincode" in response.json()["detail"].lower()
 
+    def test_a_refusal_never_shows_the_customer_a_regular_expression(self, base_url, user_client):
+        """Pydantic answers a failed pattern with the pattern itself, which
+        reached the checkout form as `String should match pattern
+        '^[1-9][0-9]{5}$'`. Nobody filling in an address can act on that."""
+        response = user_client.post(
+            f"{base_url}/api/orders",
+            json={
+                "items": [{"product_id": "anything", "quantity": 1}],
+                "address": {
+                    "full_name": "Pattern Tester",
+                    "phone": "9999900002",
+                    "line1": "12 Market Road",
+                    "city": "Mumbai",
+                    "state": "MH",
+                    "pincode": "12",
+                },
+                "payment_method": "cod",
+            },
+        )
+        body = response.json()
+
+        assert response.status_code == 422
+        everything = str(body)
+        for giveaway in ("should match pattern", "[0-9]", "Value error"):
+            assert giveaway not in everything, f"{giveaway!r} reached the customer"
+        assert "PIN code" in body["errors"][0]["message"]
+
 
 class TestOtherErrors:
     def test_not_found_uses_the_same_shape(self, base_url, anon_client):

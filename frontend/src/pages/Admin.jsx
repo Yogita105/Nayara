@@ -1,23 +1,26 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
-import { api, errorMessage, formatINR } from "../lib/api";
+import { api, errorMessage, fieldErrors, formatINR } from "../lib/api";
 import useAsyncData from "../hooks/useAsyncData";
 import usePagedData from "../hooks/usePagedData";
 import Pagination from "../components/Pagination";
 import { EmptyPanel, ErrorPanel, LoadingPanel, TableStateRow } from "../components/DataState";
+import { ErrorSummary, FieldError, describedBy } from "../components/FormErrors";
 import ProductImage from "../components/ProductImage";
 import RequiredMark from "../components/RequiredMark";
 import { cheapestVariant, totalStock } from "../lib/variants";
-import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase } from "lucide-react";
+import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase, Settings } from "lucide-react";
 import { toast } from "sonner";
 
-const navs = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
+const SETTING_LABEL = "text-xs font-bold uppercase tracking-[0.15em] text-[#64748B]";
+
+const navs = [  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/bulk", label: "Bulk Inquiries", icon: Briefcase },
   { to: "/admin/messages", label: "Messages", icon: MessageSquare },
   { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 function Dashboard() {
@@ -717,6 +720,133 @@ function BulkInquiriesAdmin() {
   );
 }
 
+function BusinessSettingsAdmin() {
+  const { data, loading, error, reload } = useAsyncData(
+    async () => (await api.get("/settings/business")).data,
+    [],
+    "Your contact details could not be loaded."
+  );
+  const [form, setForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [problem, setProblem] = useState("");
+  const [fields, setFields] = useState({});
+
+  // The form starts from whatever is saved, once it arrives.
+  useEffect(() => {
+    if (data) setForm({ ...data, address_lines: [...data.address_lines] });
+  }, [data]);
+
+  if (loading || !form) return <LoadingPanel label="Loading your details..." />;
+  if (error) return <ErrorPanel message={error} onRetry={reload} />;
+
+  const set = (field, value) => setForm((f) => ({ ...f, [field]: value }));
+  const setLine = (index, value) =>
+    setForm((f) => ({
+      ...f,
+      address_lines: f.address_lines.map((line, i) => (i === index ? value : line)),
+    }));
+
+  const save = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setProblem("");
+    setFields({});
+    try {
+      const { data: saved } = await api.put("/admin/settings/business", {
+        ...form,
+        address_lines: form.address_lines.filter((line) => line.trim()),
+      });
+      setForm({ ...saved, address_lines: [...saved.address_lines] });
+      toast.success("Your contact details are updated across the site");
+    } catch (failure) {
+      setProblem(errorMessage(failure, "Could not save your details"));
+      setFields(fieldErrors(failure));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const field = (name, label, props = {}) => (
+    <div>
+      <label htmlFor={name} className={SETTING_LABEL}>
+        {label}<RequiredMark />
+      </label>
+      <input
+        id={name}
+        value={form[name] ?? ""}
+        onChange={(e) => set(name, e.target.value)}
+        required
+        className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm"
+        data-testid={`setting-${name}`}
+        {...describedBy(name, { error: Boolean(fields[name]) })}
+        {...props}
+      />
+      <FieldError name={name}>{fields[name]}</FieldError>
+    </div>
+  );
+
+  return (
+    <div data-testid="admin-settings">
+      <h1 className="font-heading text-3xl font-medium tracking-tight mb-2">Settings</h1>
+      <p className="text-sm text-[#64748B] mb-8">
+        How customers reach you. These appear in the footer of every page, on the contact
+        page and on the bulk orders page.
+      </p>
+
+      <form onSubmit={save} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6 max-w-2xl space-y-5" noValidate>
+        <ErrorSummary message={problem} fields={fields} />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {field("name", "Business name")}
+          {field("founder", "Founder")}
+          {field("founder_title", "Their title")}
+          {field("phone", "Phone", { type: "tel", inputMode: "tel" })}
+          {field("email", "Email", { type: "email" })}
+          {field("wholesale_email", "Wholesale email", { type: "email" })}
+        </div>
+
+        {field("hours", "Opening hours")}
+
+        <fieldset>
+          <legend className={SETTING_LABEL}>Address<RequiredMark /></legend>
+          <div className="space-y-2 mt-1">
+            {form.address_lines.map((line, index) => (
+              <input
+                key={index}
+                value={line}
+                onChange={(e) => setLine(index, e.target.value)}
+                aria-label={`Address line ${index + 1}`}
+                placeholder={index === 0 ? "Street and town" : "State, postcode and country"}
+                className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 text-sm"
+                data-testid={`setting-address-${index}`}
+              />
+            ))}
+          </div>
+          <FieldError name="address_lines">{fields.address_lines}</FieldError>
+          <button
+            type="button"
+            onClick={() => setForm((f) => ({ ...f, address_lines: [...f.address_lines, ""] }))}
+            disabled={form.address_lines.length >= 4}
+            className="mt-2 text-sm px-3 py-1.5 rounded-md border border-[var(--nayara-border)] hover:bg-[#FBEEE4] disabled:opacity-40"
+            data-testid="setting-add-address-line"
+          >
+            + Add a line
+          </button>
+        </fieldset>
+
+        <div className="flex items-center gap-3 pt-2">
+          <button type="submit" disabled={saving} className="nayara-btn" data-testid="setting-save">
+            {saving ? "Saving..." : "Save details"}
+          </button>
+          <button type="button" onClick={reload} className="px-5 py-2 rounded-md border border-[var(--nayara-border)]" data-testid="setting-reset">
+            Discard changes
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function Admin() {
   const location = useLocation();
   return (
@@ -738,6 +868,7 @@ export default function Admin() {
         <Route path="bulk" element={<BulkInquiriesAdmin />} />
         <Route path="messages" element={<MessagesAdmin />} />
         <Route path="users" element={<UsersAdmin />} />
+        <Route path="settings" element={<BusinessSettingsAdmin />} />
       </Routes>
     </div>
   );

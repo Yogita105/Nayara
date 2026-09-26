@@ -1,9 +1,11 @@
+import re
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     EmailStr,
@@ -20,6 +22,49 @@ MAX_VARIANTS = 20
 SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
 PINCODE_PATTERN = r"^[1-9][0-9]{5}$"
 BUSINESS_PHONE_PATTERN = r"^\+?[0-9][0-9\s-]{7,19}$"
+
+
+def matching(pattern: str, complaint: str):
+    """Check a value against a pattern and complain in words if it fails.
+
+    Pydantic's own message for a failed pattern is the pattern itself, which
+    reaches the customer as `String should match pattern '^[1-9][0-9]{5}$'`.
+    Nobody filling in a delivery address can act on that.
+    """
+    compiled = re.compile(pattern)
+
+    def check(value: str) -> str:
+        if not compiled.match(value):
+            raise ValueError(complaint)
+        return value
+
+    return check
+
+
+Pincode = Annotated[
+    str,
+    AfterValidator(matching(PINCODE_PATTERN, "Enter a 6-digit PIN code, like 400001")),
+]
+BusinessPhone = Annotated[
+    str,
+    Field(min_length=8, max_length=20),
+    AfterValidator(
+        matching(
+            BUSINESS_PHONE_PATTERN,
+            "Enter a phone number we can ring, like +91 97808 44330",
+        )
+    ),
+]
+Slug = Annotated[
+    str,
+    Field(min_length=2, max_length=200),
+    AfterValidator(
+        matching(
+            SLUG_PATTERN,
+            "Use lowercase letters, numbers and hyphens, like washing-powder",
+        )
+    ),
+]
 
 
 class ContentModel(BaseModel):
@@ -163,7 +208,7 @@ class ProductVariant(ContentModel):
 
 class ProductCreate(ContentModel):
     name: str = Field(min_length=2, max_length=200)
-    slug: str = Field(min_length=2, max_length=200, pattern=SLUG_PATTERN)
+    slug: Slug
     category: ProductCategory
     description: str = Field(default="", max_length=5000)
     short_description: str = Field(default="", max_length=500)
@@ -240,6 +285,51 @@ def total_stock(variants: List[dict]) -> int:
     return sum(variant.get("stock", 0) for variant in variants)
 
 
+class BusinessSettings(ContentModel):
+    """How the shop tells a customer to reach it.
+
+    These were fixed in the code, which meant a new phone number needed a
+    developer and a deployment. They are editable now, and validated, because
+    a shop that publishes an unreachable number is worse off than one that
+    refuses to save it.
+    """
+
+    name: str = Field(min_length=2, max_length=120)
+    founder: str = Field(min_length=2, max_length=120)
+    founder_title: str = Field(min_length=2, max_length=60)
+    # Two or three lines is a postal address; more is somebody pasting prose.
+    address_lines: List[str] = Field(min_length=1, max_length=4)
+    phone: BusinessPhone
+    hours: str = Field(min_length=2, max_length=80)
+    email: EmailStr
+    wholesale_email: EmailStr
+
+    @field_validator("address_lines")
+    @classmethod
+    def check_address_lines_say_something(cls, lines: List[str]) -> List[str]:
+        trimmed = [line.strip() for line in lines if line and line.strip()]
+        if not trimmed:
+            raise ValueError("An address needs at least one line")
+        for line in trimmed:
+            if len(line) > 120:
+                raise ValueError("An address line is at most 120 characters")
+        return trimmed
+
+
+# What the shop says about itself before anyone has edited it, and what it
+# falls back to if the stored settings cannot be read.
+DEFAULT_BUSINESS = BusinessSettings(
+    name="Nayara Brands",
+    founder="Abhinav Grover",
+    founder_title="Owner",
+    address_lines=["Jaito, District Faridkot", "Punjab 151202, India"],
+    phone="+91 97808 44330",
+    hours="Mon–Sat · 10am–7pm",
+    email="hello@nayara.in",
+    wholesale_email="wholesale@nayara.in",
+)
+
+
 class CartItem(ContentModel):
     product_id: str = Field(min_length=1, max_length=100)
     # Older clients do not send one. A product with a single variant resolves
@@ -289,7 +379,7 @@ class ContactRequest(ContentModel):
 class BulkInquiryRequest(ContentModel):
     name: str = Field(min_length=2, max_length=100)
     business_name: str = Field(min_length=2, max_length=150)
-    phone: str = Field(min_length=8, max_length=20, pattern=BUSINESS_PHONE_PATTERN)
+    phone: BusinessPhone
     email: EmailStr
     city: str = Field(min_length=2, max_length=100)
     products_interested: List[str] = Field(default_factory=list, max_length=20)
@@ -319,7 +409,7 @@ class Address(ContentModel):
     line2: Optional[str] = Field(default="", max_length=200)
     city: str = Field(min_length=2, max_length=100)
     state: str = Field(min_length=2, max_length=100)
-    pincode: str = Field(pattern=PINCODE_PATTERN)
+    pincode: Pincode
 
     @field_validator("phone")
     @classmethod

@@ -5,7 +5,7 @@ import { Textarea } from "../components/ui/textarea";
 import { Checkbox } from "../components/ui/checkbox";
 import RequiredMark from "../components/RequiredMark";
 import { api } from "../lib/api";
-import { BUSINESS } from "../lib/business";
+import { useBusiness } from "../context/BusinessContext";
 import { toast } from "sonner";
 
 const BENEFITS = [
@@ -34,6 +34,7 @@ const PRODUCT_OPTIONS = [
 ];
 
 export default function Bulk() {
+  const business = useBusiness();
   const [form, setForm] = useState({
     name: "",
     business_name: "",
@@ -91,8 +92,8 @@ export default function Bulk() {
                 <a href="#inquiry" className="nayara-btn" data-testid="bulk-hero-cta">
                   Request Bulk Pricing <ArrowRight className="w-4 h-4 ml-2" />
                 </a>
-                <a href={BUSINESS.phoneHref} className="nayara-btn-outline" data-testid="bulk-hero-call">
-                  Or call {BUSINESS.phone}
+                <a href={business.phoneHref} className="nayara-btn-outline" data-testid="bulk-hero-call">
+                  Or call {business.phone}
                 </a>
               </div>
               <div className="mt-8 flex flex-wrap items-center gap-5 text-sm text-[#64748B]">

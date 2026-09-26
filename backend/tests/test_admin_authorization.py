@@ -40,6 +40,7 @@ ADMIN_ROUTES = {
     ("GET", "/api/admin/stats"),
     ("POST", "/api/admin/upload"),
     ("GET", "/api/admin/users"),
+    ("PUT", "/api/admin/settings/business"),
     ("POST", "/api/products"),
     ("PUT", "/api/products/{product_id}"),
     ("DELETE", "/api/products/{product_id}"),
@@ -81,6 +82,9 @@ PUBLIC_ROUTES = {
     ("GET", "/api/files/{file_id}"),
     ("GET", "/api/products"),
     ("GET", "/api/products/{product_id}"),
+    # The footer on every page shows how to reach the shop, so a stranger has
+    # to be able to read it.
+    ("GET", "/api/settings/business"),
     ("GET", "/api/products/{product_id}/reviews"),
 }
 

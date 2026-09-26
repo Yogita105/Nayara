@@ -3,6 +3,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { BusinessProvider } from "./context/BusinessContext";
 import { Toaster } from "sonner";
 
 import Layout from "./components/Layout";
@@ -70,14 +71,16 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <CartProvider>
-            <AppRouter />
-            {/*
-              Bottom of the screen, not the top: the navbar is fixed at the
-              top-right and a toast there lands directly on the cart icon, so
-              "added to cart" covered the very thing it invited you to click.
-              The close button lets it be dismissed rather than waited out.
-            */}
-            <Toaster position="bottom-right" richColors closeButton />
+            <BusinessProvider>
+              <AppRouter />
+              {/*
+                Bottom of the screen, not the top: the navbar is fixed at the
+                top-right and a toast there lands directly on the cart icon, so
+                "added to cart" covered the very thing it invited you to click.
+                The close button lets it be dismissed rather than waited out.
+              */}
+              <Toaster position="bottom-right" richColors closeButton />
+            </BusinessProvider>
           </CartProvider>
         </AuthProvider>
       </BrowserRouter>

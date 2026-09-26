@@ -6,13 +6,14 @@ import { Button } from "../components/ui/button";
 import RequiredMark from "../components/RequiredMark";
 import { ErrorSummary, FieldError, describedBy } from "../components/FormErrors";
 import { api, errorMessage, fieldErrors } from "../lib/api";
-import { BUSINESS, mailtoHref } from "../lib/business";
+import { useBusiness } from "../context/BusinessContext";
 import { toast } from "sonner";
 
 const LABEL = "text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block";
 const EMPTY = { name: "", email: "", phone: "", subject: "", message: "" };
 
 export default function Contact() {
+  const business = useBusiness();
   const [form, setForm] = useState(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -152,7 +153,7 @@ export default function Contact() {
             <MapPin className="w-5 h-5 text-[var(--nayara-primary)] mb-2" />
             <h3 className="font-heading font-semibold">Visit us</h3>
             <p className="text-sm text-[#64748B] mt-1">
-              {BUSINESS.addressLines.map((line, index) => (
+              {business.address_lines.map((line, index) => (
                 <React.Fragment key={line}>
                   {index > 0 && <br />}
                   {line}
@@ -164,24 +165,24 @@ export default function Contact() {
             <Phone className="w-5 h-5 text-[var(--nayara-primary)] mb-2" />
             <h3 className="font-heading font-semibold">Call us</h3>
             <p className="text-sm text-[#64748B] mt-1">
-              {BUSINESS.founder} ({BUSINESS.founderTitle})<br />
-              <a href={BUSINESS.phoneHref} className="text-[var(--nayara-primary)] font-medium" data-testid="contact-call-link">
-                {BUSINESS.phone}
+              {business.founder} ({business.founder_title})<br />
+              <a href={business.phoneHref} className="text-[var(--nayara-primary)] font-medium" data-testid="contact-call-link">
+                {business.phone}
               </a>
               <br />
-              {BUSINESS.hours}
+              {business.hours}
             </p>
           </div>
           <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <Mail className="w-5 h-5 text-[var(--nayara-primary)] mb-2" />
             <h3 className="font-heading font-semibold">Email us</h3>
             <p className="text-sm text-[#64748B] mt-1">
-              <a href={mailtoHref(BUSINESS.email)} className="text-[var(--nayara-primary)]" data-testid="contact-email-link">
-                {BUSINESS.email}
+              <a href={business.emailHref} className="text-[var(--nayara-primary)]" data-testid="contact-email-link">
+                {business.email}
               </a>
               <br />
-              <a href={mailtoHref(BUSINESS.wholesaleEmail)} className="text-[var(--nayara-primary)]" data-testid="contact-wholesale-link">
-                {BUSINESS.wholesaleEmail}
+              <a href={business.wholesaleEmailHref} className="text-[var(--nayara-primary)]" data-testid="contact-wholesale-link">
+                {business.wholesale_email}
               </a>
             </p>
           </div>

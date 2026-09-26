@@ -196,6 +196,8 @@ production-ready ecommerce application.
 - [x] Add loading and empty states across every data-driven screen.
 - [x] Add accessible form validation and error summaries.
 - [x] Let customers correct their own name and mobile number.
+- [x] Let the owner edit the shop's contact details without a deployment, and
+      stop a pattern from reaching a customer as its own regular expression.
 - [ ] Evaluate migration from Create React App to Vite.
 - [ ] Evaluate server-side rendering only if SEO requirements justify it.
 - [ ] Build and serve production assets through a CDN.
