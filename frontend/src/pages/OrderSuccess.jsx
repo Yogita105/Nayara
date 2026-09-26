@@ -54,7 +54,7 @@ export default function OrderSuccess() {
         <div className="space-y-3">
           {order.items.map((it) => (
             <div key={lineKey(it)} className="flex items-center gap-4 text-sm">
-              <ProductImage src={it.image} alt={lineName(it)} className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
+              <ProductImage src={it.image} alt={lineName(it)} width={150} className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
               <div className="flex-1">
                 <div className="font-medium">{it.name}</div>
                 <div className="text-sm text-[#64748B]">

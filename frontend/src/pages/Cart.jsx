@@ -49,7 +49,7 @@ export default function Cart() {
             const label = lineName(item);
             return (
             <div key={key} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4 items-center" data-testid={`cart-item-${key}`}>
-              <ProductImage src={item.image} alt={label} className="w-24 h-24 rounded-xl object-cover bg-[#F1F5F9]" />
+              <ProductImage src={item.image} alt={label} width={200} className="w-24 h-24 rounded-xl object-cover bg-[#F1F5F9]" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-heading font-medium">{item.name}</h3>
                 {item.variant_label && (

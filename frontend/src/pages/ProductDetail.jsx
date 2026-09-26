@@ -144,7 +144,7 @@ export default function ProductDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="rounded-3xl overflow-hidden bg-[#F1F5F9] aspect-square">
-          <ProductImage src={sold.image} alt={product.name} className="w-full h-full object-cover" />
+          <ProductImage src={sold.image} alt={product.name} width={1000} sizes="(min-width: 1024px) 45vw, 90vw" className="w-full h-full object-cover" />
         </div>
         <div>
           <div className="flex flex-wrap gap-2 mb-3">

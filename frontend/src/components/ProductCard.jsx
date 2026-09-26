@@ -53,6 +53,8 @@ export default function ProductCard({ product, index = 0 }) {
           <ProductImage
             src={product.image}
             alt={product.name}
+            width={600}
+            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 45vw, 90vw"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         </Link>

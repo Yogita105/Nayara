@@ -187,7 +187,7 @@ function ProductsAdmin() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {products.map((p) => (
             <div key={p.product_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-4 flex gap-4" data-testid={`admin-product-${p.product_id}`}>
-              <ProductImage src={p.image} alt={p.name} className="w-20 h-20 rounded-lg object-cover bg-[#F1F5F9]" />
+              <ProductImage src={p.image} alt={p.name} width={160} className="w-20 h-20 rounded-lg object-cover bg-[#F1F5F9]" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-heading font-medium text-sm truncate">{p.name}</h3>
                 <div className="text-xs text-[#64748B] mt-1">Stock: {totalStock(p) ?? 0} · {p.category}</div>
@@ -416,7 +416,7 @@ function ProductEditor({ initial, onClose }) {
                   <div className="col-span-9 md:col-span-2">
                     <label htmlFor={`variant-image-${index}`} className="text-[10px] uppercase tracking-[0.15em] font-bold text-[#64748B]">Photo</label>
                     <div className="flex items-center gap-2 mt-1">
-                      {row.image ? <ProductImage src={row.image} alt={`${row.label} option`} className="w-9 h-9 rounded object-cover bg-[#F1F5F9] shrink-0" /> : null}
+                      {row.image ? <ProductImage src={row.image} alt={`${row.label} option`} width={80} className="w-9 h-9 rounded object-cover bg-[#F1F5F9] shrink-0" /> : null}
                       <input id={`variant-image-${index}`} type="file" accept="image/*" onChange={(e) => onVariantUpload(index, e)} disabled={uploading} className="block text-[11px] w-full" data-testid={`variant-image-input-${index}`} />
                     </div>
                   </div>

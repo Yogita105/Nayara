@@ -52,7 +52,7 @@ export default function Orders() {
               </div>
               <div className="flex flex-wrap gap-3 mb-4">
                 {o.items.slice(0, 5).map((it) => (
-                  <ProductImage key={lineKey(it)} src={it.image} alt={lineName(it)} className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
+                  <ProductImage key={lineKey(it)} src={it.image} alt={lineName(it)} width={150} className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
                 ))}
                 {o.items.length > 5 && <div className="w-14 h-14 rounded-lg bg-[#F1F5F9] flex items-center justify-center text-xs">+{o.items.length - 5}</div>}
               </div>

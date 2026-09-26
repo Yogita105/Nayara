@@ -47,6 +47,7 @@ export default function VariantPicker({ product, value, onChange }) {
                   <ProductImage
                     src={variant.image}
                     alt=""
+                    width={80}
                     className="w-8 h-8 rounded-lg object-cover bg-[#F1F5F9]"
                   />
                 )}

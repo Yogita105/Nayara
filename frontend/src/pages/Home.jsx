@@ -4,6 +4,12 @@ import { ArrowRight, Leaf, ShieldCheck, Factory, Sparkles, Truck } from "lucide-
 import ProductCard from "../components/ProductCard";
 import useAsyncData from "../hooks/useAsyncData";
 import { api } from "../lib/api";
+import { sized, srcSet } from "../lib/images";
+
+const HERO_IMAGE =
+  "https://images.unsplash.com/photo-1632834702267-8da808897480?crop=entropy&cs=srgb&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxjbGVhbiUyMHdhdGVyJTIwc3BsYXNoJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzY2ODM4Nzh8MA&ixlib=rb-4.1.0";
+const STORY_IMAGE =
+  "https://images.unsplash.com/photo-1681822520036-d84c2a1eefa4?crop=entropy&cs=srgb&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxmcmVzaCUyMGxhdW5kcnklMjBzdW5ueXxlbnwwfHx8fDE3NzY2ODM4NDh8MA&ixlib=rb-4.1.0";
 
 export default function Home() {
   const { data, loading } = useAsyncData(
@@ -17,9 +23,29 @@ export default function Home() {
     <div data-testid="home-page">
       {/* HERO */}
       <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1632834702267-8da808897480?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwxfHxjbGVhbiUyMHdhdGVyJTIwc3BsYXNoJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3NzY2ODM4Nzh8MA&ixlib=rb-4.1.0&q=85')" }}
+        {/*
+          An image rather than a CSS background. A background on a element
+          React has yet to render cannot be found by the browser until the
+          bundle has parsed and run; an <img> in the markup is discovered
+          immediately, can say it is the important one, and can offer a
+          phone a phone-sized copy.
+
+          Decorative: the words beside it carry the meaning, so it is hidden
+          from a screen reader rather than described to one.
+        */}
+        <img
+          src={sized(HERO_IMAGE, 1920)}
+          srcSet={srcSet(HERO_IMAGE)}
+          // Wider than the screen on a phone: the hero is taller than it is
+          // wide there and the picture is cropped to cover it, so a
+          // screen-width file would be stretched and go soft.
+          sizes="(max-width: 768px) 200vw, 100vw"
+          alt=""
+          aria-hidden="true"
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+          data-testid="hero-image"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-[#FBEEE4]/55 via-white/40 to-[#E6F0F9]/55" />
         <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent" />
@@ -91,7 +117,15 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-6 py-20">
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 md:col-span-7 rounded-3xl overflow-hidden relative aspect-[16/10]">
-            <img src="https://images.unsplash.com/photo-1681822520036-d84c2a1eefa4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxmcmVzaCUyMGxhdW5kcnklMjBzdW5ueXxlbnwwfHx8fDE3NzY2ODM4NDh8MA&ixlib=rb-4.1.0&q=85" alt="Fresh laundry" className="w-full h-full object-cover" />
+            <img
+              src={sized(STORY_IMAGE, 1280)}
+              srcSet={srcSet(STORY_IMAGE, [480, 800, 1280])}
+              sizes="(min-width: 768px) 58vw, 100vw"
+              alt="Fresh laundry"
+              loading="lazy"
+              decoding="async"
+              className="w-full h-full object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-tr from-[#0F172A]/60 to-transparent" />
             <div className="absolute bottom-6 left-6 right-6 text-white">
               <p className="text-xs uppercase tracking-[0.2em] font-bold mb-2 opacity-90">The Nayara promise</p>
@@ -124,7 +158,15 @@ export default function Home() {
             { key: "home-care", label: "Home Care", img: "https://images.pexels.com/photos/10566509/pexels-photo-10566509.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" },
           ].map((c) => (
             <Link key={c.key} to={`/shop?category=${c.key}`} className="group relative rounded-3xl overflow-hidden aspect-[4/5]" data-testid={`category-${c.key}`}>
-              <img src={c.img} alt={c.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <img
+                src={sized(c.img, 800)}
+                srcSet={srcSet(c.img, [400, 600, 800])}
+                sizes="(min-width: 768px) 32vw, 100vw"
+                alt={c.label}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/30 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6 text-white flex items-end justify-between">
                 <h3 className="font-heading text-2xl font-medium">{c.label}</h3>
