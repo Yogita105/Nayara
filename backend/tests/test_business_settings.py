@@ -83,12 +83,37 @@ class TestReadingThem:
         assert response.status_code == 200
         assert response.json()["phone"] == DEFAULT_BUSINESS.phone
 
-    def test_the_answer_may_be_cached_briefly(self, base_url, anon_client):
-        """Every page asks for this, so it should not be a fresh request each
-        time; but a corrected number should still reach customers today."""
+    def test_the_answer_is_revalidated_rather_than_assumed(self, base_url, anon_client):
+        """Every page asks for this, so it should not cost a full answer each
+        time; but an owner who corrects their number expects to see it on the
+        next page, not after a wait nobody told them about."""
         response = anon_client.get(f"{base_url}{SETTINGS}")
 
-        assert "max-age" in response.headers.get("Cache-Control", "")
+        assert response.headers.get("Cache-Control") == "no-cache"
+        assert response.headers.get("ETag")
+
+    def test_asking_again_unchanged_costs_almost_nothing(self, base_url, anon_client):
+        first = anon_client.get(f"{base_url}{SETTINGS}")
+
+        again = anon_client.get(
+            f"{base_url}{SETTINGS}", headers={"If-None-Match": first.headers["ETag"]}
+        )
+
+        assert again.status_code == 304
+        assert again.content == b""
+
+    def test_a_change_makes_the_old_answer_stale(
+        self, base_url, admin_client, anon_client, restore_settings
+    ):
+        """The tag has to move, or a browser would go on reusing the old
+        details and never be told they are out of date."""
+        before = anon_client.get(f"{base_url}{SETTINGS}").headers["ETag"]
+
+        admin_client.put(f"{base_url}{ADMIN_SETTINGS}", json=valid(phone="+91 90000 55555"))
+
+        after = anon_client.get(f"{base_url}{SETTINGS}", headers={"If-None-Match": before})
+        assert after.status_code == 200, "the browser was told nothing had changed"
+        assert after.json()["phone"] == "+91 90000 55555"
 
 
 class TestChangingThem:

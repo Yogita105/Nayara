@@ -5,6 +5,9 @@ Written only by an administrator, and recorded when it changes: a phone
 number quietly becoming someone else's is worth being able to trace.
 """
 
+import hashlib
+import json
+
 from fastapi import APIRouter, Depends, Request, Response
 
 from .. import audit
@@ -15,9 +18,6 @@ from ..security import require_admin
 router = APIRouter(prefix="/api", tags=["settings"])
 
 SETTINGS_KEY = "business"
-# Long enough that a browser is not asking on every page, short enough that a
-# corrected phone number reaches customers the same afternoon.
-CACHE_SECONDS = 300
 
 
 async def stored_business() -> BusinessSettings:
@@ -36,10 +36,33 @@ async def stored_business() -> BusinessSettings:
         return DEFAULT_BUSINESS
 
 
+def version_of(settings: dict) -> str:
+    """A tag that changes when the details do.
+
+    Lets a browser ask "still the same?" and be told so in a few bytes,
+    instead of being handed the answer once and told to assume it for the
+    next five minutes. An owner who corrects their phone number expects to
+    see it on the next page, not after a wait they were never told about.
+    """
+    body = json.dumps(settings, sort_keys=True, ensure_ascii=False)
+    return '"' + hashlib.sha256(body.encode("utf-8")).hexdigest()[:16] + '"'
+
+
 @router.get("/settings/business")
-async def get_business(response: Response):
-    response.headers["Cache-Control"] = f"public, max-age={CACHE_SECONDS}"
-    return (await stored_business()).model_dump()
+async def get_business(request: Request):
+    settings = (await stored_business()).model_dump()
+    version = version_of(settings)
+    # `no-cache` does not mean do not store it; it means ask before reusing
+    # it. The tag makes that question cheap.
+    headers = {"Cache-Control": "no-cache", "ETag": version}
+
+    if request.headers.get("if-none-match") == version:
+        return Response(status_code=304, headers=headers)
+    return Response(
+        content=json.dumps(settings, ensure_ascii=False),
+        media_type="application/json",
+        headers=headers,
+    )
 
 
 @router.put("/admin/settings/business")

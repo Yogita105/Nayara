@@ -9,6 +9,7 @@ import { ErrorSummary, FieldError, describedBy } from "../components/FormErrors"
 import ProductImage from "../components/ProductImage";
 import RequiredMark from "../components/RequiredMark";
 import { cheapestVariant, totalStock } from "../lib/variants";
+import { useBusiness } from "../context/BusinessContext";
 import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase, Settings } from "lucide-react";
 import { toast } from "sonner";
 
@@ -721,6 +722,7 @@ function BulkInquiriesAdmin() {
 }
 
 function BusinessSettingsAdmin() {
+  const { refresh } = useBusiness();
   const { data, loading, error, reload } = useAsyncData(
     async () => (await api.get("/settings/business")).data,
     [],
@@ -757,6 +759,9 @@ function BusinessSettingsAdmin() {
         address_lines: form.address_lines.filter((line) => line.trim()),
       });
       setForm({ ...saved, address_lines: [...saved.address_lines] });
+      // The footer on this very page is showing the old details until it is
+      // told otherwise; nothing remounts on a route change.
+      await refresh();
       toast.success("Your contact details are updated across the site");
     } catch (failure) {
       setProblem(errorMessage(failure, "Could not save your details"));

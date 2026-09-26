@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { DEFAULT_BUSINESS, withContactLinks } from "../lib/business";
 
@@ -12,10 +12,25 @@ import { DEFAULT_BUSINESS, withContactLinks } from "../lib/business";
  * built-in details simply stay, which is a readable footer rather than a
  * blank space where a phone number should be.
  */
-const BusinessContext = createContext(withContactLinks(DEFAULT_BUSINESS));
+const BusinessContext = createContext({
+  ...withContactLinks(DEFAULT_BUSINESS),
+  refresh: () => {},
+});
 
 export const BusinessProvider = ({ children }) => {
   const [settings, setSettings] = useState(DEFAULT_BUSINESS);
+
+  const refresh = useCallback(
+    () =>
+      api
+        .get("/settings/business")
+        .then(({ data }) => setSettings(data))
+        .catch(() => {
+          // Deliberately silent. A customer cannot act on this, and the
+          // details they need are already on the screen.
+        }),
+    []
+  );
 
   useEffect(() => {
     let current = true;
@@ -24,16 +39,16 @@ export const BusinessProvider = ({ children }) => {
       .then(({ data }) => {
         if (current) setSettings(data);
       })
-      .catch(() => {
-        // Deliberately silent. A customer cannot act on this, and the
-        // details they need are already on the screen.
-      });
+      .catch(() => {});
     return () => {
       current = false;
     };
   }, []);
 
-  const value = useMemo(() => withContactLinks(settings), [settings]);
+  // Exposed so the admin screen can say "these changed" after saving.
+  // Without it the owner sees their own edit everywhere except the page
+  // they are standing on, because nothing remounts on a route change.
+  const value = useMemo(() => ({ ...withContactLinks(settings), refresh }), [settings, refresh]);
   return <BusinessContext.Provider value={value}>{children}</BusinessContext.Provider>;
 };
 
