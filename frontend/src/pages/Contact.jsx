@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button";
 import RequiredMark from "../components/RequiredMark";
 import { ErrorSummary, FieldError, describedBy } from "../components/FormErrors";
 import { api, errorMessage, fieldErrors } from "../lib/api";
+import { BUSINESS, mailtoHref } from "../lib/business";
 import { toast } from "sonner";
 
 const LABEL = "text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block";
@@ -150,17 +151,39 @@ export default function Contact() {
           <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <MapPin className="w-5 h-5 text-[var(--nayara-primary)] mb-2" />
             <h3 className="font-heading font-semibold">Visit us</h3>
-            <p className="text-sm text-[#64748B] mt-1">Jaito, District Faridkot,<br />Punjab 151202, India</p>
+            <p className="text-sm text-[#64748B] mt-1">
+              {BUSINESS.addressLines.map((line, index) => (
+                <React.Fragment key={line}>
+                  {index > 0 && <br />}
+                  {line}
+                </React.Fragment>
+              ))}
+            </p>
           </div>
           <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <Phone className="w-5 h-5 text-[var(--nayara-primary)] mb-2" />
             <h3 className="font-heading font-semibold">Call us</h3>
-            <p className="text-sm text-[#64748B] mt-1">Abhinav Grover (Owner)<br />+91 97808 44330<br />Mon–Sat · 10am–7pm</p>
+            <p className="text-sm text-[#64748B] mt-1">
+              {BUSINESS.founder} ({BUSINESS.founderTitle})<br />
+              <a href={BUSINESS.phoneHref} className="text-[var(--nayara-primary)] font-medium" data-testid="contact-call-link">
+                {BUSINESS.phone}
+              </a>
+              <br />
+              {BUSINESS.hours}
+            </p>
           </div>
           <div className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <Mail className="w-5 h-5 text-[var(--nayara-primary)] mb-2" />
             <h3 className="font-heading font-semibold">Email us</h3>
-            <p className="text-sm text-[#64748B] mt-1">hello@nayara.in<br />wholesale@nayara.in</p>
+            <p className="text-sm text-[#64748B] mt-1">
+              <a href={mailtoHref(BUSINESS.email)} className="text-[var(--nayara-primary)]" data-testid="contact-email-link">
+                {BUSINESS.email}
+              </a>
+              <br />
+              <a href={mailtoHref(BUSINESS.wholesaleEmail)} className="text-[var(--nayara-primary)]" data-testid="contact-wholesale-link">
+                {BUSINESS.wholesaleEmail}
+              </a>
+            </p>
           </div>
         </aside>
       </div>

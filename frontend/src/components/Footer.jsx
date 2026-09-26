@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Leaf, MapPin, Mail, Phone } from "lucide-react";
+import { BUSINESS, addressOneLine, mailtoHref } from "../lib/business";
 
 export default function Footer() {
   return (
@@ -42,15 +43,28 @@ export default function Footer() {
         <div>
           <h4 className="font-heading font-semibold mb-4">Reach Us</h4>
           <ul className="space-y-3 text-base text-[#64748B]">
-            <li className="flex items-start gap-2"><MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" /> Jaito, District Faridkot, Punjab 151202, India</li>
-            <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> +91 97808 44330</li>
-            <li className="flex items-center gap-2"><Mail className="w-4 h-4" /> hello@nayara.in</li>
+            <li className="flex items-start gap-2">
+              <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" /> {addressOneLine}
+            </li>
+            {/* Tappable, because on a phone the point of a number is to dial it. */}
+            <li className="flex items-center gap-2">
+              <Phone className="w-4 h-4 flex-shrink-0" />
+              <a href={BUSINESS.phoneHref} className="hover:text-[var(--nayara-primary)]" data-testid="footer-phone">
+                {BUSINESS.phone}
+              </a>
+            </li>
+            <li className="flex items-center gap-2">
+              <Mail className="w-4 h-4 flex-shrink-0" />
+              <a href={mailtoHref(BUSINESS.email)} className="hover:text-[var(--nayara-primary)]" data-testid="footer-email">
+                {BUSINESS.email}
+              </a>
+            </li>
           </ul>
         </div>
       </div>
       <div className="border-t border-[var(--nayara-border)]">
         <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between text-sm text-[#64748B]">
-          <p>© {new Date().getFullYear()} Nayara Brands. Founded by Abhinav Grover.</p>
+          <p>© {new Date().getFullYear()} {BUSINESS.name}. Founded by {BUSINESS.founder}.</p>
           <p className="mt-2 sm:mt-0">Crafted with care in Jaito, Punjab.</p>
         </div>
       </div>
