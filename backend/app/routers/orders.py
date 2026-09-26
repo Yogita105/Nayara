@@ -20,8 +20,10 @@ from ..variants import line_key, resolve_variant
 router = APIRouter(prefix="/api", tags=["orders"])
 
 
-def calculate_totals(items_with_products: List[dict]) -> dict:
-    subtotal = sum(product["price"] * product["quantity"] for product in items_with_products)
+def calculate_totals(lines: List[dict]) -> dict:
+    # These are order lines, not products: the price is the one the chosen
+    # form was bought at, copied at purchase time.
+    subtotal = sum(line["price"] * line["quantity"] for line in lines)
     shipping = 0 if subtotal >= 499 else 49
     total = subtotal + shipping
     return {

@@ -226,22 +226,19 @@ class Product(ProductCreate):
     price_from: float = Field(default=0, ge=0, le=10_000_000)
 
 
-def variant_mirrors(variants: List[dict]) -> dict:
-    """What a product's own price, MRP and stock should read.
+def advertised_price(variants: List[dict]) -> float:
+    """The price a product is shown at before a form is chosen.
 
-    These are a summary of the variants rather than anything an administrator
-    sets: the price shown before a choice is made is the cheapest on offer,
-    and the stock is everything on hand across the forms. Deriving them is
-    what stops the product and its variants quietly disagreeing.
+    Held on the product as `price_from` so the catalogue can be sorted and
+    filtered with a plain indexed field, which an embedded array cannot be.
+    It is a projection of the variants, never something anyone sets.
     """
-    cheapest = min(variants, key=lambda variant: variant.get("price", 0))
-    price = cheapest.get("price", 0)
-    return {
-        "price": price,
-        "mrp": cheapest.get("mrp", price),
-        "price_from": price,
-        "stock": sum(variant.get("stock", 0) for variant in variants),
-    }
+    return min((variant.get("price", 0) for variant in variants), default=0)
+
+
+def total_stock(variants: List[dict]) -> int:
+    """Everything on hand across a product's forms."""
+    return sum(variant.get("stock", 0) for variant in variants)
 
 
 def cheapest_price(variants: List[dict], fallback: float = 0) -> float:

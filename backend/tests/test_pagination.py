@@ -22,7 +22,7 @@ class TestIndexDefinitions:
             ("products", ("category", "created_at")),
             ("products", ("featured", "created_at")),
             ("products", ("created_at", "product_id")),
-            ("products", ("price", "product_id")),
+            ("products", ("price_from", "product_id")),
             ("products", ("rating", "product_id")),
             ("orders", ("order_id",)),
             ("orders", ("user_id", "created_at")),
@@ -139,12 +139,14 @@ class TestProductSorting:
         everything = anon_client.get(f"{base_url}/api/products").json()
         if not everything:
             pytest.skip("needs a catalogue")
-        cheapest = min(item["price"] for item in everything)
+        # A product is in range when its cheapest form is, so the filter is
+        # asked about `price_from` rather than any one variant.
+        cheapest = min(item["price_from"] for item in everything)
 
         items = anon_client.get(f"{base_url}/api/products?max_price={cheapest}").json()
 
         assert items, "the cheapest product should still be included"
-        assert all(item["price"] <= cheapest for item in items)
+        assert all(item["price_from"] <= cheapest for item in items)
 
     def test_a_negative_max_price_is_rejected(self, base_url, anon_client):
         response = anon_client.get(f"{base_url}/api/products?max_price=-1")

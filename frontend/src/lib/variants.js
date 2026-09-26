@@ -39,6 +39,26 @@ export function cheapestPrice(product) {
 }
 
 /**
+ * The form a product is advertised at: the cheapest on offer.
+ *
+ * The grid shows this one's price and its own MRP. Pairing one form's price
+ * with another's MRP would invent a discount neither of them offers.
+ */
+export function cheapestVariant(product) {
+  return variantsOf(product).reduce(
+    (best, variant) => (!best || (variant.price || 0) < (best.price || 0) ? variant : best),
+    null
+  );
+}
+
+/** Everything on hand across a product's forms. */
+export function totalStock(product) {
+  const variants = variantsOf(product);
+  if (!variants.length) return undefined;
+  return variants.reduce((total, variant) => total + (variant.stock || 0), 0);
+}
+
+/**
  * A product as it is actually sold in one form.
  *
  * The price, stock and image of the chosen form stand in for the product's

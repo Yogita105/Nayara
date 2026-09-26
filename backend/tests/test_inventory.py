@@ -63,7 +63,13 @@ def stocked_product(mongo_db):
 
 
 def stock_of(mongo_db, product_id):
-    return mongo_db.products.find_one({"product_id": product_id})["stock"]
+    """Everything on hand across a product's forms.
+
+    The product no longer keeps a count of its own, so this adds up the
+    variants exactly as the shop does.
+    """
+    product = mongo_db.products.find_one({"product_id": product_id})
+    return sum(variant.get("stock", 0) for variant in product.get("variants", []))
 
 
 def place_order(client, base_url, items, key=None):

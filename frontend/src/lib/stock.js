@@ -11,7 +11,7 @@
  * means nothing to a customer buying one.
  */
 
-import { lineName } from "./variants";
+import { lineName, totalStock } from "./variants";
 
 export const LOW_STOCK_THRESHOLD = 5;
 
@@ -33,9 +33,20 @@ export function stockNotice(stock) {
   return null;
 }
 
-/** Whether this product can be ordered at all. */
-export function isOutOfStock(product) {
-  return typeof product?.stock === "number" && product.stock <= 0;
+/** Whether this particular form can be ordered. */
+export function isOutOfStock(item) {
+  return typeof item?.stock === "number" && item.stock <= 0;
+}
+
+/**
+ * Whether a product has nothing left in any of its forms.
+ *
+ * A different question from the one above: the grid shows a product before a
+ * form has been chosen, so it is only sold out when every form is.
+ */
+export function isSoldOut(product) {
+  const stock = totalStock(product);
+  return typeof stock === "number" && stock <= 0;
 }
 
 /**

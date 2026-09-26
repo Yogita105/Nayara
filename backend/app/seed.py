@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict, List
 
 from .database import db
-from .models import Product, default_variant, variant_mirrors
+from .models import Product, advertised_price, default_variant
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +118,7 @@ async def seed_products() -> int:
         data = {**seed_product, "variants": [default_variant(seed_product)]}
         document = Product(**data).model_dump()
         document["created_at"] = document["created_at"].isoformat()
-        document.update(variant_mirrors(document["variants"]))
+        document["price_from"] = advertised_price(document["variants"])
         documents.append(document)
 
     await db.products.insert_many(documents)

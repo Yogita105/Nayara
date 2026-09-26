@@ -196,6 +196,16 @@ def order_in_parallel(base_url, token, product_id, attempts):
     return run_together(place, attempts)
 
 
+def stock_left(mongo_db, product_id):
+    """Everything still on hand across the product's forms.
+
+    Stock belongs to the variants, so overselling shows up as the sum going
+    negative or as more sales than there were units.
+    """
+    product = mongo_db.products.find_one({"product_id": product_id})
+    return sum(variant.get("stock", 0) for variant in product.get("variants", []))
+
+
 class TestConcurrentOrders:
     """Stock is reserved with a conditional update, so simultaneous shoppers
     cannot both be promised the same unit."""
@@ -210,7 +220,7 @@ class TestConcurrentOrders:
         codes = sorted(response.status_code for response in responses)
         assert codes.count(200) == 1, f"expected one sale, got {codes}"
         assert all(code == 409 for code in codes if code != 200), codes
-        assert mongo_db.products.find_one({"product_id": product_id})["stock"] == 0
+        assert stock_left(mongo_db, product_id) == 0
 
     def test_stock_is_never_oversold(self, base_url, user_session, mongo_db, scarce_product):
         """More shoppers than units: the shop sells what it has and no more."""
@@ -220,7 +230,7 @@ class TestConcurrentOrders:
         responses = order_in_parallel(base_url, user_session["token"], product_id, 8)
 
         sold = sum(1 for response in responses if response.status_code == 200)
-        remaining = mongo_db.products.find_one({"product_id": product_id})["stock"]
+        remaining = stock_left(mongo_db, product_id)
 
         assert sold == available, f"sold {sold} of {available}"
         assert remaining == 0

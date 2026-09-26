@@ -13,8 +13,9 @@ from ..models import (
     ProductCreate,
     Review,
     ReviewCreate,
+    advertised_price,
     default_variant,
-    variant_mirrors,
+    total_stock,
 )
 from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
 from ..security import get_current_user, require_admin
@@ -39,8 +40,8 @@ RETURNABLE_STATUSES = ["placed", "processing", "shipped"]
 PRODUCT_SORTS: Dict[str, list] = {
     "popular": [("created_at", ASCENDING), ("product_id", ASCENDING)],
     "newest": [("created_at", DESCENDING), ("product_id", DESCENDING)],
-    "price_asc": [("price", ASCENDING), ("product_id", ASCENDING)],
-    "price_desc": [("price", DESCENDING), ("product_id", DESCENDING)],
+    "price_asc": [("price_from", ASCENDING), ("product_id", ASCENDING)],
+    "price_desc": [("price_from", DESCENDING), ("product_id", DESCENDING)],
     "rating": [("rating", DESCENDING), ("product_id", ASCENDING)],
 }
 ProductSort = Literal["popular", "newest", "price_asc", "price_desc", "rating"]
@@ -70,7 +71,10 @@ async def list_products(
     if featured is not None:
         query["featured"] = featured
     if max_price is not None:
-        query["price"] = {"$lte": max_price}
+        # The cheapest form decides whether a product belongs in the range: a
+        # shopper capping their spend is asking what they could buy, and the
+        # 500g qualifies even when the 2kg does not.
+        query["price_from"] = {"$lte": max_price}
 
     response.headers[TOTAL_COUNT_HEADER] = str(await db.products.count_documents(query))
     docs = await (
@@ -105,7 +109,7 @@ async def create_product(
     product = Product(**data)
     doc = product.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
-    doc.update(variant_mirrors(doc["variants"]))
+    doc["price_from"] = advertised_price(doc["variants"])
     try:
         await db.products.insert_one(doc)
     except DuplicateKeyError as error:
@@ -144,29 +148,16 @@ async def orders_still_holding(product_id: str, variant_ids: set) -> int:
     )
 
 
-def settle_variants(changes: dict, incoming: Optional[list], existing: list) -> list:
+def settle_variants(incoming: Optional[list], existing: list) -> list:
     """Which variants the product should end up with.
 
     A request that names them is taken at its word. One that does not comes
-    from something that predates variants or does not manage them, and must
-    not be allowed to wipe them: a product with a single form lets that form
-    follow the price and stock it sets, and a product with several keeps them
-    untouched.
+    from something that does not manage them, and leaves them exactly as they
+    were rather than wiping them.
     """
     if incoming is not None:
         return list(incoming)
-    if len(existing) == 1:
-        return [
-            {
-                **existing[0],
-                "price": changes["price"],
-                "mrp": changes["mrp"],
-                "stock": changes["stock"],
-            }
-        ]
-    if existing:
-        return existing
-    return [default_variant(changes)]
+    return existing
 
 
 @router.put("/products/{product_id}")
@@ -176,9 +167,7 @@ async def update_product(
     request: Request,
     user: dict = Depends(require_admin),
 ):
-    previous = await db.products.find_one(
-        {"product_id": product_id}, {"_id": 0, "price": 1, "stock": 1, "variants": 1}
-    )
+    previous = await db.products.find_one({"product_id": product_id}, {"_id": 0, "variants": 1})
     changes = payload.model_dump()
     incoming = changes.pop("variants", None)
     existing = (previous or {}).get("variants") or []
@@ -197,11 +186,11 @@ async def update_product(
                 f"still {'holds' if held == 1 else 'hold'} it.",
             )
 
-    variants = settle_variants(changes, incoming, existing)
+    variants = settle_variants(incoming, existing)
     changes["variants"] = variants
-    # The product's own figures are always recomputed rather than taken from
-    # the request, so the two cannot be saved out of step.
-    changes.update(variant_mirrors(variants))
+    # Recomputed from the variants rather than taken from the request, so the
+    # advertised price cannot be saved disagreeing with what is on offer.
+    changes["price_from"] = advertised_price(variants)
 
     try:
         result = await db.products.update_one(
@@ -222,14 +211,16 @@ async def update_product(
         actor_id=user["user_id"],
         request=request,
         product_id=product_id,
-        # Price and stock are the fields worth being able to trace later, and
-        # so is a form appearing or disappearing.
-        price_from=(previous or {}).get("price"),
-        price_to=doc.get("price"),
-        stock_from=(previous or {}).get("stock"),
-        stock_to=doc.get("stock"),
-        variants_from=len(existing),
-        variants_to=len(variants),
+        # What a price or stock change looks like afterwards is the thing
+        # worth being able to trace, and so is a form appearing or
+        # disappearing. Named "before" and "after" rather than "from" and
+        # "to", because `price_from` is now a field of the product itself.
+        price_before=advertised_price(existing),
+        price_after=doc.get("price_from"),
+        stock_before=total_stock(existing),
+        stock_after=total_stock(variants),
+        variants_before=len(existing),
+        variants_after=len(variants),
     )
     return serialize_doc(doc)
 

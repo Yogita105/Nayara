@@ -68,8 +68,9 @@ INDEXES: Tuple[Tuple[str, List[Tuple[str, int]], Dict[str, Any]], ...] = (
     ("products", [("created_at", ASCENDING), ("product_id", ASCENDING)], {}),
     # Storefront sorting. The trailing product_id matches the tiebreaker the
     # catalogue query appends, so paging stays stable when prices or ratings
-    # are equal.
-    ("products", [("price", ASCENDING), ("product_id", ASCENDING)], {}),
+    # are equal. Price sorting reads `price_from`, the cheapest form on offer,
+    # because an embedded array of variants cannot be sorted on directly.
+    ("products", [("price_from", ASCENDING), ("product_id", ASCENDING)], {}),
     ("products", [("rating", DESCENDING), ("product_id", ASCENDING)], {}),
     ("orders", [("order_id", ASCENDING)], {"unique": True}),
     ("orders", [("user_id", ASCENDING), ("created_at", DESCENDING)], {}),

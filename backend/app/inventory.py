@@ -53,9 +53,7 @@ async def release_stock(items: Sequence[dict]) -> None:
 
         result = await db.products.update_one(
             criteria,
-            # The product's own count mirrors its variants while anything
-            # still reads it, and is dropped once nothing does.
-            {"$inc": {field: item["quantity"], "stock": item["quantity"]}},
+            {"$inc": {field: item["quantity"]}},
         )
         if result.matched_count == 0:
             # There is nothing to return the units to. Removing a variant an
@@ -90,7 +88,6 @@ async def reserve_stock(items: Sequence[dict]) -> None:
             {
                 "$inc": {
                     "variants.$.stock": -item["quantity"],
-                    "stock": -item["quantity"],
                 }
             },
         )

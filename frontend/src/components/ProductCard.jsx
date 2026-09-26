@@ -3,16 +3,22 @@ import { Link } from "react-router-dom";
 import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { formatINR } from "../lib/api";
-import { isOutOfStock, stockNotice } from "../lib/stock";
-import { hasChoice, variantsOf } from "../lib/variants";
+import { isSoldOut, stockNotice } from "../lib/stock";
+import { cheapestVariant, asSold, hasChoice, totalStock, variantsOf } from "../lib/variants";
 import ProductImage from "./ProductImage";
 
 export default function ProductCard({ product, index = 0 }) {
   const { addToCart, toggleWishlist, isInWishlist, cart } = useCart();
   const saved = isInWishlist(product.product_id);
-  const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100) || 0;
-  const notice = stockNotice(product.stock);
-  const soldOut = isOutOfStock(product);
+  // The product is advertised at its cheapest form, with that same form's
+  // MRP: pairing one form's price with another's would invent a discount.
+  const shown = cheapestVariant(product);
+  const price = shown ? shown.price : product.price;
+  const mrp = shown ? (shown.mrp ?? shown.price) : product.mrp;
+  const discount = Math.round(((mrp - price) / mrp) * 100) || 0;
+  const stock = totalStock(product);
+  const notice = stockNotice(stock);
+  const soldOut = isSoldOut(product);
   // Sold in more than one form, so there is a decision the grid cannot make
   // on the customer's behalf.
   const choose = hasChoice(product);
@@ -22,7 +28,7 @@ export default function ProductCard({ product, index = 0 }) {
   const held = cart
     .filter((item) => item.product_id === product.product_id)
     .reduce((total, item) => total + (item.quantity || 0), 0);
-  const atLimit = typeof product.stock === "number" && held >= product.stock;
+  const atLimit = typeof stock === "number" && held >= stock;
   const cannotAdd = soldOut || atLimit;
 
   return (
@@ -83,10 +89,10 @@ export default function ProductCard({ product, index = 0 }) {
           <div>
             <div className="font-heading text-xl font-semibold">
               {choose && <span className="text-xs font-medium text-[#64748B] mr-1">from</span>}
-              {formatINR(product.price)}
+              {formatINR(price)}
             </div>
-            {product.mrp > product.price && (
-              <div className="text-xs text-[#64748B] line-through">{formatINR(product.mrp)}</div>
+            {mrp > price && (
+              <div className="text-xs text-[#64748B] line-through">{formatINR(mrp)}</div>
             )}
             {choose && (
               <div className="text-xs text-[#64748B] mt-0.5" data-testid={`variant-count-${product.product_id}`}>
@@ -106,7 +112,7 @@ export default function ProductCard({ product, index = 0 }) {
             </Link>
           ) : (
             <button
-              onClick={() => addToCart(product, 1)}
+              onClick={() => addToCart(asSold(product, shown), 1)}
               disabled={cannotAdd}
               className="w-10 h-10 rounded-full bg-[var(--nayara-primary)] text-white flex items-center justify-center hover:bg-[var(--nayara-primary-hover)] transition disabled:opacity-40 disabled:cursor-not-allowed"
               data-testid={`add-to-cart-${product.product_id}`}

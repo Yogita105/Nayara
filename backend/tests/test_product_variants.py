@@ -20,9 +20,10 @@ if str(BACKEND_DIR) not in sys.path:
 from app.models import (  # noqa: E402
     MAX_VARIANTS,
     ProductVariant,
+    advertised_price,
     cheapest_price,
     default_variant,
-    variant_mirrors,
+    total_stock,
 )
 from scripts.add_product_variants import read_size  # noqa: E402
 
@@ -168,8 +169,10 @@ class TestEveryProductHasOne:
         assert stored["variants"][0]["stock"] == 7
         assert stored["price_from"] == 100.0
 
-    def test_the_only_variant_follows_the_product_price(self, base_url, admin_client, mongo_db):
-        """Until variants can be edited directly, the two must not drift."""
+    def test_a_request_that_names_no_forms_leaves_the_only_one_alone(
+        self, base_url, admin_client, mongo_db
+    ):
+        """Nothing outside the variants may quietly reprice a product."""
         payload = product_payload()
         created = admin_client.post(f"{base_url}/api/products", json=payload)
         product_id = created.json()["product_id"]
@@ -180,10 +183,9 @@ class TestEveryProductHasOne:
         stored = mongo_db.products.find_one({"product_id": product_id})
         mongo_db.products.delete_one({"product_id": product_id})
 
-        assert stored["variants"][0]["price"] == 250.0
-        assert stored["variants"][0]["mrp"] == 300.0
-        assert stored["variants"][0]["stock"] == 3
-        assert stored["price_from"] == 250.0
+        assert stored["variants"][0]["price"] == 100.0
+        assert stored["variants"][0]["stock"] == 7
+        assert stored["price_from"] == 100.0
 
     def test_every_product_in_the_catalogue_has_one(self, mongo_db):
         without = mongo_db.products.count_documents({"variants": {"$in": [None, []]}})
@@ -192,7 +194,7 @@ class TestEveryProductHasOne:
 
     def test_the_advertised_price_matches_the_variants(self, mongo_db):
         for product in mongo_db.products.find({}, {"_id": 0}):
-            expected = cheapest_price(product.get("variants", []), product["price"])
+            expected = cheapest_price(product.get("variants", []))
 
             assert product.get("price_from") == expected, product["name"]
 
@@ -204,29 +206,25 @@ class TestLimits:
         assert MAX_VARIANTS == 20
 
 
-class TestTheProductsOwnFigures:
-    """`price`, `mrp` and `stock` on the product summarise its variants.
+class TestWhatTheProductStillKeeps:
+    """`price_from` is the one figure the product still keeps for itself.
 
-    Nothing sets them by hand, so they cannot be saved disagreeing with the
-    forms they describe.
+    An embedded array cannot be sorted or filtered on directly, so the
+    cheapest form is projected onto the product where an index can reach it.
+    Nothing sets it by hand.
     """
 
-    def test_the_price_is_the_cheapest_form(self):
-        mirrors = variant_mirrors([form("1kg", 180), form("500g", 100)])
+    def test_it_is_the_cheapest_form(self):
+        assert advertised_price([form("1kg", 180), form("500g", 100)]) == 100
 
-        assert mirrors["price"] == 100
-        assert mirrors["price_from"] == 100
-
-    def test_the_mrp_belongs_to_that_same_form(self):
-        """Showing one form's price beside another's MRP invents a discount."""
-        mirrors = variant_mirrors([form("1kg", 180, mrp=240), form("500g", 100, mrp=130)])
-
-        assert mirrors["mrp"] == 130
+    def test_it_survives_a_product_with_one_form(self):
+        assert advertised_price([form("1kg", 180)]) == 180
 
     def test_the_stock_is_every_form_together(self):
-        mirrors = variant_mirrors([form("1kg", 180, stock=4), form("500g", 100, stock=9)])
+        assert total_stock([form("1kg", 180, stock=4), form("500g", 100, stock=9)]) == 13
 
-        assert mirrors["stock"] == 13
+    def test_no_forms_means_nothing_on_hand(self):
+        assert total_stock([]) == 0
 
 
 @pytest.fixture
@@ -266,7 +264,7 @@ class TestEditingTheForms:
         identities = {variant["variant_id"] for variant in product["variants"]}
         assert len(identities) == 2
 
-    def test_the_product_summarises_them(self, saved_product):
+    def test_the_product_advertises_the_cheapest(self, saved_product):
         product = saved_product(
             price=999.0,
             mrp=999.0,
@@ -274,12 +272,10 @@ class TestEditingTheForms:
             variants=[form("500g", 100, mrp=130, stock=4), form("1kg", 180, mrp=240, stock=9)],
         )
 
-        # What the request said about price and stock is ignored: those are
-        # the variants' to decide.
-        assert product["price"] == 100
-        assert product["mrp"] == 130
+        # What the request said about price is ignored: that is the variants'
+        # to decide.
         assert product["price_from"] == 100
-        assert product["stock"] == 13
+        assert total_stock(product["variants"]) == 13
 
     def test_a_form_can_be_added_later(self, base_url, admin_client, saved_product):
         product = saved_product(variants=[form("500g", 100, stock=4)])
@@ -299,7 +295,7 @@ class TestEditingTheForms:
         assert response.status_code == 200, response.text
         updated = response.json()
         assert [variant["label"] for variant in updated["variants"]] == ["500g", "1kg"]
-        assert updated["stock"] == 13
+        assert total_stock(updated["variants"]) == 13
 
     def test_an_existing_form_keeps_its_identity_when_edited(
         self, base_url, admin_client, saved_product
@@ -321,7 +317,7 @@ class TestEditingTheForms:
         updated = response.json()
         assert updated["variants"][0]["variant_id"] == only["variant_id"]
         assert updated["variants"][0]["price"] == 120.0
-        assert updated["price"] == 120.0
+        assert updated["price_from"] == 120.0
 
     def test_a_form_can_be_removed(self, base_url, admin_client, saved_product):
         product = saved_product(variants=[form("500g", 100, stock=4), form("1kg", 180, stock=9)])
@@ -338,8 +334,8 @@ class TestEditingTheForms:
         assert response.status_code == 200, response.text
         updated = response.json()
         assert [variant["label"] for variant in updated["variants"]] == ["1kg"]
-        assert updated["stock"] == 9
-        assert updated["price"] == 180
+        assert total_stock(updated["variants"]) == 9
+        assert updated["price_from"] == 180
 
     def test_two_forms_cannot_share_a_label(self, base_url, admin_client):
         """A customer choosing between two identical options is choosing blind."""
@@ -383,8 +379,8 @@ class TestARequestThatKnowsNothingOfForms:
         assert response.status_code == 200, response.text
         assert len(response.json()["variants"]) == 2
 
-    def test_it_cannot_put_the_summary_out_of_step(self, base_url, admin_client, saved_product):
-        """Its price and stock are recomputed from the forms, not believed."""
+    def test_it_cannot_reprice_them(self, base_url, admin_client, saved_product):
+        """Its price and stock are ignored; the forms decide both."""
         product = saved_product(variants=[form("500g", 100, stock=4), form("1kg", 180, stock=9)])
         payload = product_payload(
             name=product["name"], slug=product["slug"], price=5.0, mrp=5.0, stock=500
@@ -395,8 +391,8 @@ class TestARequestThatKnowsNothingOfForms:
         )
 
         updated = response.json()
-        assert updated["price"] == 100
-        assert updated["stock"] == 13
+        assert updated["price_from"] == 100
+        assert total_stock(updated["variants"]) == 13
 
 
 def place_order(client, base_url, items):

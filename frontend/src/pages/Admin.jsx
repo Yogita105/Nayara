@@ -7,6 +7,7 @@ import Pagination from "../components/Pagination";
 import { EmptyPanel, ErrorPanel, LoadingPanel, TableStateRow } from "../components/DataState";
 import ProductImage from "../components/ProductImage";
 import RequiredMark from "../components/RequiredMark";
+import { cheapestVariant, totalStock } from "../lib/variants";
 import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 
@@ -185,9 +186,11 @@ function ProductsAdmin() {
               <ProductImage src={p.image} alt={p.name} className="w-20 h-20 rounded-lg object-cover bg-[#F1F5F9]" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-heading font-medium text-sm truncate">{p.name}</h3>
-                <div className="text-xs text-[#64748B] mt-1">Stock: {p.stock} · {p.category}</div>
+                <div className="text-xs text-[#64748B] mt-1">Stock: {totalStock(p) ?? 0} · {p.category}</div>
                 <div className="font-heading font-semibold mt-2">
-                  {(p.variants || []).length > 1 ? `from ${formatINR(p.price)}` : formatINR(p.price)}
+                  {(p.variants || []).length > 1
+                    ? `from ${formatINR(cheapestVariant(p)?.price)}`
+                    : formatINR(cheapestVariant(p)?.price)}
                 </div>
                 {(p.variants || []).length > 1 && (
                   <div className="text-xs text-[#64748B] mt-1" data-testid={`variant-count-${p.product_id}`}>
