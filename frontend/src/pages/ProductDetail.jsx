@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate, Link } from "react-router-dom";
 import { api, formatINR } from "../lib/api";
 import { isOutOfStock, stockNotice } from "../lib/stock";
 import { asSold, defaultVariant, findVariant, hasChoice } from "../lib/variants";
@@ -7,7 +7,7 @@ import useAsyncData from "../hooks/useAsyncData";
 import { ErrorPanel, LoadingPanel } from "../components/DataState";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { Heart, ShoppingCart, Star, ShieldCheck, Truck, Leaf, Minus, Plus, Check } from "lucide-react";
+import { Heart, ShoppingCart, Star, ShieldCheck, Truck, Leaf, Minus, Plus, Check, ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Input } from "../components/ui/input";
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 export default function ProductDetail() {
   const { productId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [reviews, setReviews] = useState([]);
   const [qty, setQty] = useState(1);
   const [chosenId, setChosenId] = useState(null);
@@ -103,6 +104,18 @@ export default function ProductDetail() {
     else setAddProblem(result.message);
   };
 
+  /**
+   * Back to wherever they came from, with the shop's filters, sort and page
+   * intact, because those live in its address and stepping back restores
+   * them. The breadcrumb below leads to an unfiltered shop instead, which is
+   * a different intention and worth keeping separate.
+   *
+   * Someone who arrived from a shared link has nothing to step back to, so
+   * they are sent to the shop rather than off the site.
+   */
+  const cameFromWithinTheSite = (window.history.state?.idx ?? 0) > 0;
+  const goBack = () => (cameFromWithinTheSite ? navigate(-1) : navigate("/shop"));
+
   const submitReview = async (e) => {
     e.preventDefault();
     if (!user) { toast.error("Please login to review"); return; }
@@ -116,8 +129,17 @@ export default function ProductDetail() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10" data-testid="product-detail-page">
-      <div className="text-xs text-[#64748B] mb-6">
-        <Link to="/">Home</Link> / <Link to="/shop">Shop</Link> / <span className="text-[#0F172A]">{product.name}</span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6">
+        <button
+          onClick={goBack}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--nayara-primary)] hover:underline"
+          data-testid="product-back"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <div className="text-xs text-[#64748B]">
+          <Link to="/">Home</Link> / <Link to="/shop">Shop</Link> / <span className="text-[#0F172A]">{product.name}</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
