@@ -71,7 +71,13 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <AppRouter />
-            <Toaster position="top-right" richColors />
+            {/*
+              Bottom of the screen, not the top: the navbar is fixed at the
+              top-right and a toast there lands directly on the cart icon, so
+              "added to cart" covered the very thing it invited you to click.
+              The close button lets it be dismissed rather than waited out.
+            */}
+            <Toaster position="bottom-right" richColors closeButton />
           </CartProvider>
         </AuthProvider>
       </BrowserRouter>
