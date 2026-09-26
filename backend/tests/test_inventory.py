@@ -750,6 +750,41 @@ class TestCartHoldsAForm:
         assert "500g" in response.json()["detail"]
         user_client.delete(f"{base_url}/api/cart")
 
+    def test_changing_a_quantity_leaves_the_line_where_it_was(
+        self, base_url, user_client, two_variant_product
+    ):
+        """A line that jumps to the bottom looks to the customer like it went
+        missing, and they go looking for what they just changed."""
+        product = two_variant_product(5, 5)
+        small, large = product["variants"]
+        user_client.delete(f"{base_url}/api/cart")
+        for variant in (small, large):
+            user_client.post(
+                f"{base_url}/api/cart",
+                json={
+                    "product_id": product["product_id"],
+                    "variant_id": variant["variant_id"],
+                    "quantity": 1,
+                },
+            )
+
+        def order():
+            cart = user_client.get(f"{base_url}/api/cart").json()
+            return [
+                line["variant_label"]
+                for line in cart["items"]
+                if line["product_id"] == product["product_id"]
+            ]
+
+        before = order()
+        user_client.put(
+            f"{base_url}/api/cart/{product['product_id']}",
+            json={"variant_id": small["variant_id"], "quantity": 3},
+        )
+
+        assert order() == before, "the edited line moved"
+        user_client.delete(f"{base_url}/api/cart")
+
     def test_changing_one_forms_quantity_leaves_the_other(
         self, base_url, user_client, two_variant_product
     ):

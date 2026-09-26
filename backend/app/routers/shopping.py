@@ -169,18 +169,32 @@ async def update_cart(
             return False
         return variant_id is None or item.get("variant_id") == variant_id
 
-    items = [item for item in existing if not is_target(item)]
     if request.quantity > 0:
         # Setting a quantity replaces whatever was there, so the whole amount
         # is what has to be available.
         variant = await require_available(product_id, variant_id, request.quantity)
-        items.append(
-            {
-                "product_id": product_id,
-                "variant_id": variant["variant_id"],
-                "quantity": request.quantity,
-            }
-        )
+        line = {
+            "product_id": product_id,
+            "variant_id": variant["variant_id"],
+            "quantity": request.quantity,
+        }
+    else:
+        line = None
+
+    # The edited line keeps its place. Removing it and adding it back would
+    # send it to the bottom of the cart, which reads as the item having
+    # disappeared and sends the customer looking for what they just changed.
+    items = []
+    replaced = False
+    for item in existing:
+        if not is_target(item):
+            items.append(item)
+        elif line and not replaced:
+            items.append(line)
+            replaced = True
+    if line and not replaced:
+        items.append(line)
+
     await db.carts.update_one(
         {"user_id": user["user_id"]},
         {"$set": {"items": items}},
