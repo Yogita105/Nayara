@@ -261,21 +261,12 @@ the model works.
 - [x] Add the storefront selector, "from ₹X" in the grid, per-variant stock
       notice, and `?variant=` in the URL.
 - [x] Drop the size from product names once the size became a choice.
-- [ ] **Next: remove `Product.price` and `Product.stock`.** They are now only a
-      summary of the variants, kept because the storefront still reads them.
-      Concretely:
-      - `price` is exactly `price_from`, which is already maintained. Move the
-        `price_asc`/`price_desc` sorts, the `max_price` filter and the
-        `products` price index in `database.py` onto `price_from`, creating the
-        new index before dropping the old one.
-      - `stock` has no equivalent yet. Either add a maintained `stock_total` or
-        compute it, then move `ProductCard`, the admin product list and
-        `isOutOfStock` onto it.
-      - `ProductCreate` still requires `price`, `mrp` and `stock`. They become
-        optional once nothing derives a first variant from them; `seed.py` and
-        `default_variant` are the remaining callers.
-      - `inventory.py` increments the product-level `stock` alongside the
-        variant's in the same operation. That mirror goes with it.
+- [x] **Removed `Product.price`, `Product.mrp` and `Product.stock`.** Price and
+      stock now live only in the variants. The catalogue is sorted and
+      filtered by `price_from`, the cheapest form projected onto the product
+      so an index can reach it; total stock is added up from the forms rather
+      than stored, so there is nothing left to fall out of step. The stale
+      `price_1_product_id_1` index is dropped by the same migration.
 - [ ] Give the soap colours their own photographs. The picker already shows a
       per-variant image when one exists; without one a colour falls back to the
       product photo, which rather defeats choosing a colour.
@@ -285,7 +276,8 @@ the model works.
 - [ ] Tidy the slugs. `washing-powder-1kg` and `toilet-cleaner-500ml` still
       name a size that is now one option among several. Slugs are not used in
       routing — products are addressed by `product_id` — so nothing is broken,
-      only misleading to read.
+      only misleading to read. The seed data already uses the tidy form, so
+      only existing databases are affected.
 
 ## Recommended execution order
 

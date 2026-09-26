@@ -167,11 +167,8 @@ class ProductCreate(ContentModel):
     category: ProductCategory
     description: str = Field(default="", max_length=5000)
     short_description: str = Field(default="", max_length=500)
-    price: float = Field(gt=0, le=10_000_000)
-    mrp: float = Field(gt=0, le=10_000_000)
     image: str = Field(default="", max_length=2000)
     images: List[str] = Field(default_factory=list, max_length=10)
-    stock: int = Field(default=100, ge=0, le=1_000_000)
     badges: List[str] = Field(default_factory=list, max_length=10)
     featured: bool = False
 
@@ -179,15 +176,10 @@ class ProductCreate(ContentModel):
     # "Colour". One axis per product, so a kilo bag of powder is not also
     # asked to be a colour.
     option_name: str = Field(default="Size", min_length=1, max_length=40)
-    # Left unset by anything that does not manage variants, which then leaves
-    # whatever the product already has alone rather than wiping it.
+    # Price and stock live here and nowhere else. Left unset by a request
+    # that does not manage them, which then leaves whatever the product
+    # already has alone rather than wiping it.
     variants: Optional[List[ProductVariant]] = Field(default=None, max_length=MAX_VARIANTS)
-
-    @model_validator(mode="after")
-    def check_mrp_covers_price(self) -> "ProductCreate":
-        if self.mrp < self.price:
-            raise ValueError("MRP must be greater than or equal to the price")
-        return self
 
     @model_validator(mode="after")
     def check_variants_can_be_told_apart(self) -> "ProductCreate":
@@ -217,8 +209,7 @@ class Product(ProductCreate):
     reviews_count: int = Field(default=0, ge=0)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    # A stored product always has them, whatever the request that made it
-    # chose to send.
+    # A stored product always has them, and price and stock live in them.
     variants: List[ProductVariant] = Field(default_factory=list, max_length=MAX_VARIANTS)
     # The cheapest variant, held here so the catalogue can be sorted and
     # filtered by price with a plain indexed field. Recalculated whenever the
@@ -232,37 +223,21 @@ def advertised_price(variants: List[dict]) -> float:
     Held on the product as `price_from` so the catalogue can be sorted and
     filtered with a plain indexed field, which an embedded array cannot be.
     It is a projection of the variants, never something anyone sets.
+
+    Entries without a readable price are skipped rather than counted as free,
+    because this also reads documents written before variants were validated.
     """
-    return min((variant.get("price", 0) for variant in variants), default=0)
-
-
-def total_stock(variants: List[dict]) -> int:
-    """Everything on hand across a product's forms."""
-    return sum(variant.get("stock", 0) for variant in variants)
-
-
-def cheapest_price(variants: List[dict], fallback: float = 0) -> float:
-    """The price a product is advertised from."""
     prices = [
         variant["price"]
         for variant in variants
         if isinstance(variant, dict) and isinstance(variant.get("price"), (int, float))
     ]
-    return min(prices) if prices else fallback
+    return min(prices) if prices else 0
 
 
-def default_variant(product: dict) -> dict:
-    """The single variant a product without any should stand in with.
-
-    Every product carries at least one variant, so that nothing downstream
-    has to handle both a product that has them and one that does not.
-    """
-    return ProductVariant(
-        label=product.get("variant_label") or "Standard",
-        price=product.get("price", 0),
-        mrp=product.get("mrp") or product.get("price", 0),
-        stock=product.get("stock", 0),
-    ).model_dump()
+def total_stock(variants: List[dict]) -> int:
+    """Everything on hand across a product's forms."""
+    return sum(variant.get("stock", 0) for variant in variants)
 
 
 class CartItem(ContentModel):

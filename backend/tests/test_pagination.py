@@ -104,8 +104,8 @@ class TestProductSorting:
     @pytest.mark.parametrize(
         "sort,key,reverse",
         [
-            ("price_asc", "price", False),
-            ("price_desc", "price", True),
+            ("price_asc", "price_from", False),
+            ("price_desc", "price_from", True),
             ("rating", "rating", True),
         ],
     )

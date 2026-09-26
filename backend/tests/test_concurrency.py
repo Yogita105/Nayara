@@ -144,13 +144,9 @@ def scarce_product(mongo_db):
             "category": "home-care",
             "description": "Temporary product used by the concurrency tests.",
             "short_description": "Temporary product.",
-            "price": 100.0,
-            "mrp": 120.0,
             "image": "",
             "images": [],
-            "stock": stock,
-            # Every product carries at least one variant, and stock lives on
-            # it. The product's own count mirrors it.
+            # Price and stock live on the variant and nowhere else.
             "option_name": "Size",
             "price_from": 100.0,
             "variants": [

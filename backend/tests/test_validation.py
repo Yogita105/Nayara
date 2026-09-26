@@ -20,8 +20,10 @@ VALID_PRODUCT = {
     "name": "Nayara Test Soap",
     "slug": "nayara-test-soap",
     "category": "laundry",
-    "price": 45.0,
-    "mrp": 60.0,
+    # Price and stock belong to the forms a product is sold in, so a valid
+    # product names at least one. The rules about those figures are the
+    # variant's, and are tested with it.
+    "variants": [{"label": "Standard", "price": 45.0, "mrp": 60.0, "stock": 10}],
 }
 VALID_ADDRESS = {
     "full_name": "Test Buyer",
@@ -36,21 +38,8 @@ VALID_ADDRESS = {
 class TestProductValidation:
     def test_valid_product_is_accepted(self):
         product = ProductCreate(**VALID_PRODUCT)
-        assert product.price == 45.0
+        assert product.variants[0].price == 45.0
         assert product.category == "laundry"
-
-    @pytest.mark.parametrize("price", [0, -1])
-    def test_price_must_be_positive(self, price):
-        with pytest.raises(ValidationError):
-            ProductCreate(**{**VALID_PRODUCT, "price": price})
-
-    def test_stock_cannot_be_negative(self):
-        with pytest.raises(ValidationError):
-            ProductCreate(**{**VALID_PRODUCT, "stock": -1})
-
-    def test_mrp_cannot_be_below_price(self):
-        with pytest.raises(ValidationError):
-            ProductCreate(**{**VALID_PRODUCT, "price": 90.0, "mrp": 60.0})
 
     def test_unknown_category_is_rejected(self):
         with pytest.raises(ValidationError):

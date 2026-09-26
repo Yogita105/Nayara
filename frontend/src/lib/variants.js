@@ -35,7 +35,7 @@ export function defaultVariant(product) {
 
 export function cheapestPrice(product) {
   const prices = variantsOf(product).map((variant) => variant.price);
-  return prices.length ? Math.min(...prices) : product?.price;
+  return prices.length ? Math.min(...prices) : undefined;
 }
 
 /**

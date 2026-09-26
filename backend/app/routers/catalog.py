@@ -14,7 +14,6 @@ from ..models import (
     Review,
     ReviewCreate,
     advertised_price,
-    default_variant,
     total_stock,
 )
 from ..pagination import TOTAL_COUNT_HEADER, limit_query, offset_query
@@ -102,10 +101,10 @@ async def create_product(
     user: dict = Depends(require_admin),
 ):
     data = payload.model_dump()
-    # Every product carries at least one variant, so nothing downstream has
-    # to handle a product that has none. Settling it before the product is
-    # built means the variant is validated with everything else.
-    data["variants"] = data.get("variants") or [default_variant(data)]
+    # Price and stock live in the variants, so a product without one cannot
+    # be sold and there is nothing left to invent one from.
+    if not data.get("variants"):
+        raise FieldError(422, "variants", "A product needs at least one option.")
     product = Product(**data)
     doc = product.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()

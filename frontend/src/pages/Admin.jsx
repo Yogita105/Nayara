@@ -217,9 +217,9 @@ const OPTION_NAMES = ["Weight", "Volume", "Colour", "Size", "Pack"];
 
 const blankVariant = () => ({ label: "", price: "", mrp: "", stock: 0, image: "" });
 
-// The product's own price and stock summarise its forms. The server works
-// these out again on save; they are computed here so the editor can show what
-// the shop will say before anyone saves.
+// What the shop will say about a product, worked out from its forms. The
+// server derives the same thing on save; this is only so the editor can show
+// it before anyone commits to it.
 function variantSummary(variants) {
   const rows = variants || [];
   const cheapest = rows.reduce(
@@ -315,11 +315,6 @@ function ProductEditor({ initial, onClose }) {
         category: form.category,
         short_description: form.short_description,
         description: form.description,
-        // Derived from the options below, and derived again on the server so
-        // the two cannot be saved disagreeing.
-        price: summary.price,
-        mrp: summary.mrp,
-        stock: summary.stock,
         image: form.image,
         images: form.images || [],
         badges: form.badges || [],

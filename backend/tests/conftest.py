@@ -50,7 +50,7 @@ def _return_reserved_stock(mongo_db, owner):
 
     Placing an order decrements stock, so deleting test orders without this
     would slowly drain the real catalogue on every run. Stock lives on the
-    variant, with the product's own count mirroring it.
+    variant and nowhere else.
     """
     for order in mongo_db.orders.find(owner, {"items": 1, "stock_released": 1}):
         if order.get("stock_released"):
@@ -68,7 +68,7 @@ def _return_reserved_stock(mongo_db, owner):
                 field = "variants.0.stock"
             mongo_db.products.update_one(
                 criteria,
-                {"$inc": {field: item["quantity"], "stock": item["quantity"]}},
+                {"$inc": {field: item["quantity"]}},
             )
 
 

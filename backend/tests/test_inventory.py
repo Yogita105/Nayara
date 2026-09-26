@@ -28,13 +28,9 @@ def stocked_product(mongo_db):
             "category": "home-care",
             "description": "Temporary product used by the inventory tests.",
             "short_description": "Temporary product.",
-            "price": 100.0,
-            "mrp": 120.0,
             "image": "",
             "images": [],
-            "stock": stock,
-            # Every product carries at least one variant, and stock lives on
-            # it. The product's own count mirrors it.
+            # Price and stock live on the variant and nowhere else.
             "option_name": "Size",
             "price_from": 100.0,
             "variants": [
@@ -465,13 +461,10 @@ def two_variant_product(mongo_db):
             "category": "home-care",
             "description": "Temporary product used by the variant tests.",
             "short_description": "Temporary product.",
-            "price": 100.0,
-            "mrp": 120.0,
             "price_from": 100.0,
             "option_name": "Weight",
             "image": "",
             "images": [],
-            "stock": first_stock + second_stock,
             "variants": [
                 {
                     "variant_id": f"var_{suffix}_small",

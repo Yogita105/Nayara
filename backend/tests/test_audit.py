@@ -228,9 +228,7 @@ class TestAdministratorActions:
                 "name": f"Audit Product {suffix}",
                 "slug": f"audit-product-{suffix}",
                 "category": "home-care",
-                "price": 100.0,
-                "mrp": 120.0,
-                "stock": 5,
+                "variants": [{"label": "Standard", "price": 100.0, "mrp": 120.0, "stock": 5}],
             },
         )
         assert created.status_code == 200

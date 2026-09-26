@@ -233,20 +233,21 @@ forms themselves as `variants`:
 }
 ```
 
-Price and stock belong to the variant, because a kilo and a half-kilo are priced
-differently and run out independently. An image is optional and falls back to the
-product's: colours need their own photograph, weights generally look alike.
-`price_from` holds the cheapest variant's price so the catalogue can still be sorted by
-a plain indexed field. Reviews and wishlists stay on the **product**.
+Price and stock belong to the variant, and to nothing else. A kilo and a half-kilo are
+priced differently and run out independently, so a product has no price or stock of its
+own to disagree with them. An image is optional and falls back to the product's:
+colours need their own photograph, weights generally look alike. Reviews and wishlists
+stay on the **product**.
+
+The one figure a product does keep is `price_from`, the cheapest form on offer. An
+embedded array cannot be indexed for sorting, so that number is projected onto the
+product where an index can reach it, and the catalogue is sorted and filtered by it. It
+is recomputed from the variants on every save and never set by hand. Total stock is not
+stored at all — it is added up from the forms wherever it is needed, which is one fewer
+thing that can fall out of step.
 
 One axis per product. A matrix of size against colour needs option sets and generated
 combinations, which is a great deal of machinery for a catalogue this size.
-
-The product's own `price`, `mrp` and `stock` are a **summary** of its variants, not
-something anyone sets: the price is the cheapest on offer, the MRP belongs to that same
-form, and the stock is everything on hand across the forms. The server recomputes them
-on every save, so the two cannot be stored disagreeing. They exist because the
-storefront still reads them, and are removed once it does not.
 
 A form can be added, priced, stocked and photographed in **Admin → Products**. Two forms
 cannot share a label, a product cannot be left with none, and a form cannot be removed
@@ -291,6 +292,18 @@ python scripts\rename_product_sizes.py --apply    # make the change
 `show_catalogue.py` prints every product with its forms, which is the quickest way to
 see what a database actually holds.
 
+Once nothing reads the product's own price and stock, they are removed from stored
+documents, along with the index on the old `price` field:
+
+```powershell
+python scripts\drop_product_price_and_stock.py            # report what would change
+python scripts\drop_product_price_and_stock.py --apply    # make the change
+```
+
+It refuses to drop anything while a product still has no variants, or while any
+product's `price_from` disagrees with its forms — either would destroy the only record
+of what that product costs.
+
 ## Orders and stock
 
 Placing an order reserves stock. Stock belongs to the variant, so a kilo bag and a
@@ -304,7 +317,6 @@ so two shoppers competing for the last unit cannot both succeed:
 { product_id, variants: { $elemMatch: { variant_id, stock: { $gte: quantity } } } }
   -> { $inc: { "variants.$.stock": -quantity } }
 ```
-
 If a later line in the same order cannot be filled, the units already reserved are
 returned and the whole order is refused with `409`. Repeated lines for one product are
 combined first, so the check uses the real total. MongoDB transactions are not used

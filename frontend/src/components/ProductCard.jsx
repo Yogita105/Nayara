@@ -13,8 +13,8 @@ export default function ProductCard({ product, index = 0 }) {
   // The product is advertised at its cheapest form, with that same form's
   // MRP: pairing one form's price with another's would invent a discount.
   const shown = cheapestVariant(product);
-  const price = shown ? shown.price : product.price;
-  const mrp = shown ? (shown.mrp ?? shown.price) : product.mrp;
+  const price = shown?.price;
+  const mrp = shown?.mrp ?? price;
   const discount = Math.round(((mrp - price) / mrp) * 100) || 0;
   const stock = totalStock(product);
   const notice = stockNotice(stock);

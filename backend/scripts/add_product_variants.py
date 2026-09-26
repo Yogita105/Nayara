@@ -26,7 +26,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND_DIR))
 load_dotenv(BACKEND_DIR / ".env")
 
-from app.models import ProductVariant, cheapest_price  # noqa: E402
+from app.models import ProductVariant, advertised_price  # noqa: E402
 
 # A size already written into the product's name is the label that product is
 # really sold under, so it is reused rather than inventing "Standard" for it.
@@ -136,7 +136,7 @@ def main() -> int:
                 "$set": {
                     "option_name": plan["option_name"],
                     "variants": [variant],
-                    "price_from": cheapest_price([variant], variant["price"]),
+                    "price_from": advertised_price([variant]),
                 }
             },
         )

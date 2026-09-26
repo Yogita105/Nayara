@@ -21,8 +21,6 @@ from app.models import (  # noqa: E402
     MAX_VARIANTS,
     ProductVariant,
     advertised_price,
-    cheapest_price,
-    default_variant,
     total_stock,
 )
 from scripts.add_product_variants import read_size  # noqa: E402
@@ -38,25 +36,24 @@ ADDRESS = {
 }
 
 
+def form(label, price, mrp=None, stock=5, **overrides):
+    """One buyable form, as an administrator would send it."""
+    entry = {"label": label, "price": price, "mrp": mrp or price, "stock": stock}
+    entry.update(overrides)
+    return entry
+
+
 def product_payload(**overrides):
     suffix = uuid.uuid4().hex[:8]
     payload = {
         "name": f"Variant Test {suffix}",
         "slug": f"variant-test-{suffix}",
         "category": "home-care",
-        "price": 100.0,
-        "mrp": 120.0,
-        "stock": 7,
+        # Price and stock live in the forms, so every product must name one.
+        "variants": [form("Standard", 100.0, mrp=120.0, stock=7)],
     }
     payload.update(overrides)
     return payload
-
-
-def form(label, price, mrp=None, stock=5, **overrides):
-    """One buyable form, as an administrator would send it."""
-    entry = {"label": label, "price": price, "mrp": mrp or price, "stock": stock}
-    entry.update(overrides)
-    return entry
 
 
 def labelled(product, label):
@@ -67,6 +64,12 @@ class TestTheVariantItself:
     def test_a_variant_needs_a_label(self):
         with pytest.raises(ValueError):
             ProductVariant(label="", price=10, mrp=10)
+
+    @pytest.mark.parametrize("price", [0, -1])
+    def test_the_price_must_be_positive(self, price):
+        """Price lives here now, so the rule about it does too."""
+        with pytest.raises(ValueError):
+            ProductVariant(label="1kg", price=price, mrp=10)
 
     def test_mrp_cannot_be_below_the_price(self):
         """The saving shown to a customer would otherwise be negative."""
@@ -93,37 +96,6 @@ class TestTheVariantItself:
         """Weights look alike and share the product's photograph; colours do
         not, which is the whole reason for choosing one."""
         assert ProductVariant(label="1kg", price=100, mrp=100).image == ""
-
-
-class TestTheAdvertisedPrice:
-    def test_it_is_the_cheapest_variant(self):
-        variants = [
-            {"price": 180.0},
-            {"price": 100.0},
-            {"price": 340.0},
-        ]
-
-        assert cheapest_price(variants) == 100.0
-
-    def test_a_product_with_no_variants_falls_back(self):
-        assert cheapest_price([], fallback=55.0) == 55.0
-
-    def test_unreadable_entries_are_ignored(self):
-        assert cheapest_price([{"price": None}, {"price": 20.0}]) == 20.0
-
-
-class TestStandingInForAProductWithout:
-    def test_it_carries_the_products_price_and_stock(self):
-        variant = default_variant({"price": 45.0, "mrp": 60.0, "stock": 12})
-
-        assert variant["price"] == 45.0
-        assert variant["mrp"] == 60.0
-        assert variant["stock"] == 12
-
-    def test_a_missing_mrp_falls_back_to_the_price(self):
-        variant = default_variant({"price": 45.0, "stock": 1})
-
-        assert variant["mrp"] == 45.0
 
 
 class TestReadingASizeFromAName:
@@ -177,6 +149,7 @@ class TestEveryProductHasOne:
         created = admin_client.post(f"{base_url}/api/products", json=payload)
         product_id = created.json()["product_id"]
 
+        payload.pop("variants")
         payload.update({"price": 250.0, "mrp": 300.0, "stock": 3})
         admin_client.put(f"{base_url}/api/products/{product_id}", json=payload)
 
@@ -194,7 +167,7 @@ class TestEveryProductHasOne:
 
     def test_the_advertised_price_matches_the_variants(self, mongo_db):
         for product in mongo_db.products.find({}, {"_id": 0}):
-            expected = cheapest_price(product.get("variants", []))
+            expected = advertised_price(product.get("variants", []))
 
             assert product.get("price_from") == expected, product["name"]
 
@@ -219,6 +192,13 @@ class TestWhatTheProductStillKeeps:
 
     def test_it_survives_a_product_with_one_form(self):
         assert advertised_price([form("1kg", 180)]) == 180
+
+    def test_unreadable_entries_are_ignored(self):
+        """It also reads documents written before variants were validated."""
+        assert advertised_price([{"price": None}, {"price": 20.0}]) == 20.0
+
+    def test_no_forms_means_no_price(self):
+        assert advertised_price([]) == 0
 
     def test_the_stock_is_every_form_together(self):
         assert total_stock([form("1kg", 180, stock=4), form("500g", 100, stock=9)]) == 13
@@ -370,7 +350,7 @@ class TestARequestThatKnowsNothingOfForms:
     def test_it_leaves_several_alone(self, base_url, admin_client, saved_product):
         product = saved_product(variants=[form("500g", 100, stock=4), form("1kg", 180, stock=9)])
         payload = product_payload(name=product["name"], slug=product["slug"])
-        assert "variants" not in payload
+        payload.pop("variants")
 
         response = admin_client.put(
             f"{base_url}/api/products/{product['product_id']}", json=payload
@@ -380,11 +360,11 @@ class TestARequestThatKnowsNothingOfForms:
         assert len(response.json()["variants"]) == 2
 
     def test_it_cannot_reprice_them(self, base_url, admin_client, saved_product):
-        """Its price and stock are ignored; the forms decide both."""
+        """A price outside the forms is not a price the shop recognises."""
         product = saved_product(variants=[form("500g", 100, stock=4), form("1kg", 180, stock=9)])
-        payload = product_payload(
-            name=product["name"], slug=product["slug"], price=5.0, mrp=5.0, stock=500
-        )
+        payload = product_payload(name=product["name"], slug=product["slug"])
+        payload.pop("variants")
+        payload.update({"price": 5.0, "mrp": 5.0, "stock": 500})
 
         response = admin_client.put(
             f"{base_url}/api/products/{product['product_id']}", json=payload
@@ -393,6 +373,8 @@ class TestARequestThatKnowsNothingOfForms:
         updated = response.json()
         assert updated["price_from"] == 100
         assert total_stock(updated["variants"]) == 13
+        assert "price" not in updated
+        assert "stock" not in updated
 
 
 def place_order(client, base_url, items):

@@ -15,7 +15,10 @@ class TestProducts:
         assert len(data) >= 7, f"Expected >=7 products, got {len(data)}"
         for p in data:
             assert "_id" not in p
-            assert "product_id" in p and "name" in p and "price" in p
+            assert "product_id" in p and "name" in p
+            # Price lives in the forms a product is sold in; the product
+            # carries only the cheapest of them, for sorting.
+            assert "price_from" in p and p["variants"]
 
     def test_filter_category_laundry(self, base_url, anon_client):
         r = anon_client.get(f"{base_url}/api/products?category=laundry")
