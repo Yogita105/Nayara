@@ -10,6 +10,7 @@ from ..models import (
     OrderCreate,
     OrderItemSnapshot,
     OrderStatus,
+    PaymentMethod,
     PaymentStatus,
     ShippingSettings,
 )
@@ -37,6 +38,19 @@ def calculate_totals(lines: List[dict], shipping_settings: ShippingSettings) -> 
         "shipping": round(shipping, 2),
         "total": round(total, 2),
     }
+
+
+def unpaid_status(method: PaymentMethod) -> PaymentStatus:
+    """The payment status an order starts life with: not yet paid.
+
+    Cash on Delivery is owed at the door and nothing further is expected here.
+    Anything paid online starts unpaid, and only a payment provider confirming
+    the money arrived may ever change that — never the browser, and never the
+    act of placing the order.
+    """
+    if method == PaymentMethod.COD:
+        return PaymentStatus.COD_PENDING
+    return PaymentStatus.PENDING
 
 
 def build_snapshots(payload: OrderCreate, products_by_id: dict) -> List[dict]:
@@ -108,7 +122,6 @@ async def create_order(
         await release_claim(user["user_id"], idempotency_key)
         raise
 
-    paid_immediately = payload.payment_method == "upi"
     order = Order(
         user_id=user["user_id"],
         user_mobile=user.get("mobile", ""),
@@ -117,16 +130,8 @@ async def create_order(
         **calculate_totals(snapshots, await stored_shipping()),
         address=payload.address,
         payment_method=payload.payment_method,
-        payment_status=(
-            PaymentStatus.PAID
-            if paid_immediately
-            else (
-                PaymentStatus.PENDING
-                if payload.payment_method == "card"
-                else PaymentStatus.COD_PENDING
-            )
-        ),
-        status=OrderStatus.PROCESSING if paid_immediately else OrderStatus.PLACED,
+        payment_status=unpaid_status(payload.payment_method),
+        status=OrderStatus.PLACED,
     )
     doc = order.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
@@ -140,7 +145,10 @@ async def create_order(
         raise
 
     await complete_claim(user["user_id"], idempotency_key, order.order_id)
-    if payload.payment_method in ("cod", "upi"):
+    # Cash on Delivery asks nothing more of the customer now, so the cart has
+    # done its job. An order awaiting an online payment must keep its cart
+    # until the money actually arrives.
+    if payload.payment_method == PaymentMethod.COD:
         await db.carts.update_one(
             {"user_id": user["user_id"]},
             {"$set": {"items": []}},

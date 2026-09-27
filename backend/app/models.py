@@ -90,6 +90,24 @@ class PaymentMethod(str, Enum):
     COD = "cod"
 
 
+# Which of those a customer may actually choose at checkout today.
+#
+# Paying online means someone takes the money and tells us it arrived. No
+# provider does that yet, so offering UPI or card would record orders as paid
+# that nobody has paid for. They stay in the enum because orders will record
+# them once a provider is wired in; they are simply not on offer until then.
+OFFERED_PAYMENT_METHODS = frozenset({PaymentMethod.COD})
+
+
+def currently_offered(method: PaymentMethod) -> PaymentMethod:
+    if method not in OFFERED_PAYMENT_METHODS:
+        raise ValueError("Only Cash on Delivery is available right now")
+    return method
+
+
+OfferedPaymentMethod = Annotated[PaymentMethod, AfterValidator(currently_offered)]
+
+
 class PaymentStatus(str, Enum):
     PENDING = "pending"
     PAID = "paid"
@@ -439,7 +457,7 @@ class Address(ContentModel):
 class OrderCreate(ContentModel):
     items: List[CartItem] = Field(min_length=1, max_length=MAX_ORDER_ITEMS)
     address: Address
-    payment_method: PaymentMethod
+    payment_method: OfferedPaymentMethod
     origin_url: Optional[str] = Field(default="", max_length=2000)
 
 

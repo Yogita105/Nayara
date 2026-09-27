@@ -285,21 +285,30 @@ class TestOrders:
         # cart cleared
         assert user_client.get(f"{base_url}/api/cart").json()["items"] == []
 
-    def test_order_upi_paid(self, base_url, user_client, sample_items):
-        r = user_client.post(
-            f"{base_url}/api/orders",
-            json={"items": sample_items, "address": ADDRESS, "payment_method": "upi"},
-        )
-        assert r.status_code == 200
-        assert r.json()["payment_status"] == "paid"
+    @pytest.mark.parametrize("method", ["upi", "card"])
+    def test_paying_online_is_not_offered_yet(self, base_url, user_client, sample_items, method):
+        """No order may be placed against a payment we cannot collect.
 
-    def test_order_card_pending(self, base_url, user_client, sample_items):
+        Until a provider takes the money and confirms it, choosing UPI or card
+        would leave an order recorded as bought but never paid for.
+        """
         r = user_client.post(
             f"{base_url}/api/orders",
-            json={"items": sample_items, "address": ADDRESS, "payment_method": "card"},
+            json={"items": sample_items, "address": ADDRESS, "payment_method": method},
+        )
+        assert r.status_code == 422, r.text
+        assert "Cash on Delivery" in r.text
+
+    def test_a_placed_order_is_never_already_paid(self, base_url, user_client, sample_items):
+        """Placing an order moves no money, so none of them may claim it did."""
+        r = user_client.post(
+            f"{base_url}/api/orders",
+            json={"items": sample_items, "address": ADDRESS, "payment_method": "cod"},
         )
         assert r.status_code == 200
-        assert r.json()["payment_status"] == "pending"
+        order = r.json()
+        assert order["payment_status"] != "paid"
+        assert order["status"] == "placed"
 
     def test_my_orders_only_own(self, base_url, user_client, user_session):
         r = user_client.get(f"{base_url}/api/orders")

@@ -48,6 +48,11 @@ export default function OrderSuccess() {
       </div>
       <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tight">Thank you for your order!</h1>
       <p className="mt-3 text-[#64748B]">Order #{order.order_id}</p>
+      {order.payment_method === "cod" && (
+        <p className="mt-2 text-[#64748B]" data-testid="amount-due">
+          Pay {formatINR(order.total)} in cash when your order arrives.
+        </p>
+      )}
 
       <div className="mt-10 rounded-2xl border border-[var(--nayara-border)] bg-white p-6 text-left">
         <h3 className="font-heading font-semibold mb-4 flex items-center gap-2"><Package className="w-4 h-4" /> Items ordered</h3>

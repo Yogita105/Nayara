@@ -115,6 +115,18 @@ class TestOrderValidation:
                 payment_method="crypto",
             )
 
+    @pytest.mark.parametrize("method", ["upi", "card"])
+    def test_a_method_we_cannot_collect_is_refused_in_words(self, method):
+        """An order records what was paid. Nothing can collect UPI or card
+        money yet, so an order must not be able to claim either."""
+        with pytest.raises(ValidationError) as caught:
+            OrderCreate(
+                items=[{"product_id": "prod_1", "quantity": 1}],
+                address=VALID_ADDRESS,
+                payment_method=method,
+            )
+        assert "Only Cash on Delivery is available" in str(caught.value)
+
     def test_order_requires_at_least_one_item(self):
         with pytest.raises(ValidationError):
             OrderCreate(items=[], address=VALID_ADDRESS, payment_method="cod")

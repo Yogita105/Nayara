@@ -151,6 +151,15 @@ production-ready ecommerce application.
 
 ## 9. Payments
 
+Nothing can collect money yet, so Cash on Delivery is the only method on
+offer and no order may be placed claiming any other. Until a provider is
+wired in, an order records only what is owed, never that it was paid.
+
+Razorpay is the chosen provider. The work below is what integrating it means.
+
+- [x] Stop offering payment methods the shop cannot collect. Choosing UPI
+      once recorded the order as paid and moved it to processing without any
+      money changing hands.
 - [ ] Select and configure a production payment provider suitable for India.
 - [ ] Implement server-side payment-order creation.
 - [ ] Implement the currently missing checkout-session endpoint.

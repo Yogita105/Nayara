@@ -8,11 +8,10 @@ import { shippingFor } from "../lib/shipping";
 import { useShipping } from "../context/BusinessContext";
 import ShippingLine from "../components/ShippingLine";
 import { Input } from "../components/ui/input";
-import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Label } from "../components/ui/label";
 import { ErrorSummary, FieldError, describedBy } from "../components/FormErrors";
 import ProductImage from "../components/ProductImage";
-import { Smartphone, Package, ShieldCheck } from "lucide-react";
+import { Package, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Checkout() {
@@ -21,7 +20,10 @@ export default function Checkout() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const [payment, setPayment] = useState("upi");
+  // Cash on Delivery is the only method the shop can actually collect today,
+  // so it is stated rather than chosen. When online payment arrives this
+  // becomes a choice again.
+  const payment = "cod";
   // Kept for the whole visit so a retried submission cannot create a second order.
   const [idempotencyKey] = useState(() =>
     (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`)
@@ -199,24 +201,21 @@ export default function Checkout() {
 
           <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <h2 className="font-heading text-lg font-semibold mb-5">Payment Method</h2>
-            <RadioGroup value={payment} onValueChange={setPayment} className="space-y-3" data-testid="payment-options">
-              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "upi" ? "border-[var(--nayara-primary)] bg-[#FBEEE4]" : "border-[var(--nayara-border)]"}`}>
-                <RadioGroupItem value="upi" id="pay-upi" data-testid="payment-upi" />
-                <Smartphone className="w-5 h-5" />
-                <div>
-                  <div className="font-medium">UPI (Demo)</div>
-                  <div className="text-sm text-[#64748B]">Google Pay, PhonePe, Paytm</div>
+            <div
+              className="flex items-center gap-3 rounded-xl border border-[var(--nayara-primary)] bg-[#FBEEE4] p-4"
+              data-testid="payment-options"
+            >
+              <Package className="w-5 h-5" />
+              <div>
+                <div className="font-medium" data-testid="payment-cod">Cash on Delivery</div>
+                <div className="text-sm text-[#64748B]">
+                  Pay the courier when your order arrives.
                 </div>
-              </label>
-              <label className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${payment === "cod" ? "border-[var(--nayara-primary)] bg-[#FBEEE4]" : "border-[var(--nayara-border)]"}`}>
-                <RadioGroupItem value="cod" id="pay-cod" data-testid="payment-cod" />
-                <Package className="w-5 h-5" />
-                <div>
-                  <div className="font-medium">Cash on Delivery</div>
-                  <div className="text-sm text-[#64748B]">Pay when you receive</div>
-                </div>
-              </label>
-            </RadioGroup>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-[#64748B]">
+              Paying online is not available yet.
+            </p>
           </section>
         </div>
 
