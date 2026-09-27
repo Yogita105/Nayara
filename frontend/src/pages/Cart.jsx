@@ -7,12 +7,16 @@ import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import ProductImage from "../components/ProductImage";
 import { cartLineProblem } from "../lib/stock";
 import { lineKey, lineName } from "../lib/variants";
+import { shippingFor } from "../lib/shipping";
+import { useShipping } from "../context/BusinessContext";
+import ShippingLine from "../components/ShippingLine";
 import { LoadingPanel } from "../components/DataState";
 
 export default function Cart() {
   const { cart, updateQuantity, removeFromCart, cartTotal, cartCount, cartLoading } = useCart();
+  const shippingSettings = useShipping();
   const { user } = useAuth();
-  const shipping = cartTotal >= 499 ? 0 : cartCount > 0 ? 49 : 0;
+  const shipping = shippingFor(cartTotal, shippingSettings, cartCount);
   const grand = cartTotal + shipping;
   // Checkout refuses an order it cannot fill completely, so a cart it would
   // reject is stopped here instead of after the address has been typed out.
@@ -92,8 +96,12 @@ export default function Cart() {
           <h3 className="font-heading text-xl font-semibold mb-4">Order Summary</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-[#64748B]">Subtotal</span><span>{formatINR(cartTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[#64748B]">Shipping</span><span>{shipping === 0 ? "Free" : formatINR(shipping)}</span></div>
-            {cartTotal < 499 && <div className="text-xs text-[var(--nayara-primary)]">Add {formatINR(499 - cartTotal)} more for free shipping</div>}
+            <ShippingLine
+              subtotal={cartTotal}
+              shipping={shipping}
+              settings={shippingSettings}
+              testId="cart-shipping"
+            />
           </div>
           <div className="border-t border-[var(--nayara-border)] my-4" />
           <div className="flex justify-between font-heading text-lg font-semibold"><span>Total</span><span>{formatINR(grand)}</span></div>

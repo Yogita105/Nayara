@@ -4,6 +4,8 @@ import { ArrowRight, Leaf, ShieldCheck, Factory, Sparkles, Truck } from "lucide-
 import ProductCard from "../components/ProductCard";
 import useAsyncData from "../hooks/useAsyncData";
 import { api } from "../lib/api";
+import { formatINR } from "../lib/api";
+import { useShipping } from "../context/BusinessContext";
 import { sized, srcSet } from "../lib/images";
 
 const HERO_IMAGE =
@@ -12,6 +14,7 @@ const STORY_IMAGE =
   "https://images.unsplash.com/photo-1681822520036-d84c2a1eefa4?crop=entropy&cs=srgb&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxmcmVzaCUyMGxhdW5kcnklMjBzdW5ueXxlbnwwfHx8fDE3NzY2ODM4NDh8MA&ixlib=rb-4.1.0";
 
 export default function Home() {
+  const shipping = useShipping();
   const { data, loading } = useAsyncData(
     async () => (await api.get("/products?featured=true")).data.slice(0, 4),
     [],
@@ -75,7 +78,7 @@ export default function Home() {
             {[
               { icon: Factory, label: "Factory Direct", tone: "orange" },
               { icon: ShieldCheck, label: "Skin-safe formulas", tone: "blue" },
-              { icon: Truck, label: "Free shipping ₹499+", tone: "orange" },
+              { icon: Truck, label: `Free shipping ${formatINR(shipping.free_above)}+`, tone: "orange" },
               { icon: Sparkles, label: "Small-batch made", tone: "blue" },
             ].map((f, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-[#0F172A]">

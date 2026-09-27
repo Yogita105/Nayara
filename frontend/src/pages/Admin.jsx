@@ -721,6 +721,96 @@ function BulkInquiriesAdmin() {
   );
 }
 
+function ShippingSettingsAdmin() {
+  const { refresh } = useBusiness();
+  const { data, loading, error, reload } = useAsyncData(
+    async () => (await api.get("/settings/shipping")).data,
+    [],
+    "Your delivery charges could not be loaded."
+  );
+  const [form, setForm] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [problem, setProblem] = useState("");
+  const [fields, setFields] = useState({});
+
+  useEffect(() => {
+    if (data) setForm({ ...data });
+  }, [data]);
+
+  if (loading || !form) return <LoadingPanel label="Loading delivery charges..." />;
+  if (error) return <ErrorPanel message={error} onRetry={reload} />;
+
+  const save = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setProblem("");
+    setFields({});
+    try {
+      await api.put("/admin/settings/shipping", {
+        free_above: Number(form.free_above),
+        flat_rate: Number(form.flat_rate),
+      });
+      // The cart and checkout on this very page quote the old figures until
+      // they are told otherwise; nothing remounts on a route change.
+      await refresh();
+      toast.success("Delivery charges updated across the shop");
+    } catch (failure) {
+      setProblem(errorMessage(failure, "Could not save your delivery charges"));
+      setFields(fieldErrors(failure));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const amount = (name, label, hint) => (
+    <div>
+      <label htmlFor={name} className={SETTING_LABEL}>
+        {label}<RequiredMark />
+      </label>
+      <input
+        id={name}
+        type="number"
+        min="0"
+        step="1"
+        required
+        value={form[name] ?? ""}
+        onChange={(e) => setForm((f) => ({ ...f, [name]: e.target.value }))}
+        className="w-full border border-[var(--nayara-border)] rounded h-10 px-3 mt-1 text-sm"
+        data-testid={`shipping-${name}`}
+        {...describedBy(name, { error: Boolean(fields[name]) })}
+      />
+      <p className="text-xs text-[#64748B] mt-1">{hint}</p>
+      <FieldError name={name}>{fields[name]}</FieldError>
+    </div>
+  );
+
+  return (
+    <div data-testid="admin-shipping" className="mt-10">
+      <h2 className="font-heading text-2xl font-medium tracking-tight mb-2">Delivery</h2>
+      <p className="text-sm text-[#64748B] mb-6">
+        What delivery costs, and when it stops costing anything. The shop quotes these in
+        the cart and charges them at checkout, so both always agree.
+      </p>
+
+      <form onSubmit={save} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6 max-w-2xl space-y-5" noValidate>
+        <ErrorSummary message={problem} fields={fields} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {amount("free_above", "Free delivery above (₹)", "Orders of this much or more are delivered free. Set 0 to make delivery always free.")}
+          {amount("flat_rate", "Delivery charge (₹)", "What a smaller order pays.")}
+        </div>
+        <div className="flex items-center gap-3 pt-2">
+          <button type="submit" disabled={saving} className="nayara-btn" data-testid="shipping-save">
+            {saving ? "Saving..." : "Save delivery charges"}
+          </button>
+          <button type="button" onClick={reload} className="px-5 py-2 rounded-md border border-[var(--nayara-border)]" data-testid="shipping-reset">
+            Discard changes
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function BusinessSettingsAdmin() {
   const { refresh } = useBusiness();
   const { data, loading, error, reload } = useAsyncData(
@@ -848,6 +938,8 @@ function BusinessSettingsAdmin() {
           </button>
         </div>
       </form>
+
+      <ShippingSettingsAdmin />
     </div>
   );
 }

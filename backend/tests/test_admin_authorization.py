@@ -41,6 +41,7 @@ ADMIN_ROUTES = {
     ("POST", "/api/admin/upload"),
     ("GET", "/api/admin/users"),
     ("PUT", "/api/admin/settings/business"),
+    ("PUT", "/api/admin/settings/shipping"),
     ("POST", "/api/products"),
     ("PUT", "/api/products/{product_id}"),
     ("DELETE", "/api/products/{product_id}"),
@@ -83,8 +84,10 @@ PUBLIC_ROUTES = {
     ("GET", "/api/products"),
     ("GET", "/api/products/{product_id}"),
     # The footer on every page shows how to reach the shop, so a stranger has
-    # to be able to read it.
+    # to be able to read it, and the cart quotes delivery before anyone signs
+    # in.
     ("GET", "/api/settings/business"),
+    ("GET", "/api/settings/shipping"),
     ("GET", "/api/products/{product_id}/reviews"),
 }
 

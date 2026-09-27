@@ -4,6 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { formatINR, api, errorMessage, fieldErrors } from "../lib/api";
 import { lineKey } from "../lib/variants";
+import { shippingFor } from "../lib/shipping";
+import { useShipping } from "../context/BusinessContext";
+import ShippingLine from "../components/ShippingLine";
 import { Input } from "../components/ui/input";
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import { Label } from "../components/ui/label";
@@ -14,6 +17,7 @@ import { toast } from "sonner";
 
 export default function Checkout() {
   const { cart, cartTotal, cartCount, clearCart } = useCart();
+  const shippingSettings = useShipping();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +36,7 @@ export default function Checkout() {
     pincode: "",
   });
 
-  const shipping = cartTotal >= 499 ? 0 : 49;
+  const shipping = shippingFor(cartTotal, shippingSettings, cartCount);
   const grand = cartTotal + shipping;
 
   const [error, setError] = useState("");
@@ -234,7 +238,12 @@ export default function Checkout() {
           </div>
           <div className="space-y-2 text-sm border-t border-[var(--nayara-border)] pt-4">
             <div className="flex justify-between"><span className="text-[#64748B]">Subtotal</span><span>{formatINR(cartTotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[#64748B]">Shipping</span><span>{shipping === 0 ? "Free" : formatINR(shipping)}</span></div>
+            <ShippingLine
+              subtotal={cartTotal}
+              shipping={shipping}
+              settings={shippingSettings}
+              testId="checkout-shipping"
+            />
             <div className="flex justify-between font-heading text-lg font-semibold pt-2 border-t border-[var(--nayara-border)]"><span>Total</span><span>{formatINR(grand)}</span></div>
           </div>
           <button type="submit" disabled={submitting} className="nayara-btn w-full mt-5" data-testid="place-order-btn">

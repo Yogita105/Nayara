@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate, Link } from "react-router-dom"
 import { api, formatINR } from "../lib/api";
 import { isOutOfStock, stockNotice } from "../lib/stock";
 import { asSold, defaultVariant, findVariant, hasChoice } from "../lib/variants";
+import { useShipping } from "../context/BusinessContext";
 import useAsyncData from "../hooks/useAsyncData";
 import { ErrorPanel, LoadingPanel } from "../components/DataState";
 import { useCart } from "../context/CartContext";
@@ -19,6 +20,7 @@ export default function ProductDetail() {
   const { productId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const shippingSettings = useShipping();
   const [reviews, setReviews] = useState([]);
   const [qty, setQty] = useState(1);
   const [chosenId, setChosenId] = useState(null);
@@ -264,7 +266,7 @@ export default function ProductDetail() {
           <div className="mt-8 grid grid-cols-3 gap-3 text-sm">
             <div className="rounded-xl border border-[var(--nayara-border)] p-3 bg-white">
               <Truck className="w-4 h-4 mb-1 text-[var(--nayara-primary)]" />
-              <span className="font-semibold">Free shipping ₹499+</span>
+              <span className="font-semibold">Free shipping {formatINR(shippingSettings.free_above)}+</span>
             </div>
             <div className="rounded-xl border border-[var(--nayara-border)] p-3 bg-white">
               <ShieldCheck className="w-4 h-4 mb-1 text-[var(--nayara-primary)]" />

@@ -330,6 +330,21 @@ DEFAULT_BUSINESS = BusinessSettings(
 )
 
 
+class ShippingSettings(ContentModel):
+    """What delivery costs, and when it stops costing anything.
+
+    The shop quotes this in the cart and charges it at checkout, so it has
+    one home. Two copies of a threshold is a customer shown one total and
+    billed another.
+    """
+
+    free_above: float = Field(ge=0, le=10_000_000)
+    flat_rate: float = Field(ge=0, le=100_000)
+
+
+DEFAULT_SHIPPING = ShippingSettings(free_above=499, flat_rate=49)
+
+
 class CartItem(ContentModel):
     product_id: str = Field(min_length=1, max_length=100)
     # Older clients do not send one. A product with a single variant resolves

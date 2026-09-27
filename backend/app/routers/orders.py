@@ -11,24 +11,30 @@ from ..models import (
     OrderItemSnapshot,
     OrderStatus,
     PaymentStatus,
+    ShippingSettings,
 )
 from ..pagination import limit_query, offset_query
 from ..security import get_current_user
 from ..utils import serialize_doc
 from ..variants import line_key, resolve_variant
+from .settings import stored_shipping
 
 router = APIRouter(prefix="/api", tags=["orders"])
 
 
-def calculate_totals(lines: List[dict]) -> dict:
+def calculate_totals(lines: List[dict], shipping_settings: ShippingSettings) -> dict:
     # These are order lines, not products: the price is the one the chosen
     # form was bought at, copied at purchase time.
     subtotal = sum(line["price"] * line["quantity"] for line in lines)
-    shipping = 0 if subtotal >= 499 else 49
+    # An empty order is not a delivery, so it is not charged for one.
+    if not lines or subtotal >= shipping_settings.free_above:
+        shipping = 0.0
+    else:
+        shipping = shipping_settings.flat_rate
     total = subtotal + shipping
     return {
         "subtotal": round(subtotal, 2),
-        "shipping": shipping,
+        "shipping": round(shipping, 2),
         "total": round(total, 2),
     }
 
@@ -108,7 +114,7 @@ async def create_order(
         user_mobile=user.get("mobile", ""),
         user_email=user.get("email"),
         items=[OrderItemSnapshot(**snapshot) for snapshot in snapshots],
-        **calculate_totals(snapshots),
+        **calculate_totals(snapshots, await stored_shipping()),
         address=payload.address,
         payment_method=payload.payment_method,
         payment_status=(
