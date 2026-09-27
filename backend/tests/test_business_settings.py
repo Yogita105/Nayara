@@ -216,3 +216,8 @@ class TestTheDefaults:
 
     def test_they_carry_every_field_the_shop_shows(self):
         assert set(DEFAULT_BUSINESS.model_dump()) == FIELDS
+
+    def test_the_name_is_the_one_shown_beside_the_logo(self):
+        """It is the shop's name everywhere -- logo, copyright and browser
+        tab -- so it has to read as a name and not as a legal entity."""
+        assert DEFAULT_BUSINESS.name == "Nayara"

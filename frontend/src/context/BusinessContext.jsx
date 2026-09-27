@@ -19,6 +19,10 @@ const BusinessContext = createContext({
   refresh: () => {},
 });
 
+// Whatever follows the shop's name in the browser tab, taken from the page
+// as it was served so that renaming the shop keeps the rest of the title.
+const TAGLINE = document.title.split(" | ").slice(1).join(" | ");
+
 export const BusinessProvider = ({ children }) => {
   const [settings, setSettings] = useState(DEFAULT_BUSINESS);
   const [shipping, setShipping] = useState(DEFAULT_SHIPPING);
@@ -60,6 +64,13 @@ export const BusinessProvider = ({ children }) => {
     () => ({ ...withContactLinks(settings), shipping, refresh }),
     [settings, shipping, refresh]
   );
+
+  // The browser tab carries the shop's name too, and it is written into the
+  // page before any of this runs.
+  useEffect(() => {
+    document.title = TAGLINE ? `${value.name} | ${TAGLINE}` : value.name;
+  }, [value.name]);
+
   return <BusinessContext.Provider value={value}>{children}</BusinessContext.Provider>;
 };
 

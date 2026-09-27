@@ -286,12 +286,16 @@ def total_stock(variants: List[dict]) -> int:
 
 
 class BusinessSettings(ContentModel):
-    """How the shop tells a customer to reach it.
+    """How the shop names itself and how customers reach it.
 
     These were fixed in the code, which meant a new phone number needed a
     developer and a deployment. They are editable now, and validated, because
     a shop that publishes an unreachable number is worse off than one that
     refuses to save it.
+
+    `name` is the shop's name wherever it appears: beside the logo, in the
+    copyright line, and in the browser tab. One name rather than a separate
+    wordmark, because a shop this size has one.
     """
 
     name: str = Field(min_length=2, max_length=120)
@@ -319,7 +323,7 @@ class BusinessSettings(ContentModel):
 # What the shop says about itself before anyone has edited it, and what it
 # falls back to if the stored settings cannot be read.
 DEFAULT_BUSINESS = BusinessSettings(
-    name="Nayara Brands",
+    name="Nayara",
     founder="Abhinav Grover",
     founder_title="Owner",
     address_lines=["Jaito, District Faridkot", "Punjab 151202, India"],

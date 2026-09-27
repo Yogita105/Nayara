@@ -10,8 +10,8 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold" style={{ background: "var(--nayara-primary)" }}>N</div>
-            <span className="font-heading text-2xl font-semibold">Nayara</span>
+            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold" style={{ background: "var(--nayara-primary)" }}>{business.initial}</div>
+            <span className="font-heading text-2xl font-semibold">{business.name}</span>
           </div>
           <p className="text-base text-[#64748B] leading-relaxed">
             Premium cleaning & personal care crafted in small batches — delivered factory direct to Indian households.

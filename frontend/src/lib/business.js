@@ -16,7 +16,7 @@
  */
 
 export const DEFAULT_BUSINESS = {
-  name: "Nayara Brands",
+  name: "Nayara",
   founder: "Abhinav Grover",
   founder_title: "Owner",
   address_lines: ["Jaito, District Faridkot", "Punjab 151202, India"],
@@ -37,9 +37,14 @@ export function withContactLinks(settings) {
   const lines = details.address_lines?.length
     ? details.address_lines
     : DEFAULT_BUSINESS.address_lines;
+  const name = details.name?.trim() || DEFAULT_BUSINESS.name;
 
   return {
     ...details,
+    name,
+    // The letter in the logo's circle, so renaming the shop does not leave
+    // somebody else's initial sitting beside the new name.
+    initial: name.charAt(0).toUpperCase(),
     address_lines: lines,
     addressOneLine: lines.join(", "),
     phoneHref: `tel:${String(details.phone).replace(/[^\d+]/g, "")}`,

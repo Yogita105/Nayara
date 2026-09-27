@@ -4,6 +4,7 @@ import { ShoppingCart, Heart, Search, User, LogOut, Menu, X, Package, LayoutDash
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
+import { useBusiness } from "../context/BusinessContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,7 @@ const navLinks = [
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const { cartCount } = useCart();
+  const business = useBusiness();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const navigate = useNavigate();
@@ -46,8 +48,8 @@ export default function Navbar() {
     <header className="glass-nav fixed top-0 inset-x-0 z-50" data-testid="site-navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
         <Link to="/" className="flex items-center gap-2" data-testid="nav-logo-link">
-          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold" style={{ background: "var(--nayara-primary)" }}>N</div>
-          <span className="font-heading text-2xl font-semibold tracking-tight text-white">Nayara</span>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold" style={{ background: "var(--nayara-primary)" }}>{business.initial}</div>
+          <span className="font-heading text-2xl font-semibold tracking-tight text-white">{business.name}</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
