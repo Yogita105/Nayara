@@ -3,6 +3,13 @@ import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import Pagination from "../components/Pagination";
 import { EmptyPanel, ErrorPanel } from "../components/DataState";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import usePagedData from "../hooks/usePagedData";
 import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 
@@ -170,20 +177,37 @@ export default function Shop() {
         </button>
 
         <div className="flex items-center gap-2 ml-auto">
-          <label htmlFor="shop-sort" className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B]">
+          <label
+            htmlFor="shop-sort"
+            className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B]"
+          >
             Sort
           </label>
-          <select
-            id="shop-sort"
-            value={sort}
-            onChange={(e) => updateParams({ sort: e.target.value })}
-            className="border border-[var(--nayara-border)] rounded-md h-11 px-3 text-sm bg-white"
-            data-testid="filter-sort"
-          >
-            {SORTS.map((s) => (
-              <option key={s.key} value={s.key}>{s.label}</option>
-            ))}
-          </select>
+          {/* A native select hands its open list to the operating system,
+              which draws it in the operating system's colours. Radix renders
+              the list as part of the page, so it can carry the same border
+              and hover tint as the filter buttons beside it. */}
+          <Select value={sort} onValueChange={(value) => updateParams({ sort: value })}>
+            <SelectTrigger
+              id="shop-sort"
+              className="h-11 w-[180px] bg-white border-[var(--nayara-border)] text-sm"
+              data-testid="filter-sort"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-[var(--nayara-border)]">
+              {SORTS.map((s) => (
+                <SelectItem
+                  key={s.key}
+                  value={s.key}
+                  className="rounded-md py-2 pl-3 pr-8 text-sm cursor-pointer focus:bg-[#FBEEE4] focus:text-[#0F172A]"
+                  data-testid={`sort-${s.key}`}
+                >
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
