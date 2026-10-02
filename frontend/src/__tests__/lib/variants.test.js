@@ -16,7 +16,7 @@ import {
   lineName,
   totalStock,
   variantsOf,
-} from "./variants";
+} from "../../lib/variants";
 
 const powder = {
   product_id: "prod_1",

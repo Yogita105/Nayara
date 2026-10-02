@@ -6,7 +6,7 @@
  * form chosen. Answering the wrong one hides things that are on sale.
  */
 
-import { cartLineProblem, isOutOfStock, isSoldOut, stockNotice } from "./stock";
+import { cartLineProblem, isOutOfStock, isSoldOut, stockNotice } from "../../lib/stock";
 
 describe("what to say about a stock level", () => {
   it("says nothing when there is plenty", () => {

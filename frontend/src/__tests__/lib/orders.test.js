@@ -20,7 +20,7 @@ import {
   paymentState,
   statusWord,
   whenItReached,
-} from "./orders";
+} from "../../lib/orders";
 
 /**
  * The states the API can actually store, read from the API.
@@ -30,7 +30,7 @@ import {
  * added in one place and forgotten in the other.
  */
 function statusesTheApiCanStore() {
-  const models = path.resolve(__dirname, "../../../backend/app/models.py");
+  const models = path.resolve(__dirname, "../../../../backend/app/models.py");
   if (!fs.existsSync(models)) {
     throw new Error(
       `Could not find the API's models at ${models}. If the backend has moved, ` +

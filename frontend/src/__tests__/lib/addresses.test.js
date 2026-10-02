@@ -12,7 +12,7 @@ import {
   findProblems,
   oneLine,
   usualAddress,
-} from "./addresses";
+} from "../../lib/addresses";
 
 const complete = {
   full_name: "Asha Nair",

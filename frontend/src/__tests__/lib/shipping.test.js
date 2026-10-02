@@ -9,11 +9,11 @@
 
 import fs from "fs";
 import path from "path";
-import { DEFAULT_SHIPPING, amountToFreeShipping, shippingFor } from "./shipping";
+import { DEFAULT_SHIPPING, amountToFreeShipping, shippingFor } from "../../lib/shipping";
 
 /** The API's own fallback, read from the API rather than written out again. */
 function apiDefaults() {
-  const models = path.resolve(__dirname, "../../../backend/app/models.py");
+  const models = path.resolve(__dirname, "../../../../backend/app/models.py");
   if (!fs.existsSync(models)) {
     throw new Error(
       `Could not find the API's models at ${models}. If the backend has moved, ` +

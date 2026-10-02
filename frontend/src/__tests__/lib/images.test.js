@@ -7,7 +7,7 @@
  * exactly as it was.
  */
 
-import { IMAGE_WIDTHS, sized, srcSet } from "./images";
+import { IMAGE_WIDTHS, sized, srcSet } from "../../lib/images";
 
 const UNSPLASH = "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec";
 
