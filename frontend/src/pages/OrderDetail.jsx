@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, MapPin, Package } from "lucide-react";
+import { ArrowLeft, Check, MapPin, Package, X } from "lucide-react";
 import { api, formatINR } from "../lib/api";
 import useAsyncData from "../hooks/useAsyncData";
 import { ErrorPanel, LoadingPanel } from "../components/DataState";
@@ -9,60 +9,70 @@ import OrderTotals from "../components/OrderTotals";
 import { lineKey, lineName } from "../lib/variants";
 import { oneLine } from "../lib/addresses";
 import {
-  JOURNEY,
   STATUS_DOT,
   formatDateTime,
+  journeyStops,
   orderedLine,
-  statusLine,
   statusWord,
-  whenItReached,
 } from "../lib/orders";
 
 /**
  * The parcel's journey as a vertical line of stops.
  *
  * The line between the dots is what makes it read as one route rather than
- * four separate facts: it is coloured as far as the parcel has travelled and
- * grey beyond, so how far along it is can be seen without reading a word.
+ * several separate facts: it is coloured as far as the parcel has travelled
+ * and grey beyond, so how far along it is can be seen without reading a word.
  */
 function Journey({ order }) {
-  if (order.status === "cancelled") return null;
-  const reached = JOURNEY.indexOf(order.status);
+  const stops = journeyStops(order);
 
   return (
     <ol data-testid="order-journey">
-      {JOURNEY.map((step, index) => {
-        const done = index <= reached;
-        const last = index === JOURNEY.length - 1;
-        const when = formatDateTime(whenItReached(order, step));
+      {stops.map((stop, index) => {
+        const last = index === stops.length - 1;
+        const cancelled = stop.status === "cancelled";
+        const when = formatDateTime(stop.at);
+        const travelled = stops[index + 1]?.done;
 
         return (
-          <li key={step} className={`relative flex gap-3 ${last ? "" : "pb-6"}`}>
+          <li key={stop.status} className={`relative flex gap-3 ${last ? "" : "pb-6"}`}>
             {!last && (
               <span
                 className={`absolute left-3 top-6 bottom-0 w-px -translate-x-1/2 ${
-                  index < reached ? "bg-[var(--nayara-primary)]" : "bg-[var(--nayara-border)]"
+                  travelled ? "bg-[var(--nayara-primary)]" : "bg-[var(--nayara-border)]"
                 }`}
                 aria-hidden="true"
               />
             )}
             <span
               className={`relative w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                done
-                  ? "bg-[var(--nayara-primary)] text-white"
-                  : "bg-white ring-1 ring-[var(--nayara-border)]"
+                cancelled
+                  ? "bg-red-600 text-white"
+                  : stop.done
+                    ? "bg-[var(--nayara-primary)] text-white"
+                    : "bg-white ring-1 ring-[var(--nayara-border)]"
               }`}
               aria-hidden="true"
             >
-              {done ? (
+              {cancelled ? (
+                <X className="w-3.5 h-3.5" />
+              ) : stop.done ? (
                 <Check className="w-3.5 h-3.5" />
               ) : (
                 <span className="w-1.5 h-1.5 rounded-full bg-[#CBD5E1]" />
               )}
             </span>
             <span className="pt-0.5">
-              <span className={`block text-sm ${done ? "font-medium" : "text-[#94A3B8]"}`}>
-                {statusWord(step)}
+              <span
+                className={`block text-sm ${
+                  cancelled
+                    ? "font-medium text-red-700"
+                    : stop.done
+                      ? "font-medium"
+                      : "text-[#94A3B8]"
+                }`}
+              >
+                {statusWord(stop.status)}
               </span>
               {when && <span className="block text-sm text-[#64748B]">{when}</span>}
             </span>
@@ -170,13 +180,7 @@ export default function OrderDetail() {
         <aside className="space-y-6">
           <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
             <h2 className="font-heading font-semibold mb-5">Progress</h2>
-            {order.status === "cancelled" ? (
-              <p className="text-sm text-[#64748B]" data-testid="order-cancelled">
-                {statusLine(order)}
-              </p>
-            ) : (
-              <Journey order={order} />
-            )}
+            <Journey order={order} />
           </section>
 
           <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
