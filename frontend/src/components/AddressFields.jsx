@@ -34,7 +34,7 @@ export default function AddressFields({ address, onChange, fields = {} }) {
         <FieldError name="phone">{fields.phone}</FieldError>
       </div>
       <div>
-        <Label htmlFor="pincode" className={LABEL} required>Pincode</Label>
+        <Label htmlFor="pincode" className={LABEL} required>PIN code</Label>
         <Input {...field("pincode")} required />
         <FieldError name="pincode">{fields.pincode}</FieldError>
       </div>
