@@ -99,13 +99,13 @@ export default function ProductCard({ product, index = 0 }) {
           </p>
         )}
         {/* Beside the price wherever there is room for both. On a phone the
-            grid is two columns wide, which leaves a card about 111 pixels of
+            grid is two columns, which leaves a card about 111 pixels of
             content: the price and a button reading "Choose volume" need
             around 160 between them, so below this width the button takes its
             own line rather than sitting on top of the price. */}
         <div
           className={
-            choose && !cannotAdd
+            choose
               ? "flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mt-4"
               : "flex items-end justify-between gap-2 mt-4"
           }
@@ -116,13 +116,15 @@ export default function ProductCard({ product, index = 0 }) {
               <div className="text-xs text-[#64748B] line-through">{formatINR(mrp)}</div>
             )}
           </div>
-          {choose && !cannotAdd ? (
+          {choose ? (
             // Which form is the customer's to pick, and the grid is the wrong
             // place to ask. The product page is where the choice lives.
             //
-            // Only while there is something to choose between, though: on a
-            // product with nothing left, "Choose weight" invites a decision
-            // that cannot be acted on.
+            // Offered even when nothing is left: the picture already carries
+            // "Out of stock", so a greyed-out cart button beside it repeats
+            // that and gives the customer nothing to do. The link at least
+            // leads to the product, where each form and what is left of it
+            // are listed.
             <Link
               to={`/product/${product.product_id}`}
               className="w-full sm:w-auto text-xs font-semibold px-3 h-10 rounded-full border border-[var(--nayara-primary)] text-[var(--nayara-primary)] flex items-center justify-center shrink-0 whitespace-nowrap hover:bg-[#FBEEE4] transition"

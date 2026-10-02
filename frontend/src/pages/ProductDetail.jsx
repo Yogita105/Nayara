@@ -144,9 +144,20 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <div className="rounded-3xl overflow-hidden bg-[#F1F5F9] aspect-square">
-          <ProductImage src={sold.image} alt={product.name} width={1000} sizes="(min-width: 1024px) 45vw, 90vw" className="w-full h-full object-cover" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-12">
+        {/* Two columns from tablet width rather than desktop. In one column
+            the picture took the full width, and a square of that is most of
+            a tablet screen: the product's own name sat below the fold and the
+            Add to Cart button was a screen and a half down. The cap keeps the
+            same from happening in the band that is still one column. */}
+        <div className="rounded-3xl overflow-hidden bg-[#F1F5F9] aspect-square w-full max-w-md mx-auto md:max-w-none">
+          <ProductImage
+            src={sold.image}
+            alt={product.name}
+            width={1000}
+            sizes="(min-width: 768px) 45vw, 90vw"
+            className="w-full h-full object-cover"
+          />
         </div>
         <div>
           <div className="flex flex-wrap gap-2 mb-3">
