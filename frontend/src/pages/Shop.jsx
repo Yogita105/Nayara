@@ -4,7 +4,7 @@ import ProductCard from "../components/ProductCard";
 import Pagination from "../components/Pagination";
 import { EmptyPanel, ErrorPanel } from "../components/DataState";
 import usePagedData from "../hooks/usePagedData";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 
 const CATEGORIES = [
   { key: "all", label: "All" },
@@ -39,6 +39,11 @@ export default function Shop() {
   // per keystroke.
   const [searchText, setSearchText] = useState(q);
   const [priceValue, setPriceValue] = useState(maxPrice);
+  // On a phone the filters fill the screen, so the products a customer came
+  // for are below the fold before they have done anything. They start folded
+  // away there and stay open on wider screens, where the panel sits beside
+  // the grid and costs nothing.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => { setSearchText(q); }, [q]);
   useEffect(() => { setPriceValue(maxPrice); }, [maxPrice]);
@@ -86,6 +91,15 @@ export default function Shop() {
     fallbackMessage: "Products could not be loaded.",
   });
 
+  // Sort is left out: it reorders the grid rather than hiding anything, so it
+  // is never the reason a customer is looking at fewer products than they
+  // expected.
+  const activeFilters = [
+    category !== "all",
+    Boolean(q),
+    maxPrice < PRICE_CEILING,
+  ].filter(Boolean).length;
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-10" data-testid="shop-page">
       <div className="mb-8">
@@ -96,11 +110,39 @@ export default function Shop() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
         <aside className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6 h-fit" data-testid="shop-filters">
-          <div className="flex items-center gap-2 mb-5">
-            <SlidersHorizontal className="w-4 h-4" />
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((open) => !open)}
+            className="lg:hidden w-full flex items-center gap-2 text-left"
+            aria-expanded={filtersOpen}
+            aria-controls="shop-filter-fields"
+            data-testid="shop-filters-toggle"
+          >
+            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+            <span className="font-heading font-semibold">Filters</span>
+            {activeFilters > 0 && (
+              <span
+                className="text-xs font-semibold px-2 py-0.5 rounded-full badge-soft"
+                data-testid="shop-filters-count"
+              >
+                {activeFilters}
+              </span>
+            )}
+            <ChevronDown
+              className={`w-4 h-4 ml-auto transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+              aria-hidden="true"
+            />
+          </button>
+
+          <div className="hidden lg:flex items-center gap-2 mb-5">
+            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
             <h3 className="font-heading font-semibold">Filters</h3>
           </div>
 
+          <div
+            id="shop-filter-fields"
+            className={`${filtersOpen ? "block mt-5" : "hidden"} lg:block lg:mt-0`}
+          >
           <div className="mb-6">
             <label htmlFor="shop-search" className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Search</label>
             <div className="flex items-center bg-[#FFFFFF] rounded-md px-3 h-10">
@@ -162,6 +204,7 @@ export default function Shop() {
                 <option key={s.key} value={s.key}>{s.label}</option>
               ))}
             </select>
+          </div>
           </div>
         </aside>
 
