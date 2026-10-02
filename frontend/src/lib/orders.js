@@ -49,6 +49,25 @@ export function formatDate(value) {
   });
 }
 
+/**
+ * A date with the time beside it.
+ *
+ * A parcel can be ordered, packed, dispatched and delivered inside a day, and
+ * four identical dates say nothing about the order they happened in.
+ */
+export function formatDateTime(value) {
+  if (!value) return "";
+  const when = new Date(value);
+  if (Number.isNaN(when.getTime())) return "";
+  return when.toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 /** When the order reached this state, if that was ever recorded. */
 export function whenItReached(order, status) {
   const events = order?.history || [];

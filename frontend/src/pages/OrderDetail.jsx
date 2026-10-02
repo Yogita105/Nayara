@@ -11,33 +11,56 @@ import { oneLine } from "../lib/addresses";
 import {
   JOURNEY,
   STATUS_DOT,
-  formatDate,
+  formatDateTime,
   orderedLine,
   statusLine,
   statusWord,
   whenItReached,
 } from "../lib/orders";
 
+/**
+ * The parcel's journey as a vertical line of stops.
+ *
+ * The line between the dots is what makes it read as one route rather than
+ * four separate facts: it is coloured as far as the parcel has travelled and
+ * grey beyond, so how far along it is can be seen without reading a word.
+ */
 function Journey({ order }) {
   if (order.status === "cancelled") return null;
   const reached = JOURNEY.indexOf(order.status);
 
   return (
-    <ol className="space-y-4" data-testid="order-journey">
+    <ol data-testid="order-journey">
       {JOURNEY.map((step, index) => {
         const done = index <= reached;
-        const when = formatDate(whenItReached(order, step));
+        const last = index === JOURNEY.length - 1;
+        const when = formatDateTime(whenItReached(order, step));
+
         return (
-          <li key={step} className="flex items-start gap-3">
+          <li key={step} className={`relative flex gap-3 ${last ? "" : "pb-6"}`}>
+            {!last && (
+              <span
+                className={`absolute left-3 top-6 bottom-0 w-px -translate-x-1/2 ${
+                  index < reached ? "bg-[var(--nayara-primary)]" : "bg-[var(--nayara-border)]"
+                }`}
+                aria-hidden="true"
+              />
+            )}
             <span
-              className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                done ? "bg-[var(--nayara-primary)] text-white" : "bg-[#F1F5F9] text-[#94A3B8]"
+              className={`relative w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                done
+                  ? "bg-[var(--nayara-primary)] text-white"
+                  : "bg-white ring-1 ring-[var(--nayara-border)]"
               }`}
               aria-hidden="true"
             >
-              {done ? <Check className="w-3.5 h-3.5" /> : <span className="w-1.5 h-1.5 rounded-full bg-current" />}
+              {done ? (
+                <Check className="w-3.5 h-3.5" />
+              ) : (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#CBD5E1]" />
+              )}
             </span>
-            <span>
+            <span className="pt-0.5">
               <span className={`block text-sm ${done ? "font-medium" : "text-[#94A3B8]"}`}>
                 {statusWord(step)}
               </span>
