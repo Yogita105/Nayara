@@ -6,18 +6,11 @@ import useAsyncData from "../hooks/useAsyncData";
 import { EmptyPanel, ErrorPanel, LoadingPanel } from "../components/DataState";
 import ProductImage from "../components/ProductImage";
 import { lineKey, lineName } from "../lib/variants";
-import {
-  STATUS_DOT,
-  orderedLine,
-  paymentName,
-  paymentState,
-  statusLine,
-} from "../lib/orders";
+import { STATUS_DOT, orderedLine, statusWord } from "../lib/orders";
 
-const SHOWN = 3;
+const SHOWN = 2;
 
 function OrderCard({ order }) {
-  const payment = paymentState(order);
   const extra = order.items.length - SHOWN;
 
   return (
@@ -26,21 +19,37 @@ function OrderCard({ order }) {
       className="block rounded-2xl border border-[var(--nayara-border)] bg-white p-6 hover:border-[var(--nayara-primary)] hover:shadow-sm transition"
       data-testid={`order-${order.order_id}`}
     >
-      <div className="mb-5">
-        <h2
-          className="font-heading text-lg font-semibold flex items-center gap-2"
-          data-testid="order-status-line"
-        >
+      <div className="flex flex-col-reverse sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-5">
+        <div className="min-w-0">
+          <h2
+            className="font-heading text-lg font-semibold flex items-center gap-2"
+            data-testid="order-status-line"
+          >
+            <span
+              className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATUS_DOT[order.status] || "bg-gray-400"}`}
+              aria-hidden="true"
+            />
+            {statusWord(order.status)}
+          </h2>
+          <p className="text-sm text-[#64748B] mt-1">{orderedLine(order)}</p>
+        </div>
+        {/* Side by side with the status when there is room; stacked above it
+            on a phone, where sharing the width squeezes the heading into one
+            word per line. */}
+        <div className="flex items-center justify-between gap-3 sm:block sm:shrink-0 sm:text-right">
+          <p className="text-xs text-[#64748B]" data-testid="order-number">
+            Order ID - #{order.order_id}
+          </p>
           <span
-            className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATUS_DOT[order.status] || "bg-gray-400"}`}
+            className="text-sm text-[var(--nayara-primary)] inline-flex items-center gap-1 whitespace-nowrap sm:mt-1"
             aria-hidden="true"
-          />
-          {statusLine(order)}
-        </h2>
-        <p className="text-sm text-[#64748B] mt-1">{orderedLine(order)}</p>
+          >
+            View order <ChevronRight className="w-4 h-4" />
+          </span>
+        </div>
       </div>
 
-      <ul className="space-y-3 mb-5">
+      <ul className="space-y-3">
         {order.items.slice(0, SHOWN).map((item) => (
           <li key={lineKey(item)} className="flex items-center gap-3">
             <ProductImage
@@ -64,29 +73,6 @@ function OrderCard({ order }) {
           </li>
         )}
       </ul>
-
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 pt-4 border-t border-[var(--nayara-border)]">
-        <div>
-          <p className="text-xs text-[#64748B]">Payment method</p>
-          <p className="text-sm font-medium">
-            {paymentName(order.payment_method)}
-            <span className={`font-normal ${payment.settled ? "text-green-700" : "text-[#64748B]"}`}>
-              {" · "}
-              {payment.text}
-            </span>
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-[#64748B]">Total</p>
-          <p className="font-heading text-lg font-semibold">{formatINR(order.total)}</p>
-        </div>
-        <span
-          className="text-sm text-[var(--nayara-primary)] inline-flex items-center gap-1"
-          aria-hidden="true"
-        >
-          View order <ChevronRight className="w-4 h-4" />
-        </span>
-      </div>
     </Link>
   );
 }

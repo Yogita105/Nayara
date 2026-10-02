@@ -105,16 +105,13 @@ export function countItems(items = []) {
 /**
  * The line beneath the heading.
  *
- * The heading already says when the order reached where it is, so repeating
- * the order date there would say the same thing twice for an order that has
- * only just been placed.
+ * The heading names the state the order is in; this says when it was placed
+ * and how big it is. When each step happened is on the order's own page.
  */
 export function orderedLine(order) {
   const parts = [];
-  if (order?.status !== "placed") {
-    const when = formatDate(order?.created_at);
-    if (when) parts.push(`Ordered on ${when}`);
-  }
+  const when = formatDate(order?.created_at);
+  if (when) parts.push(`Ordered on ${when}`);
   parts.push(countItems(order?.items));
   return parts.join(" · ");
 }
