@@ -107,8 +107,13 @@ export default function Shop() {
 
       {/* Outside the filter panel, which folds away on a phone: the navbar's
           own search is hidden below this width too, so burying this one would
-          leave the shop with no way to search at all. */}
-      <div className="mb-8 max-w-xl">
+          leave the shop with no way to search at all.
+
+          Full width at every size, so both its edges line up with the content
+          below -- the filter panel on a phone, the sidebar and grid together
+          on a wide screen. A cap looked arbitrary because it was: it stopped
+          partway across the first column, lined up with nothing. */}
+      <div className="mb-8">
         <label htmlFor="shop-search" className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">
           Search
         </label>
@@ -135,41 +140,67 @@ export default function Shop() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
-        <aside className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6 h-fit" data-testid="shop-filters">
-          <button
-            type="button"
-            onClick={() => setFiltersOpen((open) => !open)}
-            className="lg:hidden w-full flex items-center gap-2 text-left"
-            aria-expanded={filtersOpen}
-            aria-controls="shop-filter-fields"
-            data-testid="shop-filters-toggle"
-          >
-            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
-            <span className="font-heading font-semibold">Filters</span>
-            {activeFilters > 0 && (
-              <span
-                className="text-xs font-semibold px-2 py-0.5 rounded-full badge-soft"
-                data-testid="shop-filters-count"
-              >
-                {activeFilters}
-              </span>
-            )}
-            <ChevronDown
-              className={`w-4 h-4 ml-auto transition-transform ${filtersOpen ? "rotate-180" : ""}`}
-              aria-hidden="true"
-            />
-          </button>
+      {/* Sort sits with the Filters button rather than inside the panel: it
+          reorders the grid and never hides a product, so a panel labelled
+          Filters was the wrong home for it. Sharing the row the button
+          already occupies costs a phone no extra height. */}
+      <div className="flex items-center justify-between gap-4 mb-6" data-testid="shop-controls">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((open) => !open)}
+          className="lg:hidden flex items-center gap-2 rounded-md border border-[var(--nayara-border)] bg-white px-4 h-11"
+          aria-expanded={filtersOpen}
+          aria-controls="shop-filter-fields"
+          data-testid="shop-filters-toggle"
+        >
+          <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+          <span className="font-heading font-semibold">Filters</span>
+          {activeFilters > 0 && (
+            <span
+              className="text-xs font-semibold px-2 py-0.5 rounded-full badge-soft"
+              data-testid="shop-filters-count"
+            >
+              {activeFilters}
+            </span>
+          )}
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
 
+        <div className="flex items-center gap-2 ml-auto">
+          <label htmlFor="shop-sort" className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B]">
+            Sort
+          </label>
+          <select
+            id="shop-sort"
+            value={sort}
+            onChange={(e) => updateParams({ sort: e.target.value })}
+            className="border border-[var(--nayara-border)] rounded-md h-11 px-3 text-sm bg-white"
+            data-testid="filter-sort"
+          >
+            {SORTS.map((s) => (
+              <option key={s.key} value={s.key}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
+        <aside
+          className={`${filtersOpen ? "block" : "hidden"} lg:block rounded-2xl border border-[var(--nayara-border)] bg-white p-6 h-fit`}
+          data-testid="shop-filters"
+        >
+          {/* Only on wide screens: below that the button above the panel
+              already names it, and two headings for one panel is one too
+              many. */}
           <div className="hidden lg:flex items-center gap-2 mb-5">
             <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
             <h3 className="font-heading font-semibold">Filters</h3>
           </div>
 
-          <div
-            id="shop-filter-fields"
-            className={`${filtersOpen ? "block mt-5" : "hidden"} lg:block lg:mt-0`}
-          >
+          <div id="shop-filter-fields">
           <div className="mb-6">
             <span className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3 block">Category</span>
             <div className="flex flex-col gap-2">
@@ -186,7 +217,7 @@ export default function Shop() {
             </div>
           </div>
 
-          <div className="mb-6">
+          <div>
             <label htmlFor="shop-price" className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3 block">
               Max Price: ₹{priceValue}
             </label>
@@ -201,21 +232,6 @@ export default function Shop() {
               className="w-full accent-[var(--nayara-primary)]"
               data-testid="filter-price"
             />
-          </div>
-
-          <div>
-            <label htmlFor="shop-sort" className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Sort</label>
-            <select
-              id="shop-sort"
-              value={sort}
-              onChange={(e) => updateParams({ sort: e.target.value })}
-              className="w-full border border-[var(--nayara-border)] rounded-md h-10 px-3 text-sm bg-white"
-              data-testid="filter-sort"
-            >
-              {SORTS.map((s) => (
-                <option key={s.key} value={s.key}>{s.label}</option>
-              ))}
-            </select>
           </div>
           </div>
         </aside>
