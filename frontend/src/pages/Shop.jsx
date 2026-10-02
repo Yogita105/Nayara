@@ -91,14 +91,11 @@ export default function Shop() {
     fallbackMessage: "Products could not be loaded.",
   });
 
-  // Sort is left out: it reorders the grid rather than hiding anything, so it
-  // is never the reason a customer is looking at fewer products than they
-  // expected.
-  const activeFilters = [
-    category !== "all",
-    Boolean(q),
-    maxPrice < PRICE_CEILING,
-  ].filter(Boolean).length;
+  // Search is left out: it now sits above the grid where the customer can see
+  // their own words, so counting it here would explain something already on
+  // screen. Sort is left out because it reorders the grid rather than hiding
+  // anything, so it is never why a list looks short.
+  const activeFilters = [category !== "all", maxPrice < PRICE_CEILING].filter(Boolean).length;
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10" data-testid="shop-page">
@@ -106,6 +103,36 @@ export default function Shop() {
         <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3">Shop</p>
         <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tighter">All Products</h1>
         <p className="mt-2 text-[#64748B]">Factory-direct cleaning &amp; personal care. Real prices. No middlemen.</p>
+      </div>
+
+      {/* Outside the filter panel, which folds away on a phone: the navbar's
+          own search is hidden below this width too, so burying this one would
+          leave the shop with no way to search at all. */}
+      <div className="mb-8 max-w-xl">
+        <label htmlFor="shop-search" className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">
+          Search
+        </label>
+        <div className="flex items-center bg-white border border-[var(--nayara-border)] rounded-md px-3 h-11">
+          <Search className="w-4 h-4 text-[#64748B]" aria-hidden="true" />
+          <input
+            id="shop-search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Search products"
+            className="bg-transparent outline-none px-2 text-base flex-1"
+            data-testid="shop-search-input"
+          />
+          {searchText && (
+            <button
+              type="button"
+              onClick={() => setSearchText("")}
+              className="text-sm text-[#64748B] hover:text-[var(--nayara-primary)] px-1"
+              data-testid="shop-search-clear"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
@@ -143,21 +170,6 @@ export default function Shop() {
             id="shop-filter-fields"
             className={`${filtersOpen ? "block mt-5" : "hidden"} lg:block lg:mt-0`}
           >
-          <div className="mb-6">
-            <label htmlFor="shop-search" className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-2 block">Search</label>
-            <div className="flex items-center bg-[#FFFFFF] rounded-md px-3 h-10">
-              <Search className="w-4 h-4 text-[#64748B]" aria-hidden="true" />
-              <input
-                id="shop-search"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Search products"
-                className="bg-transparent outline-none px-2 text-base flex-1"
-                data-testid="shop-search-input"
-              />
-            </div>
-          </div>
-
           <div className="mb-6">
             <span className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] mb-3 block">Category</span>
             <div className="flex flex-col gap-2">
