@@ -492,6 +492,19 @@ class OrderItemSnapshot(ContentModel):
     quantity: int = Field(ge=1, le=MAX_CART_QUANTITY)
 
 
+class OrderEvent(ContentModel):
+    """When an order reached a state.
+
+    An order used to record only when it was placed, so nothing could say
+    when it shipped or arrived. That left a customer asking "when was this
+    delivered?" with no answer, and the shop with no record of its own
+    against a claim that a parcel never came.
+    """
+
+    status: OrderStatus
+    at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class Order(ContentModel):
     order_id: str = Field(default_factory=lambda: f"ord_{uuid.uuid4().hex[:10]}")
     user_id: str
@@ -505,4 +518,13 @@ class Order(ContentModel):
     payment_method: PaymentMethod
     payment_status: PaymentStatus = PaymentStatus.PENDING
     status: OrderStatus = OrderStatus.PLACED
+    # Every state the order has reached, in the order it reached them. The
+    # first entry is placing it, so this is never empty.
+    history: List[OrderEvent] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @model_validator(mode="after")
+    def record_the_opening_event(self) -> "Order":
+        if not self.history:
+            self.history = [OrderEvent(status=self.status, at=self.created_at)]
+        return self

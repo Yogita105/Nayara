@@ -1,19 +1,95 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { ChevronRight, Package } from "lucide-react";
 import { api, formatINR } from "../lib/api";
 import useAsyncData from "../hooks/useAsyncData";
 import { EmptyPanel, ErrorPanel, LoadingPanel } from "../components/DataState";
-import { Link } from "react-router-dom";
-import { Package } from "lucide-react";
 import ProductImage from "../components/ProductImage";
 import { lineKey, lineName } from "../lib/variants";
+import {
+  STATUS_DOT,
+  orderedLine,
+  paymentName,
+  paymentState,
+  statusLine,
+} from "../lib/orders";
 
-const STATUS_COLORS = {
-  placed: "bg-blue-100 text-blue-700",
-  processing: "bg-amber-100 text-amber-700",
-  shipped: "bg-indigo-100 text-indigo-700",
-  delivered: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-};
+const SHOWN = 3;
+
+function OrderCard({ order }) {
+  const payment = paymentState(order);
+  const extra = order.items.length - SHOWN;
+
+  return (
+    <Link
+      to={`/orders/${order.order_id}`}
+      className="block rounded-2xl border border-[var(--nayara-border)] bg-white p-6 hover:border-[var(--nayara-primary)] hover:shadow-sm transition"
+      data-testid={`order-${order.order_id}`}
+    >
+      <div className="mb-5">
+        <h2
+          className="font-heading text-lg font-semibold flex items-center gap-2"
+          data-testid="order-status-line"
+        >
+          <span
+            className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATUS_DOT[order.status] || "bg-gray-400"}`}
+            aria-hidden="true"
+          />
+          {statusLine(order)}
+        </h2>
+        <p className="text-sm text-[#64748B] mt-1">{orderedLine(order)}</p>
+      </div>
+
+      <ul className="space-y-3 mb-5">
+        {order.items.slice(0, SHOWN).map((item) => (
+          <li key={lineKey(item)} className="flex items-center gap-3">
+            <ProductImage
+              src={item.image}
+              alt={lineName(item)}
+              width={150}
+              className="w-12 h-12 rounded-lg object-cover bg-[#F1F5F9] shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{item.name}</p>
+              <p className="text-sm text-[#64748B]">
+                {item.variant_label ? `${item.variant_label} · ` : ""}
+                {item.quantity} × {formatINR(item.price)}
+              </p>
+            </div>
+          </li>
+        ))}
+        {extra > 0 && (
+          <li className="text-sm text-[#64748B]" data-testid="order-more-items">
+            and {extra} more {extra === 1 ? "item" : "items"}
+          </li>
+        )}
+      </ul>
+
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 pt-4 border-t border-[var(--nayara-border)]">
+        <div>
+          <p className="text-xs text-[#64748B]">Payment method</p>
+          <p className="text-sm font-medium">
+            {paymentName(order.payment_method)}
+            <span className={`font-normal ${payment.settled ? "text-green-700" : "text-[#64748B]"}`}>
+              {" · "}
+              {payment.text}
+            </span>
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-[#64748B]">Total</p>
+          <p className="font-heading text-lg font-semibold">{formatINR(order.total)}</p>
+        </div>
+        <span
+          className="text-sm text-[var(--nayara-primary)] inline-flex items-center gap-1"
+          aria-hidden="true"
+        >
+          View order <ChevronRight className="w-4 h-4" />
+        </span>
+      </div>
+    </Link>
+  );
+}
 
 export default function Orders() {
   const { data, loading, error, reload } = useAsyncData(
@@ -24,8 +100,10 @@ export default function Orders() {
   const orders = data || [];
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10" data-testid="orders-page">
-      <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tight mb-8">My Orders</h1>
+    <div className="max-w-3xl mx-auto px-6 py-10" data-testid="orders-page">
+      <h1 className="font-heading text-2xl md:text-3xl font-medium tracking-tight mb-8">
+        My Orders
+      </h1>
       {loading ? (
         <LoadingPanel label="Loading your orders..." />
       ) : error ? (
@@ -38,29 +116,8 @@ export default function Orders() {
         />
       ) : (
         <div className="space-y-5">
-          {orders.map((o) => (
-            <div key={o.order_id} className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6" data-testid={`order-${o.order_id}`}>
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div>
-                  <div className="text-sm text-[#64748B]">Order #{o.order_id}</div>
-                  <div className="text-sm text-[#64748B]">{new Date(o.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs font-semibold px-3 py-1 rounded-full ${STATUS_COLORS[o.status] || "bg-gray-100"}`}>{o.status}</span>
-                  <span className="text-xs font-semibold px-3 py-1 rounded-full badge-soft">{o.payment_method.toUpperCase()}</span>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-3 mb-4">
-                {o.items.slice(0, 5).map((it) => (
-                  <ProductImage key={lineKey(it)} src={it.image} alt={lineName(it)} width={150} className="w-14 h-14 rounded-lg object-cover bg-[#F1F5F9]" />
-                ))}
-                {o.items.length > 5 && <div className="w-14 h-14 rounded-lg bg-[#F1F5F9] flex items-center justify-center text-xs">+{o.items.length - 5}</div>}
-              </div>
-              <div className="flex justify-between items-center pt-4 border-t border-[var(--nayara-border)]">
-                <div className="text-sm text-[#64748B]">{o.items.length} item(s)</div>
-                <div className="font-heading text-lg font-semibold">{formatINR(o.total)}</div>
-              </div>
-            </div>
+          {orders.map((order) => (
+            <OrderCard key={order.order_id} order={order} />
           ))}
         </div>
       )}

@@ -17,6 +17,7 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderSuccess from "./pages/OrderSuccess";
 import Orders from "./pages/Orders";
+import OrderDetail from "./pages/OrderDetail";
 import Wishlist from "./pages/Wishlist";
 import Login from "./pages/Login";
 import Account from "./pages/Account";
@@ -51,6 +52,10 @@ function AppRouter() {
         <Route
           path="/orders"
           element={<ProtectedRoute><Orders /></ProtectedRoute>}
+        />
+        <Route
+          path="/orders/:orderId"
+          element={<ProtectedRoute><OrderDetail /></ProtectedRoute>}
         />
         <Route
           path="/account"

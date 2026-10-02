@@ -22,6 +22,7 @@ from ..models import (
     BulkInquiryRequest,
     BulkInquiryUpdate,
     ContactRequest,
+    OrderEvent,
     OrderUpdate,
     allowed_next_statuses,
     can_change_status,
@@ -149,6 +150,20 @@ async def admin_all_orders(
     return await paged_admin_list("orders", response, "created_at", limit, offset, {"_id": 0})
 
 
+def stamp(current_status: str, new_status) -> dict:
+    """Record the moment an order reached a new state.
+
+    Only a real change is worth recording: re-saving an order that is already
+    shipped did not ship it again, and an entry for that would turn the
+    history into a log of administrative clicks rather than of the parcel.
+    """
+    if new_status is None or new_status == current_status:
+        return {}
+    event = OrderEvent(status=new_status).model_dump()
+    event["at"] = event["at"].isoformat()
+    return {"$push": {"history": event}}
+
+
 @router.put("/admin/orders/{order_id}")
 async def admin_update_order(
     order_id: str,
@@ -181,7 +196,10 @@ async def admin_update_order(
     else:
         await db.orders.update_one(
             {"order_id": order_id},
-            {"$set": payload.model_dump(exclude_none=True)},
+            {
+                "$set": payload.model_dump(exclude_none=True),
+                **stamp(current_status, payload.status),
+            },
         )
 
     doc = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
@@ -214,7 +232,10 @@ async def cancel_order(order: dict, payload: OrderUpdate) -> None:
             "status": {"$ne": "cancelled"},
             "stock_released": {"$ne": True},
         },
-        {"$set": {**updates, "stock_released": True}},
+        {
+            "$set": {**updates, "stock_released": True},
+            **stamp(order.get("status", ""), payload.status),
+        },
     )
     if result.modified_count == 0:
         return

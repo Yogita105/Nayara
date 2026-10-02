@@ -135,6 +135,10 @@ async def create_order(
     )
     doc = order.model_dump()
     doc["created_at"] = doc["created_at"].isoformat()
+    # Times are stored as text throughout this record, so the history matches
+    # rather than arriving back as a different type from the same document.
+    for event in doc.get("history", []):
+        event["at"] = event["at"].isoformat()
 
     try:
         await db.orders.insert_one(doc)
