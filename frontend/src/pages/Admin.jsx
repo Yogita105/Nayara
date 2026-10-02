@@ -9,6 +9,7 @@ import { ErrorSummary, FieldError, describedBy } from "../components/FormErrors"
 import ProductImage from "../components/ProductImage";
 import RequiredMark from "../components/RequiredMark";
 import { cheapestVariant, totalStock } from "../lib/variants";
+import { paymentName, statusWord } from "../lib/orders";
 import { useBusiness } from "../context/BusinessContext";
 import { LayoutDashboard, Package, Users, IndianRupee, ShoppingBag, MessageSquare, Briefcase, Settings } from "lucide-react";
 import { toast } from "sonner";
@@ -112,7 +113,7 @@ function OrdersAdmin() {
                 <td className="px-4 py-3 font-mono text-xs">{o.order_id}</td>
                 <td className="px-4 py-3">{o.user_mobile || o.user_email || "—"}</td>
                 <td className="px-4 py-3">{formatINR(o.total)}</td>
-                <td className="px-4 py-3"><span className="badge-soft px-2 py-1 rounded-full text-xs">{o.payment_method}</span></td>
+                <td className="px-4 py-3"><span className="badge-soft px-2 py-1 rounded-full text-xs">{paymentName(o.payment_method)}</span></td>
                 <td className="px-4 py-3">
                   <select
                     value={o.status}
@@ -126,7 +127,7 @@ function OrdersAdmin() {
                     }
                   >
                     {[o.status, ...(NEXT_ORDER_STATUSES[o.status] || [])].map((s) => (
-                      <option key={s} value={s}>{s}</option>
+                      <option key={s} value={s}>{statusWord(s)}</option>
                     ))}
                   </select>
                 </td>

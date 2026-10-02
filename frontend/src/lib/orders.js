@@ -1,25 +1,30 @@
 /**
- * How an order is described to the person who placed it.
+ * How an order is described, on every screen that describes one.
  *
- * The list page and the order page say the same things about an order, so
- * the wording lives here rather than being written twice.
+ * The orders list, the order page and the admin table all say the same
+ * things about an order, so the wording lives here rather than being written
+ * out separately in each and drifting apart.
  */
 
-/** "placed" is a database word. This is what a customer is told. */
+/**
+ * The word for each state.
+ *
+ * "processing" is a database word. It is stored, never shown: the shop and
+ * the customer both read the labels below, so there is nowhere for a second
+ * vocabulary to grow. A customer quoting "Preparing" is quoting what the
+ * owner sees too.
+ *
+ * "Preparing" rather than "Packed" deliberately. The shop moves an order here
+ * when it has accepted it and started getting it ready, which is not the same
+ * as a box being sealed. Claiming the stronger of the two would have the shop
+ * promising something it had not done.
+ */
 const STATUS_WORDS = {
-  placed: { done: "Ordered", pending: "Ordered" },
-  processing: { done: "Packed", pending: "Being packed" },
-  shipped: { done: "Dispatched", pending: "On its way" },
-  delivered: { done: "Delivered", pending: "Delivered" },
-  cancelled: { done: "Cancelled", pending: "Cancelled" },
-};
-
-export const STATUS_TONE = {
-  placed: "bg-blue-100 text-blue-700",
-  processing: "bg-amber-100 text-amber-700",
-  shipped: "bg-indigo-100 text-indigo-700",
-  delivered: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
+  placed: "Ordered",
+  processing: "Preparing",
+  shipped: "Dispatched",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
 };
 
 /** A colour to scan a list by, since the heading already says the word. */
@@ -66,7 +71,7 @@ export function journeyStops(order) {
 }
 
 export function statusWord(status) {
-  return STATUS_WORDS[status]?.done || status || "Ordered";
+  return STATUS_WORDS[status] || status || "Ordered";
 }
 
 export function formatDate(value) {
@@ -112,19 +117,6 @@ export function whenItReached(order, status) {
   const match = [...events].reverse().find((event) => event.status === status);
   if (match?.at) return match.at;
   return status === "placed" ? order?.created_at || null : null;
-}
-
-/**
- * The headline: what happened, and when.
- *
- * Orders placed before the shop recorded its own timings have no date to
- * give, so they say what happened and stop, rather than claiming a date
- * that was never written down.
- */
-export function statusLine(order) {
-  const word = statusWord(order?.status);
-  const when = formatDate(whenItReached(order, order?.status));
-  return when ? `${word} on ${when}` : word;
 }
 
 const PAYMENT_NAMES = {
