@@ -4,6 +4,8 @@ import { KeyRound, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { api, errorMessage, setCsrfToken } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import useAddresses from "../hooks/useAddresses";
+import AddressBook from "../components/AddressBook";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -13,6 +15,7 @@ const EMPTY_FORM = { current_password: "", new_password: "", confirm_password: "
 export default function Account() {
   const { user, checkAuth } = useAuth();
   const navigate = useNavigate();
+  const book = useAddresses();
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -178,6 +181,8 @@ export default function Account() {
           </Button>
         </form>
       </section>
+
+      <AddressBook book={book} />
 
       <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6 mb-6">
         <h2 className="font-heading text-lg font-semibold flex items-center gap-2">

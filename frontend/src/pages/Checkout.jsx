@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { formatINR, api, errorMessage, fieldErrors } from "../lib/api";
 import { lineKey } from "../lib/variants";
 import { shippingFor } from "../lib/shipping";
 import { useShipping } from "../context/BusinessContext";
+import useAddresses from "../hooks/useAddresses";
 import ShippingLine from "../components/ShippingLine";
+import AddressFields from "../components/AddressFields";
+import { EMPTY_ADDRESS, deliveryPartOf, findProblems, oneLine, usualAddress } from "../lib/addresses";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { ErrorSummary, FieldError, describedBy } from "../components/FormErrors";
+import { ErrorSummary } from "../components/FormErrors";
 import ProductImage from "../components/ProductImage";
 import { Package, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -29,20 +32,42 @@ export default function Checkout() {
     (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`)
   );
   const [address, setAddress] = useState({
+    ...EMPTY_ADDRESS,
     full_name: user?.name || "",
-    phone: "",
-    line1: "",
-    line2: "",
-    city: "",
-    state: "",
-    pincode: "",
   });
+  const [error, setError] = useState("");
+  const [fields, setFields] = useState({});
+  // Which saved address is in use, or "new" while typing one that is not
+  // saved yet. Null until the book has been read, so a book arriving late
+  // cannot overwrite something already being typed.
+  const [chosen, setChosen] = useState(null);
+  const [label, setLabel] = useState("");
+  const book = useAddresses();
+  const { addresses } = book;
+
+  useEffect(() => {
+    if (chosen !== null) return;
+    const usual = usualAddress(addresses);
+    if (!usual) return;
+    setChosen(usual.address_id);
+    setAddress(deliveryPartOf(usual));
+  }, [addresses, chosen]);
+
+  const chooseSaved = (saved) => {
+    setChosen(saved.address_id);
+    setAddress(deliveryPartOf(saved));
+    setFields({});
+  };
+
+  const chooseNewAddress = () => {
+    setChosen("new");
+    setAddress({ ...EMPTY_ADDRESS, full_name: user?.name || "" });
+    setLabel("");
+    setFields({});
+  };
 
   const shipping = shippingFor(cartTotal, shippingSettings, cartCount);
   const grand = cartTotal + shipping;
-
-  const [error, setError] = useState("");
-  const [fields, setFields] = useState({});
 
   const updateAddress = (name) => (event) => {
     const { value } = event.target;
@@ -55,24 +80,11 @@ export default function Checkout() {
     });
   };
 
-  const findProblems = () => {
-    const problems = {};
-    if (address.full_name.trim().length < 2) {
-      problems.full_name = "Enter the name for this delivery.";
-    }
-    if (!address.phone.trim()) problems.phone = "Enter a phone number for the courier.";
-    if (!address.line1.trim()) problems.line1 = "Enter the street address.";
-    if (!address.city.trim()) problems.city = "Enter the city.";
-    if (!address.state.trim()) problems.state = "Enter the state.";
-    if (!address.pincode.trim()) problems.pincode = "Enter the pincode.";
-    return problems;
-  };
-
   const submit = async (e) => {
     e.preventDefault();
     if (cart.length === 0) { toast.error("Cart is empty"); return; }
 
-    const problems = findProblems();
+    const problems = findProblems(address);
     if (Object.keys(problems).length > 0) {
       setError("");
       setFields(problems);
@@ -92,6 +104,14 @@ export default function Checkout() {
         address,
         payment_method: payment,
       }, { headers: { "Idempotency-Key": idempotencyKey } });
+
+      // The order is placed, so keeping the address is a convenience that must
+      // never cost the customer their order. A full book or a failed save is
+      // silently accepted rather than turned into an error about something
+      // that already succeeded.
+      if (chosen === "new" || addresses.length === 0) {
+        await book.save({ ...deliveryPartOf(address), label, is_default: addresses.length === 0 });
+      }
 
       await clearCart();
       toast.success("Order placed successfully!");
@@ -118,85 +138,84 @@ export default function Checkout() {
             <div className="mb-4">
               <ErrorSummary message={error} fields={fields} />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <Label htmlFor="full_name" className="text-xs font-bold uppercase tracking-[0.15em]" required>Full name</Label>
-                <Input
-                  id="full_name"
-                  value={address.full_name}
-                  onChange={updateAddress("full_name")} required
-                  data-testid="addr-name"
-                  {...describedBy("full_name", { error: Boolean(fields.full_name) })}
-                />
-                <FieldError name="full_name">{fields.full_name}</FieldError>
-              </div>
-              <div>
-                <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-[0.15em]" required>Phone</Label>
-                <Input
-                  id="phone"
-                  value={address.phone}
-                  onChange={updateAddress("phone")} required
-                  data-testid="addr-phone"
-                  {...describedBy("phone", { error: Boolean(fields.phone) })}
-                />
-                <FieldError name="phone">{fields.phone}</FieldError>
-              </div>
-              <div>
-                <Label htmlFor="pincode" className="text-xs font-bold uppercase tracking-[0.15em]" required>Pincode</Label>
-                <Input
-                  id="pincode"
-                  value={address.pincode}
-                  onChange={updateAddress("pincode")} required
-                  data-testid="addr-pincode"
-                  {...describedBy("pincode", { error: Boolean(fields.pincode) })}
-                />
-                <FieldError name="pincode">{fields.pincode}</FieldError>
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="line1" className="text-xs font-bold uppercase tracking-[0.15em]" required>Address line 1</Label>
-                <Input
-                  id="line1"
-                  value={address.line1}
-                  onChange={updateAddress("line1")} required
-                  data-testid="addr-line1"
-                  {...describedBy("line1", { error: Boolean(fields.line1) })}
-                />
-                <FieldError name="line1">{fields.line1}</FieldError>
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="line2" className="text-xs font-bold uppercase tracking-[0.15em]">Address line 2</Label>
-                <Input
-                  id="line2"
-                  value={address.line2}
-                  onChange={updateAddress("line2")}
-                  data-testid="addr-line2"
-                  {...describedBy("line2", { error: Boolean(fields.line2) })}
-                />
-                <FieldError name="line2">{fields.line2}</FieldError>
-              </div>
-              <div>
-                <Label htmlFor="city" className="text-xs font-bold uppercase tracking-[0.15em]" required>City</Label>
-                <Input
-                  id="city"
-                  value={address.city}
-                  onChange={updateAddress("city")} required
-                  data-testid="addr-city"
-                  {...describedBy("city", { error: Boolean(fields.city) })}
-                />
-                <FieldError name="city">{fields.city}</FieldError>
-              </div>
-              <div>
-                <Label htmlFor="state" className="text-xs font-bold uppercase tracking-[0.15em]" required>State</Label>
-                <Input
-                  id="state"
-                  value={address.state}
-                  onChange={updateAddress("state")} required
-                  data-testid="addr-state"
-                  {...describedBy("state", { error: Boolean(fields.state) })}
-                />
-                <FieldError name="state">{fields.state}</FieldError>
-              </div>
-            </div>
+            {addresses.length > 0 && (
+              <ul className="space-y-3 mb-5" data-testid="saved-addresses">
+                {addresses.map((saved) => (
+                  <li key={saved.address_id}>
+                    <label
+                      className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer ${
+                        chosen === saved.address_id
+                          ? "border-[var(--nayara-primary)] bg-[#FBEEE4]"
+                          : "border-[var(--nayara-border)]"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="saved-address"
+                        className="mt-1"
+                        checked={chosen === saved.address_id}
+                        onChange={() => chooseSaved(saved)}
+                        data-testid={`choose-address-${saved.address_id}`}
+                      />
+                      <span className="min-w-0">
+                        <span className="font-medium block">
+                          {saved.label || saved.full_name}
+                        </span>
+                        <span className="text-sm text-[#64748B] block">{saved.full_name}</span>
+                        <span className="text-sm text-[#64748B] block">{oneLine(saved)}</span>
+                        <span className="text-sm text-[#64748B] block">{saved.phone}</span>
+                      </span>
+                    </label>
+                  </li>
+                ))}
+                <li>
+                  <label
+                    className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer ${
+                      chosen === "new"
+                        ? "border-[var(--nayara-primary)] bg-[#FBEEE4]"
+                        : "border-[var(--nayara-border)]"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="saved-address"
+                      checked={chosen === "new"}
+                      onChange={chooseNewAddress}
+                      data-testid="choose-address-new"
+                    />
+                    <span className="font-medium">Deliver somewhere else</span>
+                  </label>
+                </li>
+              </ul>
+            )}
+
+            {(chosen === "new" || addresses.length === 0) && (
+              <>
+                {addresses.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    <Label htmlFor="label" className="text-xs font-bold uppercase tracking-[0.15em]">
+                      Name this address
+                    </Label>
+                    <Input
+                      id="label"
+                      value={label}
+                      onChange={(event) => setLabel(event.target.value)}
+                      maxLength={30}
+                      placeholder="Home, Office, Mum's"
+                      data-testid="addr-label"
+                    />
+                  </div>
+                )}
+                <AddressFields address={address} onChange={updateAddress} fields={fields} />
+                <p className="text-sm text-[#64748B] mt-3" data-testid="address-will-be-saved">
+                  This address will be saved for next time. You can change or
+                  remove it from{" "}
+                  <Link to="/account" className="text-[var(--nayara-primary)] underline">
+                    your account
+                  </Link>.
+                </p>
+              </>
+            )}
           </section>
 
           <section className="rounded-2xl border border-[var(--nayara-border)] bg-white p-6">
