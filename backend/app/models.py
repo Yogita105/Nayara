@@ -19,6 +19,9 @@ from .utils import normalize_indian_mobile
 MAX_CART_QUANTITY = 50
 MAX_ORDER_ITEMS = 50
 MAX_VARIANTS = 20
+# An address book, not an archive. Past orders keep their own copy of where
+# they went, so a cap here loses no history.
+MAX_ADDRESSES = 10
 SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
 PINCODE_PATTERN = r"^[1-9][0-9]{5}$"
 BUSINESS_PHONE_PATTERN = r"^\+?[0-9][0-9\s-]{7,19}$"
@@ -452,6 +455,21 @@ class Address(ContentModel):
     @classmethod
     def check_delivery_phone(cls, value: str) -> str:
         return normalize_indian_mobile(value)
+
+
+class AddressInput(Address):
+    """A delivery address the customer wants kept for next time.
+
+    The label is theirs to choose: "Home" and "Mum's" mean something to them
+    and nothing to us, so it is free text rather than a fixed list.
+    """
+
+    label: str = Field(default="", max_length=30)
+    is_default: bool = False
+
+
+class SavedAddress(AddressInput):
+    address_id: str = Field(default_factory=lambda: f"addr_{uuid.uuid4().hex[:10]}")
 
 
 class OrderCreate(ContentModel):

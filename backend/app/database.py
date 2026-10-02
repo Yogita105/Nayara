@@ -91,6 +91,7 @@ INDEXES: Tuple[Tuple[str, List[Tuple[str, int]], Dict[str, Any]], ...] = (
     ("bulk_inquiries", [("created_at", DESCENDING)], {}),
     ("bulk_inquiries", [("status", ASCENDING)], {}),
     ("carts", [("user_id", ASCENDING)], {"unique": True}),
+    ("addresses", [("user_id", ASCENDING)], {"unique": True}),
     ("wishlists", [("user_id", ASCENDING)], {"unique": True}),
     ("files", [("file_id", ASCENDING)], {"unique": True}),
 )

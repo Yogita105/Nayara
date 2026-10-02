@@ -78,6 +78,7 @@ def _remove_user_data(mongo_db, user_ids):
     mongo_db.users.delete_many(owner)
     mongo_db.user_sessions.delete_many(owner)
     mongo_db.carts.delete_many(owner)
+    mongo_db.addresses.delete_many(owner)
     mongo_db.wishlists.delete_many(owner)
     mongo_db.orders.delete_many(owner)
     mongo_db.audit_events.delete_many({"actor_id": {"$in": list(user_ids)}})
