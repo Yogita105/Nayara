@@ -155,7 +155,7 @@ export default function Shop() {
         <button
           type="button"
           onClick={() => setFiltersOpen((open) => !open)}
-          className="lg:hidden flex items-center gap-2 rounded-md border border-[var(--nayara-border)] bg-white px-4 h-11"
+          className="lg:hidden flex items-center gap-2 rounded-md border border-[var(--nayara-border)] bg-white px-4 h-11 shrink-0"
           aria-expanded={filtersOpen}
           aria-controls="shop-filter-fields"
           data-testid="shop-filters-toggle"
@@ -176,10 +176,13 @@ export default function Shop() {
           />
         </button>
 
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-2 ml-auto min-w-0">
           <label
             htmlFor="shop-sort"
-            className="text-xs uppercase tracking-[0.2em] font-bold text-[#64748B]"
+            // Kept for screen readers at every width, shown once there is
+            // room: on a narrow phone the words cost more space than the
+            // control they name.
+            className="sr-only sm:not-sr-only text-xs uppercase tracking-[0.2em] font-bold text-[#64748B] whitespace-nowrap"
           >
             Sort
           </label>
@@ -190,7 +193,8 @@ export default function Shop() {
           <Select value={sort} onValueChange={(value) => updateParams({ sort: value })}>
             <SelectTrigger
               id="shop-sort"
-              className="h-11 w-[180px] bg-white border-[var(--nayara-border)] text-sm"
+              aria-label="Sort products"
+              className="h-11 w-full max-w-[180px] bg-white border-[var(--nayara-border)] text-sm"
               data-testid="filter-sort"
             >
               <SelectValue />

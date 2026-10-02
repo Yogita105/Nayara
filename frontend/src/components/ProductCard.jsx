@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useCart } from "../context/CartContext";
 import { formatINR } from "../lib/api";
 import { isSoldOut, stockNotice } from "../lib/stock";
-import { defaultVariant, asSold, hasChoice, totalStock, variantsOf } from "../lib/variants";
+import { defaultVariant, asSold, hasChoice, totalStock } from "../lib/variants";
 import ProductImage from "./ProductImage";
 
 export default function ProductCard({ product, index = 0 }) {
@@ -98,16 +98,22 @@ export default function ProductCard({ product, index = 0 }) {
             {notice.text}
           </p>
         )}
-        <div className="flex items-end justify-between mt-4">
+        {/* Beside the price wherever there is room for both. On a phone the
+            grid is two columns wide, which leaves a card about 111 pixels of
+            content: the price and a button reading "Choose volume" need
+            around 160 between them, so below this width the button takes its
+            own line rather than sitting on top of the price. */}
+        <div
+          className={
+            choose && !cannotAdd
+              ? "flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mt-4"
+              : "flex items-end justify-between gap-2 mt-4"
+          }
+        >
           <div>
             <div className="font-heading text-xl font-semibold">{formatINR(price)}</div>
             {mrp > price && (
               <div className="text-xs text-[#64748B] line-through">{formatINR(mrp)}</div>
-            )}
-            {choose && (
-              <div className="text-xs text-[#64748B] mt-0.5" data-testid={`variant-count-${product.product_id}`}>
-                {variantsOf(product).length} {optionName}s
-              </div>
             )}
           </div>
           {choose && !cannotAdd ? (
@@ -119,7 +125,7 @@ export default function ProductCard({ product, index = 0 }) {
             // that cannot be acted on.
             <Link
               to={`/product/${product.product_id}`}
-              className="text-xs font-semibold px-3 h-10 rounded-full border border-[var(--nayara-primary)] text-[var(--nayara-primary)] flex items-center hover:bg-[#FBEEE4] transition"
+              className="w-full sm:w-auto text-xs font-semibold px-3 h-10 rounded-full border border-[var(--nayara-primary)] text-[var(--nayara-primary)] flex items-center justify-center shrink-0 whitespace-nowrap hover:bg-[#FBEEE4] transition"
               data-testid={`choose-${product.product_id}`}
             >
               Choose {optionName}
@@ -134,7 +140,7 @@ export default function ProductCard({ product, index = 0 }) {
                 else toast.error(result.message);
               }}
               disabled={cannotAdd}
-              className={`w-10 h-10 rounded-full text-white flex items-center justify-center transition disabled:opacity-40 disabled:cursor-not-allowed ${added ? "bg-[#15803D]" : "bg-[var(--nayara-primary)] hover:bg-[var(--nayara-primary-hover)]"}`}
+              className={`w-10 h-10 rounded-full text-white flex items-center justify-center shrink-0 transition disabled:opacity-40 disabled:cursor-not-allowed ${added ? "bg-[#15803D]" : "bg-[var(--nayara-primary)] hover:bg-[var(--nayara-primary-hover)]"}`}
               data-testid={`add-to-cart-${product.product_id}`}
               aria-label={
                 added
