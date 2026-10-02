@@ -38,7 +38,7 @@ export function findProblems(address) {
   if (!(address.line1 || "").trim()) problems.line1 = "Enter the street address.";
   if (!(address.city || "").trim()) problems.city = "Enter the city.";
   if (!(address.state || "").trim()) problems.state = "Enter the state.";
-  if (!(address.pincode || "").trim()) problems.pincode = "Enter the pincode.";
+  if (!(address.pincode || "").trim()) problems.pincode = "Enter the PIN code.";
   return problems;
 }
 

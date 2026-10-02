@@ -64,7 +64,7 @@ jobs:
         run: python scripts/run_tests.py
 
   frontend:
-    name: Frontend lint and build
+    name: Frontend lint, test and build
     runs-on: ubuntu-latest
 
     steps:
@@ -83,6 +83,12 @@ jobs:
       - name: Lint
         working-directory: frontend
         run: yarn lint
+
+      - name: Test
+        working-directory: frontend
+        env:
+          CI: "true"
+        run: yarn test:ci
 
       - name: Build
         working-directory: frontend

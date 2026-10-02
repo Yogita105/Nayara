@@ -168,12 +168,3 @@ export function orderedLine(order) {
   parts.push(countItems(order?.items));
   return parts.join(" · ");
 }
-
-/** What is in the order, named, for someone deciding whether to open it. */
-export function summarise(items = [], upTo = 2) {
-  const names = items.map((item) => item.name);
-  if (names.length === 0) return "";
-  if (names.length <= upTo) return names.join(" and ");
-  const extra = names.length - upTo;
-  return `${names.slice(0, upTo).join(", ")} and ${extra} more`;
-}

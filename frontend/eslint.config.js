@@ -38,4 +38,13 @@ module.exports = [
       "no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
   },
+  {
+    // Tests run under Node, not in a browser, so they may read the project's
+    // own files: a couple of them check that values copied from the API have
+    // not drifted away from it.
+    files: ["src/**/*.test.{js,jsx}"],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 ];
